@@ -1779,7 +1779,7 @@ window.renderSiparisler = function() {
   tbody.innerHTML = list.map(s => `<tr onclick="openDetail('siparis','${s.id}')">
     <td class="mono" style="font-size:11px;color:var(--accent)">${s.sipNo||'—'}</td>
     <td class="mono" style="font-size:11px;color:var(--text2)">${s.sipTarihi||'—'}</td>
-    <td><strong>${s.musteriAd||'—'}</strong>${s.perakende?` <span class="badge badge-gray" style="font-size:9px;margin-left:4px">PERAKENDE</span>`:''}</td>
+    <td><strong>${s.musteriAd||'—'}</strong></td>
     <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.urun||'—'}${s.renk?' · <span style=\'color:var(--text3)\'>'+s.renk+'</span>':''}</td>
     <td class="mono">${s.adet||1}</td>
     <td class="mono">${fmtMoney(s.tutar)}</td>
@@ -1843,19 +1843,6 @@ function siparisForm(data={}) {
   const MDF_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'];
   return `<div class="form-grid">
     <div class="form-group full">
-      <label>Müşteri Tipi</label>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
-          <input type="radio" name="sipMusteriTip" id="r_toptan" value="toptan"
-            ${!(data.perakende)?'checked':''} onchange="toggleMusteriTip()"> Kayıtlı Müşteri (Toptan)
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
-          <input type="radio" name="sipMusteriTip" id="r_perakende" value="perakende"
-            ${data.perakende?'checked':''} onchange="toggleMusteriTip()"> Tek Seferlik Perakende
-        </label>
-      </div>
-    </div>
-    <div class="form-group full" id="musteriKayitliAlan">
       <label>Müşteri *</label>
       <div style="position:relative">
         <input id="f_musteriSearch" placeholder="Müşteri adı yaz..." autocomplete="off"
@@ -1866,14 +1853,6 @@ function siparisForm(data={}) {
         <input type="hidden" id="f_musteriId" value="${data.musteriId||''}">
         <div id="musteriDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:200px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
       </div>
-    </div>
-    <div class="form-group" id="perakendeAdAlan" style="display:${data.perakende?'block':'none'}">
-      <label>Ad Soyad *</label>
-      <input id="f_perakendeAd" placeholder="Müşteri adı..." value="${data.musteriAd&&data.perakende?data.musteriAd:''}">
-    </div>
-    <div class="form-group" id="perakendeTelAlan" style="display:${data.perakende?'block':'none'}">
-      <label>Telefon <span style="color:var(--text3);font-weight:400">(opsiyonel)</span></label>
-      <input id="f_perakendeTel" placeholder="05xx..." value="${data.perakendeTel||''}">
     </div>
     <div class="form-group">
       <label>Sipariş No</label>
@@ -1992,16 +1971,6 @@ window.toggleOlcuFields = function() {
   const ozel = document.getElementById('r_ozel')?.checked;
   const alan = document.getElementById('ozelOlcuAlani');
   if(alan) alan.style.display = ozel ? 'block' : 'none';
-};
-
-window.toggleMusteriTip = function() {
-  const perakende = document.getElementById('r_perakende')?.checked;
-  const kayitliAlan  = document.getElementById('musteriKayitliAlan');
-  const adAlan       = document.getElementById('perakendeAdAlan');
-  const telAlan      = document.getElementById('perakendeTelAlan');
-  if(kayitliAlan) kayitliAlan.style.display = perakende ? 'none' : '';
-  if(adAlan)      adAlan.style.display      = perakende ? 'block' : 'none';
-  if(telAlan)     telAlan.style.display     = perakende ? 'block' : 'none';
 };
 
 window.filterRenkDropdown = function() {
@@ -2241,22 +2210,11 @@ window.saveRecord = async function() {
 
   try {
     if(editingType === 'siparis') {
-      const isPerakende = document.getElementById('r_perakende')?.checked;
-      let musteriId = '', musteriAd = '';
-
-      if(isPerakende) {
-        const ad = document.getElementById('f_perakendeAd')?.value?.trim();
-        if(!ad) { showToast('Ad Soyad zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
-        musteriId = '';
-        musteriAd = ad;
-      } else {
-        musteriId = document.getElementById('f_musteriId')?.value;
-        const musteri = musteriler.find(m => m.id === musteriId);
-        musteriAd = musteri?.ad || '—';
-        if(!musteriId) { showToast('Müşteri seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
-      }
-
+      const musteriId = document.getElementById('f_musteriId')?.value;
+      const musteri = musteriler.find(m => m.id === musteriId);
       const urun = document.getElementById('f_urun')?.value?.trim();
+      const tutar = document.getElementById('f_tutar')?.value;
+      if(!musteriId) { showToast('Müşteri seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
       if(!urun) { showToast('Kapı modeli seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
       const birimFiyat = Number(document.getElementById('f_birimFiyat')?.value||0);
       if(!birimFiyat) { showToast('Birim fiyat zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
@@ -2269,9 +2227,7 @@ window.saveRecord = async function() {
       const kalinlik = document.getElementById('f_olcuKalinlik')?.value||'';
       const olcuStr = (en&&boy) ? en+'x'+boy : (ozelOlcu ? '' : 'Standart');
       const data = {
-        musteriId, musteriAd,
-        perakende: isPerakende || false,
-        perakendeTel: isPerakende ? (document.getElementById('f_perakendeTel')?.value||'') : '',
+        musteriId, musteriAd: musteri?.ad || '—',
         sipNo: sipNoVal,
         sipTarihi: document.getElementById('f_sipTarihi')?.value || new Date().toISOString().split('T')[0],
         urun, adet: Number(document.getElementById('f_adet')?.value||1),
@@ -2849,12 +2805,12 @@ window.KATALOG = [
       '441','442','443'].map(n=>({no:'AYBAT-'+n,seri:'Laminoks Yüzey Seri'})),
   // Sac Panel Seri (500)
   ...['501','502','503'].map(n=>({no:'AYBAT-'+n,seri:'Sac Panel Seri'})),
-  // Panjur Kapı Seri (600) — tek model
-  {no:'AYBAT-601', seri:'Panjur Kapı Seri'},
-  // Villa & Bina Giriş Seri (700) — tek model
-  {no:'AYBAT-701', seri:'Villa & Bina Giriş Seri'},
-  // Yangın Acil Çıkış Seri (800) — tek model
-  {no:'AYBAT-801', seri:'Yangın Acil Çıkış Seri'},
+  // Panjur Kapı Seri (600)
+  ...['601','602','603'].map(n=>({no:'AYBAT-'+n,seri:'Panjur Kapı Seri'})),
+  // Villa & Bina Giriş Seri (700)
+  ...['701','702','703','704'].map(n=>({no:'AYBAT-'+n,seri:'Villa & Bina Giriş Seri'})),
+  // Yangın Acil Çıkış Seri (800)
+  ...['801','802'].map(n=>({no:'AYBAT-'+n,seri:'Yangın Acil Çıkış Seri'})),
 ];
 
 // ─── KASA STATE & LISTENERS ─────────────────────────────────────────────────
@@ -3216,27 +3172,11 @@ window.deleteAktivite = async function(id) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 window.renderAnaliz = function() {
-  // Geçmiş satış verisi müşterilerden topla (Excel import)
+  // Geçmiş satış verisi müşterilerden topla
   const allSatislar = [];
   musteriler.forEach(m => {
     (m.gecmisSatislar||[]).forEach(s => {
-      allSatislar.push({...s, musteriId:m.id, musteriAd:m.ad, satisTip:m.satisTip, kaynak:'gecmis'});
-    });
-  });
-  // ERP'e girilen siparişleri de ekle
-  siparisler.forEach(s => {
-    const musteri = musteriler.find(m => m.id === s.musteriId);
-    const satisTip = s.perakende ? 'Perakende' : (musteri?.satisTip || 'Toptan');
-    allSatislar.push({
-      tarih: s.sipTarihi||'',
-      fiyat: Number(s.tutar||0),
-      adet: Number(s.adet||1),
-      seri: (s.urun||'').replace('AYBAT-','').substring(0,1)+'xx',
-      musteriId: s.musteriId||'',
-      musteriAd: s.musteriAd||'—',
-      satisTip,
-      perakende: s.perakende||false,
-      kaynak: 'erp'
+      allSatislar.push({...s, musteriId:m.id, musteriAd:m.ad, satisTip:m.satisTip});
     });
   });
 
@@ -3316,23 +3256,16 @@ window.renderAnaliz = function() {
       <span style="font-size:11px;font-family:var(--mono);color:var(--text3);width:30px;text-align:right">${cnt}</span>
     </div>`).join('');
 
-  // Toptan/Perakende — canlı ERP + geçmiş verisi
-  const erpSiparisler = siparisler;
-  const erpToptan    = erpSiparisler.filter(s => !s.perakende).reduce((a,s)=>a+Number(s.tutar||0), 0);
-  const erpPerakende = erpSiparisler.filter(s =>  s.perakende).reduce((a,s)=>a+Number(s.tutar||0), 0);
-  const gecmisToptan    = allSatislar.filter(s=>s.kaynak==='gecmis'&&s.satisTip==='Toptan').reduce((a,s)=>a+s.fiyat,0);
-  const gecmisPerakende = allSatislar.filter(s=>s.kaynak==='gecmis'&&s.satisTip==='Perakende').reduce((a,s)=>a+s.fiyat,0);
-  const tCiro = gecmisToptan + erpToptan;
-  const pCiro = gecmisPerakende + erpPerakende;
-  const erpTopAdet  = erpSiparisler.filter(s=>!s.perakende).reduce((a,s)=>a+Number(s.adet||1),0);
-  const erpPerAdet  = erpSiparisler.filter(s=> s.perakende).reduce((a,s)=>a+Number(s.adet||1),0);
-  const total = tCiro + pCiro || 1;
+  // Toptan/Perakende
+  const tCiro = allSatislar.filter(s=>s.tip==='Toptan').reduce((a,s)=>a+s.fiyat,0);
+  const pCiro = allSatislar.filter(s=>s.tip==='Perakende').reduce((a,s)=>a+s.fiyat,0);
+  const total = tCiro+pCiro||1;
   const tPct = Math.round(tCiro/total*100);
   document.getElementById('an-tp-chart').innerHTML = `
     <div style="margin-bottom:16px">
       <div style="display:flex;height:28px;border-radius:4px;overflow:hidden">
-        <div style="width:${tPct}%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;min-width:${tPct>5?0:0}px">${tPct>8?tPct+'%':''}</div>
-        <div style="flex:1;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000">${tPct<92?(100-tPct)+'%':''}</div>
+        <div style="width:${tPct}%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000">${tPct}%</div>
+        <div style="flex:1;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000">${100-tPct}%</div>
       </div>
       <div style="display:flex;gap:16px;margin-top:10px;font-size:12px">
         <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:var(--blue);border-radius:2px;display:inline-block"></span>Toptan · ${fmtMoney(tCiro)}</span>
@@ -3340,9 +3273,9 @@ window.renderAnaliz = function() {
       </div>
     </div>
     <div style="font-size:12px;color:var(--text3);margin-top:12px">
+      <div class="detail-row"><span class="detail-key">Toplam Satış</span><span class="detail-val mono">${allSatislar.length} adet</span></div>
       <div class="detail-row"><span class="detail-key">Toplam Ciro</span><span class="detail-val mono" style="color:var(--green)">${fmtMoney(total)}</span></div>
-      <div class="detail-row"><span class="detail-key">ERP — Toptan Sipariş</span><span class="detail-val mono">${erpTopAdet} adet · ${fmtMoney(erpToptan)}</span></div>
-      <div class="detail-row"><span class="detail-key">ERP — Perakende Sipariş</span><span class="detail-val mono">${erpPerAdet} adet · ${fmtMoney(erpPerakende)}</span></div>
+      <div class="detail-row"><span class="detail-key">Ortalama Sipariş</span><span class="detail-val mono">${fmtMoney(Math.round(total/allSatislar.length))}</span></div>
     </div>`;
 };
 </script>
