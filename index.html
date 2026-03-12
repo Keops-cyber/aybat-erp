@@ -1824,7 +1824,7 @@ function siparisForm(data={}) {
   const autoSipNo = data.sipNo || nextSipNo();
   const bugun = new Date().toISOString().split('T')[0];
   const ozelOlcu = data.olcuEn || data.olcuBoy ? true : false;
-  const MDF_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika'];
+  const MDF_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'];
   return `<div class="form-grid">
     <div class="form-group full">
       <label>Müşteri *</label>
@@ -1871,7 +1871,7 @@ function siparisForm(data={}) {
     </div>
     <div class="form-group">
       <label>Adet</label>
-      <input id="f_adet" type="number" min="1" value="${data.adet||1}">
+      <input id="f_adet" type="number" min="1" value="${data.adet||1}" oninput="hesaplaToplam()">
     </div>
     <div class="form-group">
       <label>Kapı Yönü / Menteşe</label>
@@ -1902,10 +1902,27 @@ function siparisForm(data={}) {
       <label>Duvar Kalınlığı (cm)</label>
       <input id="f_olcuKalinlik" type="number" placeholder="örn: 18" value="${data.olcuKalinlik||''}">
     </div>
+    <div class="form-group">
+      <label>Sac Rengi</label>
+      <div style="position:relative">
+        <input id="f_sacRenk" placeholder="Renk ara..." autocomplete="off"
+          value="${data.sacRenk||''}"
+          oninput="filterSacRenkDropdown()"
+          onfocus="filterSacRenkDropdown()"
+          style="width:100%">
+        <div id="sacRenkDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:180px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
+      </div>
+    </div>
     <hr class="form-divider">
     <div class="form-group">
-      <label>Toplam Tutar (₺) *</label>
-      <input id="f_tutar" type="number" placeholder="0" value="${data.tutar||''}">
+      <label>Birim Fiyat (₺) *</label>
+      <input id="f_birimFiyat" type="number" placeholder="0" value="${data.birimFiyat||''}"
+        oninput="hesaplaToplam()">
+    </div>
+    <div class="form-group">
+      <label>Toplam Tutar (₺)</label>
+      <input id="f_tutar" type="number" placeholder="0" value="${data.tutar||''}" readonly
+        style="background:var(--surface2);color:var(--accent);font-weight:600;font-family:var(--mono)">
     </div>
     <div class="form-group">
       <label>Ödeme Durumu</label>
@@ -1941,7 +1958,7 @@ window.toggleOlcuFields = function() {
 };
 
 window.filterRenkDropdown = function() {
-  const MDF_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika'];
+  const MDF_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'];
   const q = (document.getElementById('f_renkSearch')?.value||'').toLowerCase();
   const dd = document.getElementById('renkDropdown');
   if(!dd) return;
@@ -2037,7 +2054,33 @@ document.addEventListener('click', e => {
   if(dd2 && !e.target.closest('#f_urunSearch') && !e.target.closest('#modelDropdown')) dd2.style.display = 'none';
   const ddr = document.getElementById('renkDropdown');
   if(ddr && !e.target.closest('#f_renkSearch') && !e.target.closest('#renkDropdown')) ddr.style.display = 'none';
+  const dds = document.getElementById('sacRenkDropdown');
+  if(dds && !e.target.closest('#f_sacRenk') && !e.target.closest('#sacRenkDropdown')) dds.style.display = 'none';
 });
+
+// Sac renk dropdown
+window.filterSacRenkDropdown = function() {
+  const SAC_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'];
+  const q = (document.getElementById('f_sacRenk')?.value||'').toLowerCase();
+  const dd = document.getElementById('sacRenkDropdown');
+  if(!dd) return;
+  const filtered = q ? SAC_RENKLER.filter(r => r.toLowerCase().includes(q)) : SAC_RENKLER;
+  if(!filtered.length) { dd.style.display='none'; return; }
+  dd.style.display = 'block';
+  dd.innerHTML = filtered.map(r =>
+    `<div onclick="document.getElementById('f_sacRenk').value='${r}';document.getElementById('sacRenkDropdown').style.display='none'"
+      style="padding:8px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">${r}</div>`
+  ).join('');
+};
+
+// Birim fiyat × adet = toplam tutar
+window.hesaplaToplam = function() {
+  const adet = Number(document.getElementById('f_adet')?.value || 1);
+  const birim = Number(document.getElementById('f_birimFiyat')?.value || 0);
+  const tutarEl = document.getElementById('f_tutar');
+  if(tutarEl) tutarEl.value = adet * birim;
+};
 
 window.showMusteriDropdown = function() {
   filterMusteriDropdown();
@@ -2128,7 +2171,9 @@ window.saveRecord = async function() {
       const urun = document.getElementById('f_urun')?.value?.trim();
       const tutar = document.getElementById('f_tutar')?.value;
       if(!musteriId) { showToast('Müşteri seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
-      if(!urun || !tutar) { showToast('Model numarası ve tutar zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+      if(!urun) { showToast('Kapı modeli seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+      const birimFiyat = Number(document.getElementById('f_birimFiyat')?.value||0);
+      if(!birimFiyat) { showToast('Birim fiyat zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
 
       const sipNoVal = document.getElementById('f_sipNo')?.value?.trim() || nextSipNo();
 
@@ -2146,7 +2191,9 @@ window.saveRecord = async function() {
         olcuTip: ozelOlcu ? 'Özel' : 'Standart',
         yon: document.getElementById('f_yon')?.value||'—',
         renk: document.getElementById('f_renkSearch')?.value||'',
-        tutar: Number(tutar),
+        sacRenk: document.getElementById('f_sacRenk')?.value||'',
+        birimFiyat: Number(document.getElementById('f_birimFiyat')?.value||0),
+        tutar: Number(document.getElementById('f_tutar')?.value||0),
         odeme: document.getElementById('f_odeme')?.value||'Bekliyor',
         odemeMiktar: Number(document.getElementById('f_odemeMiktar')?.value||0),
         teslimTarihi: document.getElementById('f_teslimTarihi')?.value||'',
@@ -2207,11 +2254,13 @@ window.openDetail = function(type, id) {
         <div class="detail-row"><span class="detail-key">Ölçü (En×Boy×Kalınlık)</span><span class="detail-val mono">${s.olcu||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Kapı Yönü / Menteşe</span><span class="detail-val">${s.yon||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Renk / Kaplama</span><span class="detail-val">${s.renk||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Sac Rengi</span><span class="detail-val">${s.sacRenk||'—'}</span></div>
       </div>
       <div class="detail-section">
         <div class="detail-section-title">Durum & Ödeme</div>
         <div class="detail-row"><span class="detail-key">Durum</span><span class="detail-val">${durumBadge(s.durum)}</span></div>
         <div class="detail-row"><span class="detail-key">Teslim Tarihi</span><span class="detail-val mono">${fmtDate(s.teslimTarihi)}</span></div>
+        <div class="detail-row"><span class="detail-key">Birim Fiyat</span><span class="detail-val mono">${fmtMoney(s.birimFiyat||0)}</span></div>
         <div class="detail-row"><span class="detail-key">Toplam Tutar</span><span class="detail-val mono" style="color:var(--accent)">${fmtMoney(s.tutar)}</span></div>
         <div class="detail-row"><span class="detail-key">Ödeme Durumu</span><span class="detail-val">${odemeBadge(s.odeme)}</span></div>
         <div class="detail-row"><span class="detail-key">Ödenen</span><span class="detail-val mono">${fmtMoney(s.odemeMiktar)}</span></div>
@@ -2309,6 +2358,7 @@ window.editRecord = function(type, id) {
   const data = type==='siparis' ? siparisler.find(x=>x.id===id) : musteriler.find(x=>x.id===id);
   document.getElementById('addModalTitle').textContent = type==='siparis' ? 'Siparişi Düzenle' : 'Müşteriyi Düzenle';
   document.getElementById('addModalBody').innerHTML = type==='siparis' ? siparisForm(data) : musteriForm(data);
+  document.getElementById('saveBtn').onclick = saveRecord;
   closeModal('detailOverlay');
   document.getElementById('addModal').classList.add('open');
 };
