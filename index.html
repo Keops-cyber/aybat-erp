@@ -2007,26 +2007,25 @@ window.selectModel = function(no) {
   if(hid) hid.value = no;
   if(dd) dd.style.display = 'none';
 
-  // Katalogdan seri adına bak
-  const katalogItem = KATALOG.find(m => m.no === no);
-  const seri = (katalogItem?.seri || '').toUpperCase();
-  const noUpper = no.toUpperCase();
-  const isPanjur = seri.includes('PANJUR') || noUpper.includes('PANJUR');
-  const isYangin = seri.includes('YANGIN') || noUpper.includes('YANGIN');
+  // Model numarasından seri tespiti: AYBAT-601 → 601 → Panjur
+  const numStr = no.replace('AYBAT-','').trim();
+  const num = parseInt(numStr);
+  const isPanjur  = (num >= 601 && num <= 699);
+  const isYangin  = (num >= 801 && num <= 899);
 
-  const renkInp = document.getElementById('f_renkSearch');
-  const renkGrup = renkInp?.closest('.form-group');
+  const renkInp  = document.getElementById('f_renkSearch');
+  const renkGrup = renkInp ? renkInp.closest('.form-group') : null;
   if(renkInp && renkGrup) {
     if(isPanjur) {
-      renkInp.value = 'Yok (Panjur)';
+      renkInp.value    = 'Yok (Panjur)';
       renkInp.disabled = true;
-      renkGrup.style.opacity = '0.45';
+      renkGrup.style.opacity = '0.4';
     } else if(isYangin) {
-      renkInp.value = 'Yok (Yangın Çıkış)';
+      renkInp.value    = 'Yok (Yangın Çıkış)';
       renkInp.disabled = true;
-      renkGrup.style.opacity = '0.45';
+      renkGrup.style.opacity = '0.4';
     } else {
-      if(renkInp.value.startsWith('Yok (')) renkInp.value = '';
+      if(renkInp.value === 'Yok (Panjur)' || renkInp.value === 'Yok (Yangın Çıkış)') renkInp.value = '';
       renkInp.disabled = false;
       renkGrup.style.opacity = '1';
     }
