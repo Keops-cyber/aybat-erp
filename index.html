@@ -1847,7 +1847,7 @@ function siparisForm(data={}) {
       <input id="f_sipTarihi" type="date" value="${data.sipTarihi||bugun}">
     </div>
     <div class="form-group full">
-      <label>Ön MDF Modeli *</label>
+      <label>Kapı Modeli *</label>
       <div style="position:relative">
         <input id="f_urunSearch" placeholder="Ara veya seç... (örn: 201, Lüks)" autocomplete="off"
           value="${data.urun||''}"
@@ -1874,7 +1874,7 @@ function siparisForm(data={}) {
       <input id="f_adet" type="number" min="1" value="${data.adet||1}">
     </div>
     <div class="form-group">
-      <label>Kapı Yönü</label>
+      <label>Kapı Yönü / Menteşe</label>
       <select id="f_yon">
         ${['—','Sağ','Sol','Çift Kanatlı'].map(y=>`<option ${(data.yon||'—')===y?'selected':''}>${y}</option>`).join('')}
       </select>
@@ -1962,11 +1962,26 @@ window.selectRenk = function(r) {
 window.showModelDropdown = function() { filterModelDropdown(); };
 
 window.filterModelDropdown = function() {
-  const q = (document.getElementById('f_urunSearch')?.value||'').toLowerCase();
+  // Yazarken seri kontrolü - katalogda eşleşen modele bak
+  const realQ = (document.getElementById('f_urunSearch')?.value||'').toLowerCase();
+  const renkInp = document.getElementById('f_renkSearch');
+  const renkGrup = renkInp?.closest('.form-group');
+  if(renkInp && renkGrup && realQ) {
+    // Tam eşleşen model varsa seri kontrolü yap
+    const exact = KATALOG.find(m => m.no.toLowerCase() === realQ);
+    if(exact) {
+      const seri = (exact.seri||'').toUpperCase();
+      const isPanjur = seri.includes('PANJUR');
+      const isYangin = seri.includes('YANGIN');
+      if(isPanjur) { renkInp.value='Yok (Panjur)'; renkInp.disabled=true; renkGrup.style.opacity='0.45'; }
+      else if(isYangin) { renkInp.value='Yok (Yangın Çıkış)'; renkInp.disabled=true; renkGrup.style.opacity='0.45'; }
+      else { if(renkInp.value.startsWith('Yok (')) renkInp.value=''; renkInp.disabled=false; renkGrup.style.opacity='1'; }
+    }
+  }
   const dd = document.getElementById('modelDropdown');
   if(!dd) return;
-  const filtered = q
-    ? KATALOG.filter(m => m.no.toLowerCase().includes(q) || m.seri.toLowerCase().includes(q))
+  const filtered = realQ
+    ? KATALOG.filter(m => m.no.toLowerCase().includes(realQ) || m.seri.toLowerCase().includes(realQ))
     : KATALOG;
   if(!filtered.length) { dd.style.display='none'; return; }
   dd.style.display = 'block';
@@ -1991,6 +2006,31 @@ window.selectModel = function(no) {
   if(inp) inp.value = no;
   if(hid) hid.value = no;
   if(dd) dd.style.display = 'none';
+
+  // Katalogdan seri adına bak
+  const katalogItem = KATALOG.find(m => m.no === no);
+  const seri = (katalogItem?.seri || '').toUpperCase();
+  const noUpper = no.toUpperCase();
+  const isPanjur = seri.includes('PANJUR') || noUpper.includes('PANJUR');
+  const isYangin = seri.includes('YANGIN') || noUpper.includes('YANGIN');
+
+  const renkInp = document.getElementById('f_renkSearch');
+  const renkGrup = renkInp?.closest('.form-group');
+  if(renkInp && renkGrup) {
+    if(isPanjur) {
+      renkInp.value = 'Yok (Panjur)';
+      renkInp.disabled = true;
+      renkGrup.style.opacity = '0.45';
+    } else if(isYangin) {
+      renkInp.value = 'Yok (Yangın Çıkış)';
+      renkInp.disabled = true;
+      renkGrup.style.opacity = '0.45';
+    } else {
+      if(renkInp.value.startsWith('Yok (')) renkInp.value = '';
+      renkInp.disabled = false;
+      renkGrup.style.opacity = '1';
+    }
+  }
 };
 
 document.addEventListener('click', e => {
@@ -2166,7 +2206,7 @@ window.openDetail = function(type, id) {
         <div class="detail-row"><span class="detail-key">Model No</span><span class="detail-val mono">${s.urun||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Adet</span><span class="detail-val mono">${s.adet||1}</span></div>
         <div class="detail-row"><span class="detail-key">Ölçü (En×Boy×Kalınlık)</span><span class="detail-val mono">${s.olcu||'—'}</span></div>
-        <div class="detail-row"><span class="detail-key">Kapı Yönü</span><span class="detail-val">${s.yon||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Kapı Yönü / Menteşe</span><span class="detail-val">${s.yon||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Renk / Kaplama</span><span class="detail-val">${s.renk||'—'}</span></div>
       </div>
       <div class="detail-section">
@@ -2649,7 +2689,7 @@ async function saveMalzeme(editId) {
 }
 
 // ─── KATALOG MODELLERİ ──────────────────────────────────────────────────────
-const KATALOG = [
+window.KATALOG = [
   // Lüks Kabartma Seri (100)
   ...['101','102','103','104','105'].map(n=>({no:'AYBAT-'+n,seri:'Lüks Kabartma Seri'})),
   // Lüks Seri (200)
