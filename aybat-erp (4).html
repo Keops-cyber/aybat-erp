@@ -1,0 +1,2688 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aybat Kapı — ERP</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0f0f0f; --surface:#171717; --surface2:#1f1f1f; --border:#2a2a2a;
+    --accent:#e8a020; --accent2:#c45c1a;
+    --text:#e8e4df; --text2:#8a8580; --text3:#4a4540;
+    --green:#4caf7d; --red:#e05c5c; --blue:#5c9ee0; --purple:#9c6ce0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;display:flex;height:100vh;overflow:hidden;}
+
+  /* SIDEBAR */
+  .sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+  .logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:32px;height:32px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#000;font-family:'IBM Plex Mono',monospace;}
+  .logo-text{font-size:13px;font-weight:700;letter-spacing:0.04em;}
+  .logo-sub{font-size:10px;color:var(--text2);font-family:'IBM Plex Mono',monospace;margin-top:1px;}
+  .nav{flex:1;padding:12px 0;overflow-y:auto;}
+  .nav-section{padding:8px 16px 4px;font-size:9px;font-weight:600;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase;font-family:'IBM Plex Mono',monospace;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;color:var(--text2);transition:all 0.15s;border-left:2px solid transparent;margin:1px 0;}
+  .nav-item:hover{color:var(--text);background:var(--surface2);}
+  .nav-item.active{color:var(--accent);background:rgba(232,160,32,0.08);border-left-color:var(--accent);}
+  .nav-item .icon{font-size:15px;width:18px;text-align:center;}
+  .nav-badge{margin-left:auto;background:var(--accent);color:#000;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;font-family:'IBM Plex Mono',monospace;}
+  .nav-badge.gray{background:var(--surface2);color:var(--text2);}
+  .sidebar-footer{padding:14px 16px;border-top:1px solid var(--border);}
+  .sync-status{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text2);}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);}
+  .sync-dot.offline{background:var(--red);}
+
+  /* TOPBAR */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+  .topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;}
+  .page-title{font-size:15px;font-weight:600;}
+  .page-sub{font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+  .btn{padding:7px 14px;font-size:12px;font-weight:500;border:none;cursor:pointer;border-radius:3px;font-family:'IBM Plex Sans',sans-serif;transition:all 0.15s;display:flex;align-items:center;gap:6px;}
+  .btn-primary{background:var(--accent);color:#000;}
+  .btn-primary:hover{background:#f0b030;}
+  .btn-primary:disabled{background:var(--text3);cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:var(--text3);}
+  .btn-danger{background:rgba(224,92,92,0.15);color:var(--red);border:1px solid rgba(224,92,92,0.3);}
+  .btn-danger:hover{background:rgba(224,92,92,0.25);}
+  .search-box{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);padding:6px 12px;border-radius:3px;min-width:200px;}
+  .search-box input{background:none;border:none;outline:none;color:var(--text);font-size:12px;width:100%;font-family:'IBM Plex Sans',sans-serif;}
+  .search-box input::placeholder{color:var(--text3);}
+
+  .content{flex:1;overflow-y:auto;padding:24px;}
+  .page{display:none;}.page.active{display:block;}
+
+  /* STATS */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);padding:18px;border-radius:4px;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .stat-card.orange::before{background:var(--accent);}
+  .stat-card.green::before{background:var(--green);}
+  .stat-card.red::before{background:var(--red);}
+  .stat-card.blue::before{background:var(--blue);}
+  .stat-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;font-family:'IBM Plex Mono',monospace;}
+  .stat-value{font-size:26px;font-weight:700;margin:6px 0 2px;font-family:'IBM Plex Mono',monospace;}
+  .stat-sub{font-size:11px;color:var(--text2);}
+
+  /* DASHBOARD GRID */
+  .dash-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:4px;}
+  .card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .card-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-family:'IBM Plex Mono',monospace;color:var(--text2);}
+
+  /* TABLE */
+  .table{width:100%;border-collapse:collapse;}
+  .table th{padding:10px 18px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;font-family:'IBM Plex Mono',monospace;border-bottom:1px solid var(--border);}
+  .table td{padding:11px 18px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text);}
+  .table tr:last-child td{border-bottom:none;}
+  .table tbody tr:hover td{background:var(--surface2);cursor:pointer;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  .badge{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
+  .badge-green{background:rgba(76,175,125,0.15);color:var(--green);}
+  .badge-yellow{background:rgba(232,160,32,0.15);color:var(--accent);}
+  .badge-red{background:rgba(224,92,92,0.15);color:var(--red);}
+  .badge-blue{background:rgba(92,158,224,0.15);color:var(--blue);}
+  .badge-gray{background:rgba(138,133,128,0.12);color:var(--text2);}
+  .badge-purple{background:rgba(156,108,224,0.15);color:var(--purple);}
+
+  /* FILTERS */
+  .filters{display:flex;gap:10px;margin-bottom:18px;align-items:center;flex-wrap:wrap;}
+  .filter-select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 12px;font-size:12px;border-radius:3px;outline:none;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:6px;width:640px;max-width:96vw;max-height:92vh;overflow-y:auto;}
+  .modal-header{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1;}
+  .modal-title{font-size:14px;font-weight:600;}
+  .modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:20px;line-height:1;padding:0 4px;}
+  .modal-close:hover{color:var(--text);}
+  .modal-body{padding:22px;}
+  .modal-footer{padding:16px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface);}
+
+  /* FORM */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .form-group{display:flex;flex-direction:column;gap:5px;}
+  .form-group.full{grid-column:1/-1;}
+  .form-group.third{grid-column:span 1;}
+  label{font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;font-family:'IBM Plex Mono',monospace;}
+  input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;font-family:'IBM Plex Sans',sans-serif;transition:border-color 0.15s;width:100%;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+  input::placeholder,textarea::placeholder{color:var(--text3);}
+  textarea{resize:vertical;min-height:70px;}
+  select option{background:var(--surface2);}
+  .form-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:4px 0;}
+
+  /* DETAIL PANEL */
+  .detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:90;align-items:center;justify-content:flex-end;}
+  .detail-overlay.open{display:flex;}
+  .detail-panel{background:var(--surface);border-left:1px solid var(--border);width:500px;max-width:95vw;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+  .detail-header{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+  .detail-body{padding:22px;flex:1;}
+  .detail-section{margin-bottom:20px;}
+  .detail-section-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;}
+  .detail-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+  .detail-row:last-child{border-bottom:none;}
+  .detail-key{font-size:12px;color:var(--text2);}
+  .detail-val{font-size:13px;font-weight:500;text-align:right;}
+  .detail-footer{padding:16px 22px;border-top:1px solid var(--border);display:flex;gap:10px;}
+
+  /* ACTIVITY */
+  .activity-item{padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px;}
+  .activity-item:last-child{border-bottom:none;}
+  .activity-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0;}
+  .activity-text{font-size:12px;line-height:1.5;}
+  .activity-time{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-top:2px;}
+
+  /* TABS */
+  .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+  .tab{padding:10px 18px;font-size:12px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab:hover:not(.active){color:var(--text);}
+
+  /* EMPTY STATE */
+  .empty-state{padding:60px 20px;text-align:center;color:var(--text3);}
+  .empty-icon{font-size:40px;margin-bottom:12px;}
+  .empty-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:6px;}
+  .empty-sub{font-size:12px;}
+
+  /* LOADING */
+  .loading{padding:40px;text-align:center;color:var(--text3);font-size:13px;}
+  .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:8px;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--surface);border:1px solid var(--border);padding:12px 18px;border-radius:4px;font-size:13px;z-index:200;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;display:flex;align-items:center;gap:8px;max-width:320px;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.success{border-left:3px solid var(--green);}
+  .toast.error{border-left:3px solid var(--red);}
+  .toast.info{border-left:3px solid var(--blue);}
+
+  /* KANBAN */
+  .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .kanban-col{background:var(--surface);border:1px solid var(--border);border-radius:4px;display:flex;flex-direction:column;min-height:400px;}
+  .kanban-col-header{padding:12px 14px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;font-family:'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:space-between;}
+  .kanban-col-body{flex:1;padding:10px;display:flex;flex-direction:column;gap:8px;}
+  .kanban-card{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:12px;cursor:pointer;transition:border-color 0.15s;}
+  .kanban-card:hover{border-color:var(--text3);}
+  .kanban-card-title{font-size:12px;font-weight:600;margin-bottom:4px;}
+  .kanban-card-customer{font-size:11px;color:var(--text2);margin-bottom:8px;}
+  .kanban-card-meta{display:flex;gap:6px;align-items:center;}
+  .kanban-card-date{font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;margin-left:auto;}
+
+  /* STOK */
+  .stok-grid{display:block;margin-bottom:20px;}
+  .stok-table td, .stok-table th{padding:5px 10px !important;font-size:11px !important;}
+  .stok-item{background:var(--surface);border:1px solid var(--border);padding:16px;border-radius:4px;}
+  .stok-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+  .stok-code{font-size:10px;color:var(--text2);font-family:'IBM Plex Mono',monospace;margin-bottom:10px;}
+  .stok-bar-bg{background:var(--surface2);border-radius:2px;height:5px;margin-bottom:6px;overflow:hidden;}
+  .stok-bar{height:100%;border-radius:2px;}
+  .stok-numbers{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);}
+  .stok-numbers strong{font-family:'IBM Plex Mono',monospace;}
+
+  /* KASA */
+  .kasa-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .kasa-card{background:var(--surface);border:1px solid var(--border);padding:18px;border-radius:4px;}
+  .kasa-label{font-size:10px;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;font-family:'IBM Plex Mono',monospace;}
+  .kasa-amount{font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace;margin-top:6px;}
+
+  .scrollbar-thin::-webkit-scrollbar{width:4px;}
+  .scrollbar-thin::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);padding:3px 10px;border-radius:12px;font-size:11px;color:var(--text2);}
+
+  /* MUSTERI CARD */
+  .musteri-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .musteri-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px;cursor:pointer;transition:border-color 0.15s;}
+  .musteri-card:hover{border-color:var(--text3);}
+  .musteri-avatar{width:36px;height:36px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#000;margin-bottom:10px;}
+  .musteri-name{font-size:14px;font-weight:600;margin-bottom:2px;}
+  .musteri-type{font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;margin-bottom:8px;}
+  .musteri-meta{font-size:11px;color:var(--text2);margin-bottom:4px;}
+
+  /* CONFIRM DIALOG */
+  .confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;align-items:center;justify-content:center;}
+  .confirm-overlay.open{display:flex;}
+  .confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:24px;width:360px;text-align:center;}
+  .confirm-title{font-size:15px;font-weight:600;margin-bottom:8px;}
+  .confirm-sub{font-size:13px;color:var(--text2);margin-bottom:20px;}
+  .confirm-actions{display:flex;gap:10px;justify-content:center;}
+</style>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">AK</div>
+    <div>
+      <div class="logo-text">Aybat Kapı</div>
+      <div class="logo-sub">ERP Sistemi</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Genel</div>
+    <div class="nav-item active" onclick="showPage('dashboard',this)">
+      <span class="icon">⬛</span> Dashboard
+    </div>
+    <div class="nav-section">Operasyon</div>
+    <div class="nav-item" onclick="showPage('musteriler',this)">
+      <span class="icon">👤</span> Müşteriler
+    </div>
+    <div class="nav-item" onclick="showPage('siparisler',this)">
+      <span class="icon">📋</span> Siparişler
+      <span class="nav-badge gray" id="sipBadge">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('uretim',this)">
+      <span class="icon">🔧</span> Üretim
+    </div>
+    <div class="nav-section">Stok & Finans</div>
+    <div class="nav-item" onclick="showPage('stok',this)">
+      <span class="icon">📦</span> Stok
+    </div>
+    <div class="nav-item" onclick="showPage('mdfstok',this)">
+      <span class="icon">🪵</span> MDF Stok
+    </div>
+    <div class="nav-item" onclick="showPage('kasa',this)">
+      <span class="icon">💰</span> Kasa
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncText">Firebase bağlanıyor...</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">Dashboard</div>
+      <div class="page-sub" id="pageSub">Genel bakış</div>
+    </div>
+    <div class="topbar-right">
+      <div class="search-box">
+        <span style="color:var(--text3);font-size:14px">⌕</span>
+        <input type="text" id="searchInput" placeholder="Müşteri veya sipariş ara..." oninput="handleSearch()">
+      </div>
+      <button class="btn btn-primary" id="addBtn" onclick="openAddModal()">+ Yeni</button>
+    </div>
+  </div>
+
+  <div class="content scrollbar-thin">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card orange">
+          <div class="stat-label">Aktif Sipariş</div>
+          <div class="stat-value" id="dash-aktif">—</div>
+          <div class="stat-sub">Üretim & bekleyen</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Toplam Ciro</div>
+          <div class="stat-value" id="dash-ciro" style="font-size:18px">—</div>
+          <div class="stat-sub">Tüm zamanlar</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Açık Alacak</div>
+          <div class="stat-value" id="dash-alacak" style="font-size:18px">—</div>
+          <div class="stat-sub">Tahsil edilmedi</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Toplam Müşteri</div>
+          <div class="stat-value" id="dash-musteri">—</div>
+          <div class="stat-sub">Kayıtlı müşteriler</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Son Siparişler</span>
+          <button class="btn btn-ghost" onclick="showPage('siparisler',null)" style="padding:4px 10px;font-size:11px;">Tümü →</button>
+        </div>
+        <div id="dash-siparis-list"><div class="loading"><span class="spinner"></span>Yükleniyor...</div></div>
+      </div>
+    </div>
+
+    <!-- MÜŞTERİLER -->
+    <div class="page" id="page-musteriler">
+      <div class="filters">
+        <select class="filter-select" id="musteriFilter" onchange="renderMusteriler()">
+          <option value="">Tüm Tipler</option>
+          <option value="Bireysel">Bireysel</option>
+          <option value="Kurumsal">Kurumsal</option>
+        </select>
+        <select class="filter-select" id="musteriSatisFilter" onchange="renderMusteriler()">
+          <option value="">Toptan & Perakende</option>
+          <option value="Toptan">Toptan</option>
+          <option value="Perakende">Perakende</option>
+        </select>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="openAddModal()">+ Yeni Müşteri</button>
+        </div>
+      </div>
+      <div class="musteri-grid" id="musteriGrid">
+        <div class="loading" style="grid-column:1/-1"><span class="spinner"></span>Yükleniyor...</div>
+      </div>
+    </div>
+
+    <!-- SİPARİŞLER -->
+    <div class="page" id="page-siparisler">
+      <div class="filters">
+        <select class="filter-select" id="sipDurumFilter" onchange="renderSiparisler()">
+          <option value="">Tüm Durumlar</option>
+          <option value="Sipariş Alındı">Sipariş Alındı</option>
+          <option value="Üretimde">Üretimde</option>
+          <option value="Montaj">Montaj</option>
+          <option value="Teslim Hazır">Teslim Hazır</option>
+          <option value="Teslim Edildi">Teslim Edildi</option>
+          <option value="İptal">İptal</option>
+        </select>
+        <select class="filter-select" id="sipOdemeFilter" onchange="renderSiparisler()">
+          <option value="">Tüm Ödemeler</option>
+          <option value="Bekliyor">Ödeme Bekliyor</option>
+          <option value="Kısmi">Kısmi Ödeme</option>
+          <option value="Tamamlandı">Ödeme Tamamlandı</option>
+        </select>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="openAddModal()">+ Yeni Sipariş</button>
+        </div>
+      </div>
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>Sipariş No</th><th>Müşteri</th><th>Ürün</th>
+            <th>Adet</th><th>Tutar</th><th>Teslim</th><th>Durum</th><th>Ödeme</th><th></th>
+          </tr></thead>
+          <tbody id="siparisTableBody">
+            <tr><td colspan="9"><div class="loading"><span class="spinner"></span>Yükleniyor...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ÜRETİM -->
+    <div class="page" id="page-uretim">
+      <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:12px;color:var(--text2)">Siparişleri buradan sürükleyerek üretim aşamasını güncelleyebilirsin</span>
+        <button class="btn btn-ghost" onclick="renderUretim()">↻ Yenile</button>
+      </div>
+      <div class="kanban" id="kanbanBoard">
+        <div class="loading" style="grid-column:1/-1"><span class="spinner"></span>Yükleniyor...</div>
+      </div>
+    </div>
+
+    <!-- STOK -->
+    <div class="page" id="page-stok">
+      <div class="filters">
+        <select class="filter-select" id="stokKategoriFilter" onchange="renderStok()">
+          <option value="">Tüm Kategoriler</option>
+          <option value="Hammadde">Hammadde</option>
+          <option value="Aksesuar">Aksesuar</option>
+          <option value="Hazır Ürün">Hazır Ürün</option>
+          <option value="Yarı Mamul">Yarı Mamul</option>
+        </select>
+        <select class="filter-select" id="stokDurumFilter" onchange="renderStok()">
+          <option value="">Tüm Stoklar</option>
+          <option value="kritik">Kritik (min altı)</option>
+          <option value="normal">Normal</option>
+        </select>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="openStokHareket()">↕ Giriş / Çıkış</button>
+          <button class="btn btn-primary" onclick="openAddModal()">+ Yeni Malzeme</button>
+        </div>
+      </div>
+      <!-- Stok özet kartları -->
+      <div class="stats-grid" style="margin-bottom:18px">
+        <div class="stat-card orange">
+          <div class="stat-label">Toplam Malzeme</div>
+          <div class="stat-value" id="stok-toplam">—</div>
+          <div class="stat-sub">Kayıtlı kalem</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Kritik Stok</div>
+          <div class="stat-value" id="stok-kritik">—</div>
+          <div class="stat-sub">Min seviyenin altı</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Toplam Stok Değeri</div>
+          <div class="stat-value" id="stok-deger" style="font-size:18px">—</div>
+          <div class="stat-sub">Maliyet bazlı</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Bu Ay Çıkış</div>
+          <div class="stat-value" id="stok-cikis">—</div>
+          <div class="stat-sub">Hareket sayısı</div>
+        </div>
+      </div>
+      <!-- Stok listesi -->
+      <div class="stok-grid" id="stokGrid">
+        <div class="loading" style="grid-column:1/-1"><span class="spinner"></span>Yükleniyor...</div>
+      </div>
+      <!-- Hareket geçmişi -->
+      <div class="card" style="margin-top:6px">
+        <div class="card-header">
+          <span class="card-title">Son Stok Hareketleri</span>
+          <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="renderHareketler()">↻ Yenile</button>
+        </div>
+        <div id="hareketListesi"><div class="loading"><span class="spinner"></span></div></div>
+      </div>
+    </div>
+
+    <!-- KASA -->
+    <div class="page" id="page-kasa">
+      <!-- Özet Kartlar -->
+      <div class="kasa-summary">
+        <div class="kasa-card" style="border-top:2px solid var(--green)">
+          <div class="kasa-label">Kasa Bakiyesi</div>
+          <div class="kasa-amount" id="kasa-bakiye" style="color:var(--green)">—</div>
+        </div>
+        <div class="kasa-card" style="border-top:2px solid var(--blue)">
+          <div class="kasa-label">Bu Ay Gelir</div>
+          <div class="kasa-amount" id="kasa-gelir" style="color:var(--blue)">—</div>
+        </div>
+        <div class="kasa-card" style="border-top:2px solid var(--red)">
+          <div class="kasa-label">Bu Ay Gider</div>
+          <div class="kasa-amount" id="kasa-gider" style="color:var(--red)">—</div>
+        </div>
+        <div class="kasa-card" style="border-top:2px solid var(--accent)">
+          <div class="kasa-label">Bu Ay Net Kar</div>
+          <div class="kasa-amount" id="kasa-kar" style="color:var(--accent)">—</div>
+        </div>
+      </div>
+      <!-- Aylık Özet Tablosu -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <span class="card-title">Aylık Özet</span>
+          <select class="filter-select" id="kasaYilFilter" onchange="renderKasaAylik()" style="padding:4px 10px;font-size:11px"></select>
+        </div>
+        <div id="kasaAylikTablo"><div class="loading"><span class="spinner"></span></div></div>
+      </div>
+      <!-- Hareket Listesi -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Tüm İşlemler</span>
+          <div style="display:flex;gap:8px">
+            <select class="filter-select" id="kasaTipFilter" onchange="renderKasaHareketler()" style="padding:4px 10px;font-size:11px">
+              <option value="">Tümü</option>
+              <option value="Gelir">Gelirler</option>
+              <option value="Gider">Giderler</option>
+            </select>
+            <select class="filter-select" id="kasaAyFilter" onchange="renderKasaHareketler()" style="padding:4px 10px;font-size:11px">
+              <option value="">Tüm Aylar</option>
+            </select>
+          </div>
+        </div>
+        <div id="kasaHareketListesi"><div class="loading"><span class="spinner"></span></div></div>
+      </div>
+    </div>
+
+    <!-- MDF STOK -->
+    <div class="page" id="page-mdfstok">
+      <!-- Özet -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+        <div class="kasa-card" style="border-top:2px solid #f59e0b">
+          <div class="kasa-label">Ön Yüz Modeller</div>
+          <div class="kasa-amount" style="color:#f59e0b">127 model</div>
+        </div>
+        <div class="kasa-card" style="border-top:2px solid #4ade80">
+          <div class="kasa-label">Ön Yüz Kalan</div>
+          <div class="kasa-amount" style="color:#4ade80">377 adet</div>
+        </div>
+        <div class="kasa-card" style="border-top:2px solid #60a5fa">
+          <div class="kasa-label">Arka Yüz Renkler</div>
+          <div class="kasa-amount" style="color:#60a5fa">9 renk</div>
+        </div>
+        <div class="kasa-card" style="border-top:2px solid #9c6ce0">
+          <div class="kasa-label">Arka Yüz Kalan</div>
+          <div class="kasa-amount" style="color:#9c6ce0">198 adet</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <!-- Ön Yüz -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">MDF Ön Yüz — Kapı Modelleri</span>
+            <input id="mdfSearchInp" placeholder="Kod ara..." style="background:#1e1e1e;border:1px solid #2a2a2a;border-radius:4px;padding:4px 10px;font-size:11px;color:#e0e0e0;width:110px">
+          </div>
+          <div style="overflow-y:auto;max-height:480px">
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:#1a1a1a;position:sticky;top:0">
+      <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Kapı Kodu</th>
+      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Sipariş</th>
+      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Satış</th>
+      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Kalan</th>
+    </tr></thead>
+    <tbody id="mdfOnBody"><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">101 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">101 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">102 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">102 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">103</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">201</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">202</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">203</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">204 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">204 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">205</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">206</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">207</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">208</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">209 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">209 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">210 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">210 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">211</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">212</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">213</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">214</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">11</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">11</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">215 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">215 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">216 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">216 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">217 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">217 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">218</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">219</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">220</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">221</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">222</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">223</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">224</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">225</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">226</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">7</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">227</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">228</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">229</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">230</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">231</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">232</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">233</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">234</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">235</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">236</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">237</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">238 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">238 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">239 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">239 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">240</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">241</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">242</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">301</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">15</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">12</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">302</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">303</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">304 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">304 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">305</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">306</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">307</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">308</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">8</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">8</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">309</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">310</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">311</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">10</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">10</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">312</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">313</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">314</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">315</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">316</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">317</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">318</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">319</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">320</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">321</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">401 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">401 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">402 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">402 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">403</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">404</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">405</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">406</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">407</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">408</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">409</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">410</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">411</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">412 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">412 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">413</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">10</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">10</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">414 sağ</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">414 sol</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">415</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">416</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">23</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">20</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">417</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">20</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">18</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">418</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">7</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">419</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">8</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">420</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">421</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">28</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">28</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">422</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">12</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">11</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">423</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">10</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">9</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">424</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">425</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">426</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">427</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">7</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">7</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">428</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">429</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">19</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">18</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">430</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">17</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">17</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">431</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">432</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">433</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">434</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">435</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">436</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">437</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">438</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">439</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">440</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">441</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">442</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">8</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">443</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">501</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">502</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">503</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr></tbody>
+  </table>
+</div>
+        </div>
+        <!-- Arka Yüz -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">MDF Arka Yüz — Renk Stoku</span>
+          </div>
+          <div style="overflow-y:auto;max-height:480px">
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:#1a1a1a">
+      <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Renk</th>
+      <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Sipariş Oranı</th>
+      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Satış</th>
+      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Kalan</th>
+    </tr></thead>
+    <tbody><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Antrasit</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:100%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">77 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">76</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Saruhan</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:65%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">50 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">49</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Beyaz</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:29%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">22 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">21</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Siyah</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:13%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">10 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">10</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Kapuçino</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:13%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">10 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">10</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Vizon</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:0%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">0 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#e05c5c">0</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Kahverengi</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:3%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">2 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#f59e0b">2</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Tanganika</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:16%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">12 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">11</span></td>
+        </tr><tr>
+          <td style="font-size:13px;font-weight:600;padding:5px 10px">Sarı</td>
+          <td style="padding:5px 10px;min-width:140px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
+                <div style="height:100%;background:#60a5fa;width:25%;border-radius:2px"></div>
+              </div>
+              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">19 sip</span>
+            </div>
+          </td>
+          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
+          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">19</span></td>
+        </tr></tbody>
+  </table>
+</div>
+        </div>
+      </div>
+      <script>
+(function() {
+  var data = [{"kod": "101 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "101 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "102 sağ", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "102 sol", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "103", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "201", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "202", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "203", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "204 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "204 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "205", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "206", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "207", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "208", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "211", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "212", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "213", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "214", "siparis": 11, "satis": 11, "kalan": 0}, {"kod": "215 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "215 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "216 sağ", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "216 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "217 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "217 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "218", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "219", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "220", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "221", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "222", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "223", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "224", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "225", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "226", "siparis": 7, "satis": 2, "kalan": 5}, {"kod": "227", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "228", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "229", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "230", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "231", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "232", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "233", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "234", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "235", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "236", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "237", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "240", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "241", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "242", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "301", "siparis": 15, "satis": 3, "kalan": 12}, {"kod": "302", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "303", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "304 sağ", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "304 sol", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "305", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "306", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "307", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "308", "siparis": 8, "satis": 0, "kalan": 8}, {"kod": "309", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "310", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "311", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "312", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "313", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "314", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "315", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "316", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "317", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "318", "siparis": 5, "satis": 2, "kalan": 3}, {"kod": "319", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "320", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "321", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "401 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "401 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "403", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "404", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "405", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "406", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "407", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "408", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "409", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "410", "siparis": 5, "satis": 1, "kalan": 4}, {"kod": "411", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "412 sağ", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "412 sol", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "413", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "414 sağ", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "414 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "415", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "416", "siparis": 23, "satis": 3, "kalan": 20}, {"kod": "417", "siparis": 20, "satis": 2, "kalan": 18}, {"kod": "418", "siparis": 7, "satis": 1, "kalan": 6}, {"kod": "419", "siparis": 8, "satis": 5, "kalan": 3}, {"kod": "420", "siparis": 6, "satis": 5, "kalan": 1}, {"kod": "421", "siparis": 28, "satis": 0, "kalan": 28}, {"kod": "422", "siparis": 12, "satis": 1, "kalan": 11}, {"kod": "423", "siparis": 10, "satis": 1, "kalan": 9}, {"kod": "424", "siparis": 4, "satis": 3, "kalan": 1}, {"kod": "425", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "426", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "427", "siparis": 7, "satis": 0, "kalan": 7}, {"kod": "428", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "429", "siparis": 19, "satis": 1, "kalan": 18}, {"kod": "430", "siparis": 17, "satis": 0, "kalan": 17}, {"kod": "431", "siparis": 4, "satis": 4, "kalan": 0}, {"kod": "432", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "433", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "434", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "435", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "436", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "437", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "438", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "439", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "440", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "441", "siparis": 6, "satis": 2, "kalan": 4}, {"kod": "442", "siparis": 8, "satis": 2, "kalan": 6}, {"kod": "443", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "501", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "502", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "503", "siparis": 0, "satis": 0, "kalan": 0}];
+  var inp = document.getElementById('mdfSearchInp');
+  if(inp) inp.addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    var tbody = document.getElementById('mdfOnBody');
+    tbody.innerHTML = data.filter(function(m){ return !q || m.kod.toLowerCase().indexOf(q)>=0; }).map(function(m){
+      var c = m.kalan > 2 ? '#4ade80' : m.kalan > 0 ? '#f59e0b' : '#e05c5c';
+      return '<tr><td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">'+m.kod+'</td>'
+        +'<td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">'+m.siparis+'</td>'
+        +'<td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">'+m.satis+'</td>'
+        +'<td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:'+c+'">'+m.kalan+'</span></td></tr>';
+    }).join('');
+  });
+})();
+</script>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- SİPARİŞ / MÜŞTERİ EKLEME MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="addModalTitle">Yeni Sipariş</span>
+      <button class="modal-close" onclick="closeModal('addModal')">✕</button>
+    </div>
+    <div class="modal-body" id="addModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addModal')">İptal</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveRecord()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAY PANELİ -->
+<div class="detail-overlay" id="detailOverlay" onclick="closeDetail(event)">
+  <div class="detail-panel scrollbar-thin" id="detailPanel">
+    <div class="detail-header">
+      <div>
+        <div id="detailTitle" style="font-size:15px;font-weight:600;margin-bottom:4px;"></div>
+        <div id="detailSub" style="font-size:11px;color:var(--text2);font-family:'IBM Plex Mono',monospace;"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('detailOverlay')">✕</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+    <div class="detail-footer" id="detailFooter"></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Emin misin?</div>
+    <div class="confirm-sub" id="confirmText">Bu kayıt silinecek.</div>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeModal('confirmOverlay')">Vazgeç</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- KASA İŞLEM MODAL -->
+<div class="modal-overlay" id="kasaModal">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <span class="modal-title" id="kasaModalTitle">Yeni İşlem</span>
+      <button class="modal-close" onclick="closeModal('kasaModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>İşlem Tipi *</label>
+          <select id="ki_tip" onchange="updateKasaKategori()">
+            <option value="Gelir">Gelir</option>
+            <option value="Gider">Gider</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Kategori *</label>
+          <select id="ki_kategori"></select>
+        </div>
+        <div class="form-group full">
+          <label>Açıklama *</label>
+          <input id="ki_aciklama" placeholder="Ödeme açıklaması...">
+        </div>
+        <div class="form-group">
+          <label>Tutar (₺) *</label>
+          <input id="ki_tutar" type="number" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Tarih *</label>
+          <input id="ki_tarih" type="date">
+        </div>
+        <div class="form-group">
+          <label>İlgili Sipariş</label>
+          <select id="ki_siparis"><option value="">— Bağlı sipariş (opsiyonel) —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Ödeme Yöntemi</label>
+          <select id="ki_odemeYontemi">
+            <option>Nakit</option>
+            <option>Banka Transferi</option>
+            <option>Çek</option>
+            <option>Kredi Kartı</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Not</label>
+          <textarea id="ki_not" style="min-height:55px" placeholder="Opsiyonel not..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('kasaModal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveKasaIslem()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- STOK HAREKET MODAL -->
+<div class="modal-overlay" id="stokHareketModal">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <span class="modal-title">Stok Girişi / Çıkışı</span>
+      <button class="modal-close" onclick="closeModal('stokHareketModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Malzeme *</label>
+          <select id="sh_malzemeId"><option value="">— Malzeme seç —</option></select>
+        </div>
+        <div class="form-group">
+          <label>Hareket Tipi *</label>
+          <select id="sh_tip">
+            <option value="Giriş">Giriş (Alım)</option>
+            <option value="Çıkış">Çıkış (Kullanım)</option>
+            <option value="Sayım">Sayım Düzeltme</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Miktar *</label>
+          <input id="sh_miktar" type="number" min="0.01" step="0.01" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Birim Fiyat (₺)</label>
+          <input id="sh_birimFiyat" type="number" min="0" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>Tarih</label>
+          <input id="sh_tarih" type="date">
+        </div>
+        <div class="form-group full">
+          <label>Tedarikçi / Açıklama</label>
+          <input id="sh_aciklama" placeholder="Tedarikçi adı veya sipariş no...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('stokHareketModal')">İptal</button>
+      <button class="btn btn-primary" onclick="saveStokHareket()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- FIREBASE -->
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyATbWCFD6egQFg5ryNGPIQzviGv49EH2mo",
+  authDomain: "aybat--door-erp.firebaseapp.com",
+  projectId: "aybat--door-erp",
+  storageBucket: "aybat--door-erp.firebasestorage.app",
+  messagingSenderId: "222249480563",
+  appId: "1:222249480563:web:5864147adf61b8d835d506"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let siparisler = [];
+let musteriler = [];
+let currentPage = 'dashboard';
+let editingId = null;
+let editingType = null;
+
+// ─── SYNC STATUS ──────────────────────────────────────────────────────────────
+function setSyncStatus(ok) {
+  document.getElementById('syncDot').className = 'sync-dot' + (ok ? '' : ' offline');
+  document.getElementById('syncText').textContent = ok ? 'Firebase bağlı' : 'Bağlantı yok';
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+window.showToast = function(msg, type='success') {
+  const t = document.getElementById('toast');
+  const icons = {success:'✓', error:'✗', info:'ℹ'};
+  t.className = 'toast show ' + type;
+  t.innerHTML = `<span>${icons[type]||'•'}</span> ${msg}`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fmtMoney(n) { return '₺' + Number(n||0).toLocaleString('tr-TR'); }
+function fmtDate(d) {
+  if(!d) return '—';
+  if(d.toDate) d = d.toDate();
+  if(typeof d === 'string') return d;
+  return d.toLocaleDateString('tr-TR');
+}
+function sipNoFormat(no) { return no || '—'; }
+
+function durumBadge(d) {
+  const map = {
+    'Sipariş Alındı':'badge-gray','Üretimde':'badge-yellow',
+    'Montaj':'badge-blue','Teslim Hazır':'badge-green',
+    'Teslim Edildi':'badge-green','İptal':'badge-red'
+  };
+  return `<span class="badge ${map[d]||'badge-gray'}">${d||'—'}</span>`;
+}
+function odemeBadge(d) {
+  const map = {'Bekliyor':'badge-red','Kısmi':'badge-yellow','Tamamlandı':'badge-green'};
+  return `<span class="badge ${map[d]||'badge-gray'}">${d||'—'}</span>`;
+}
+function musteriRenk(ad) {
+  const colors = ['#e8a020','#4caf7d','#5c9ee0','#9c6ce0','#e05c5c','#c45c1a'];
+  let h = 0; for(let c of (ad||'?')) h += c.charCodeAt(0);
+  return colors[h % colors.length];
+}
+
+// ─── FIRESTORE LISTENERS ─────────────────────────────────────────────────────
+function startListeners() {
+  // Siparişler
+  db.collection('siparisler').orderBy('createdAt','desc').onSnapshot(snap => {
+    siparisler = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    setSyncStatus(true);
+    updateBadge();
+    if(currentPage==='siparisler') renderSiparisler();
+    if(currentPage==='dashboard') renderDashboard();
+    if(currentPage==='uretim') renderUretim();
+  }, err => { console.error(err); setSyncStatus(false); });
+
+  // Müşteriler
+  db.collection('musteriler').orderBy('createdAt','desc').onSnapshot(snap => {
+    musteriler = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    if(currentPage==='musteriler') renderMusteriler();
+    if(currentPage==='dashboard') renderDashboard();
+  }, err => console.error(err));
+}
+
+function updateBadge() {
+  const aktif = siparisler.filter(s => !['Teslim Edildi','İptal'].includes(s.durum)).length;
+  const badge = document.getElementById('sipBadge');
+  badge.textContent = aktif || '0';
+  badge.className = 'nav-badge' + (aktif ? '' : ' gray');
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────────────
+window.renderDashboard = function() {
+  const aktif = siparisler.filter(s => !['Teslim Edildi','İptal'].includes(s.durum)).length;
+  const toplamCiro = siparisler.reduce((a,s) => a + Number(s.tutar||0), 0);
+  const alacak = siparisler.filter(s => s.odeme !== 'Tamamlandı').reduce((a,s) => {
+    const odendi = Number(s.odemeMiktar||0);
+    return a + (Number(s.tutar||0) - odendi);
+  }, 0);
+
+  document.getElementById('dash-aktif').textContent = aktif;
+  document.getElementById('dash-ciro').textContent = fmtMoney(toplamCiro);
+  document.getElementById('dash-alacak').textContent = fmtMoney(alacak);
+  document.getElementById('dash-musteri').textContent = musteriler.length;
+
+  // Son 5 sipariş
+  const son5 = siparisler.slice(0,5);
+  const sipEl = document.getElementById('dash-siparis-list');
+  if(!son5.length) { sipEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sipariş yok</div></div>'; return; }
+  sipEl.innerHTML = `<table class="table"><thead><tr><th>No</th><th>Müşteri</th><th>Ürün</th><th>Durum</th><th>Tutar</th></tr></thead><tbody>
+    ${son5.map(s=>`<tr onclick="openDetail('siparis','${s.id}')">
+      <td class="mono" style="font-size:11px;color:var(--accent)">${s.sipNo||'—'}</td>
+      <td>${s.musteriAd||'—'}</td><td style="font-size:12px">${(s.urun||'').substring(0,28)}</td>
+      <td>${durumBadge(s.durum)}</td>
+      <td class="mono">${fmtMoney(s.tutar)}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+
+  // Aktiviteler (son 5 sipariş hareketi)
+  const aktEl = document.getElementById('dash-aktivite-list');
+  const dotColors = {'Sipariş Alındı':'var(--blue)','Üretimde':'var(--accent)','Montaj':'var(--purple)','Teslim Hazır':'var(--green)','Teslim Edildi':'var(--green)','İptal':'var(--red)'};
+  aktEl.innerHTML = son5.map(s=>`<div class="activity-item">
+    <div class="activity-dot" style="background:${dotColors[s.durum]||'var(--text3)'}"></div>
+    <div><div class="activity-text">${s.sipNo} — ${s.musteriAd||'?'}</div>
+    <div class="activity-time">${s.durum} · ${fmtDate(s.createdAt)}</div></div>
+  </div>`).join('') || '<div class="loading">Aktivite yok</div>';
+};
+
+// ─── MÜŞTERİLER ──────────────────────────────────────────────────────────────
+window.renderMusteriler = function() {
+  const filter = document.getElementById('musteriFilter').value;
+  const satisFilter = document.getElementById('musteriSatisFilter')?.value||'';
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let list = musteriler;
+  if(filter) list = list.filter(m => m.tip === filter);
+  if(satisFilter) list = list.filter(m => (m.satisTip||'Perakende') === satisFilter);
+  if(search && currentPage==='musteriler') list = list.filter(m =>
+    (m.ad||'').toLowerCase().includes(search) || (m.telefon||'').includes(search)
+  );
+  const grid = document.getElementById('musteriGrid');
+  if(!list.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👤</div><div class="empty-title">Müşteri bulunamadı</div><div class="empty-sub">Yeni müşteri ekle</div></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(m => {
+    const sipSayisi = siparisler.filter(s => s.musteriId === m.id).length;
+    const alacak = siparisler.filter(s => s.musteriId === m.id && s.odeme !== 'Tamamlandı')
+      .reduce((a,s) => a + (Number(s.tutar||0) - Number(s.odemeMiktar||0)), 0);
+    return `<div class="musteri-card" onclick="openDetail('musteri','${m.id}')">
+      <div class="musteri-avatar" style="background:${musteriRenk(m.ad)}">${(m.ad||'?')[0].toUpperCase()}</div>
+      <div class="musteri-name">${m.ad||'İsimsiz'}</div>
+      <div class="musteri-type">${m.tip||'Bireysel'} ${m.sehir?'· '+m.sehir:''}</div>
+      <div style="margin-top:3px"><span class="badge ${(m.satisTip||'Perakende')==='Toptan'?'badge-blue':'badge-gray'}" style="font-size:10px">${m.satisTip||'Perakende'}</span></div>
+      <div class="musteri-meta">📞 ${m.telefon||'—'}</div>
+      ${m.email?`<div class="musteri-meta" style="font-size:10px">✉ ${m.email}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <span class="chip">${sipSayisi} sipariş</span>
+        ${alacak>0?`<span class="chip" style="color:var(--red);border-color:rgba(224,92,92,0.3)">${fmtMoney(alacak)} alacak</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+};
+
+// ─── SİPARİŞLER ──────────────────────────────────────────────────────────────
+window.renderSiparisler = function() {
+  const durumF = document.getElementById('sipDurumFilter').value;
+  const odemeF = document.getElementById('sipOdemeFilter').value;
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let list = siparisler;
+  if(durumF) list = list.filter(s => s.durum === durumF);
+  if(odemeF) list = list.filter(s => s.odeme === odemeF);
+  if(search && currentPage==='siparisler') list = list.filter(s =>
+    (s.musteriAd||'').toLowerCase().includes(search) ||
+    (s.sipNo||'').toLowerCase().includes(search) ||
+    (s.urun||'').toLowerCase().includes(search)
+  );
+  const tbody = document.getElementById('siparisTableBody');
+  if(!list.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sipariş bulunamadı</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(s => `<tr onclick="openDetail('siparis','${s.id}')">
+    <td class="mono" style="font-size:11px;color:var(--accent)">${s.sipNo||'—'}</td>
+    <td><strong>${s.musteriAd||'—'}</strong></td>
+    <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.urun||'—'}</td>
+    <td class="mono">${s.adet||1}</td>
+    <td class="mono">${fmtMoney(s.tutar)}</td>
+    <td class="mono" style="font-size:11px">${fmtDate(s.teslimTarihi)}</td>
+    <td>${durumBadge(s.durum)}</td>
+    <td>${odemeBadge(s.odeme)}</td>
+    <td><button class="btn btn-ghost" style="padding:3px 8px;font-size:10px" onclick="event.stopPropagation();openDetail('siparis','${s.id}')">→</button></td>
+  </tr>`).join('');
+};
+
+// ─── ÜRETİM KANBAN ───────────────────────────────────────────────────────────
+window.renderUretim = function() {
+  const cols = ['Sipariş Alındı','Üretimde','Montaj','Teslim Hazır'];
+  const colColors = ['var(--text3)','var(--accent)','var(--blue)','var(--green)'];
+  const aktif = siparisler.filter(s => !['Teslim Edildi','İptal'].includes(s.durum));
+  document.getElementById('kanbanBoard').innerHTML = cols.map((col,i) => {
+    const cards = aktif.filter(s => s.durum === col);
+    return `<div class="kanban-col">
+      <div class="kanban-col-header" style="border-top:2px solid ${colColors[i]}">
+        ${col} <span class="nav-badge" style="background:${colColors[i]};color:${i===0?'var(--text)':'#000'}">${cards.length}</span>
+      </div>
+      <div class="kanban-col-body scrollbar-thin">
+        ${cards.length ? cards.map(s => `<div class="kanban-card" onclick="openDetail('siparis','${s.id}')">
+          <div class="kanban-card-title">${s.sipNo||'—'} — ${(s.urun||'').substring(0,22)}</div>
+          <div class="kanban-card-customer">${s.musteriAd||'—'}</div>
+          <div class="kanban-card-meta">
+            <span class="badge badge-gray">${s.adet||1} adet</span>
+            <span class="kanban-card-date">${fmtDate(s.teslimTarihi)}</span>
+          </div>
+        </div>`).join('') : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Boş</div>'}
+      </div>
+    </div>`;
+  }).join('');
+};
+
+// ─── MODAL: EKLEME ───────────────────────────────────────────────────────────
+window.openAddModal = function() {
+  editingId = null;
+  const type = currentPage === 'musteriler' ? 'musteri' : 'siparis';
+  editingType = type;
+  document.getElementById('addModalTitle').textContent = type === 'musteri' ? 'Yeni Müşteri' : 'Yeni Sipariş';
+  document.getElementById('addModalBody').innerHTML = type === 'musteri' ? musteriForm() : siparisForm();
+  document.getElementById('addModal').classList.add('open');
+};
+
+function nextSipNo() {
+  // En yüksek sipariş numarasını bul ve 1 ekle
+  const yil = new Date().getFullYear();
+  const buYillar = siparisler
+    .map(s => s.sipNo||'')
+    .filter(n => n.startsWith('SP-'+yil+'-'))
+    .map(n => parseInt(n.split('-')[2]||0))
+    .filter(n => !isNaN(n));
+  const sonNo = buYillar.length ? Math.max(...buYillar) : 0;
+  return 'SP-' + yil + '-' + String(sonNo + 1).padStart(3,'0');
+}
+
+function siparisForm(data={}) {
+  const autoSipNo = data.sipNo || nextSipNo();
+  return `<div class="form-grid">
+    <div class="form-group full">
+      <label>Müşteri *</label>
+      <div style="position:relative">
+        <input id="f_musteriSearch" placeholder="Müşteri adı yaz..." autocomplete="off"
+          value="${data.musteriAd||''}"
+          oninput="filterMusteriDropdown()"
+          onfocus="showMusteriDropdown()"
+          style="width:100%">
+        <input type="hidden" id="f_musteriId" value="${data.musteriId||''}">
+        <div id="musteriDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:200px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Sipariş No</label>
+      <input id="f_sipNo" value="${autoSipNo}" style="font-family:'IBM Plex Mono',monospace">
+    </div>
+    <div class="form-group full">
+      <label>Model Numarası *</label>
+      <div style="position:relative">
+        <input id="f_urunSearch" placeholder="Ara veya seç... (örn: 201, Lüks)" autocomplete="off"
+          value="${data.urun||''}"
+          oninput="filterModelDropdown()"
+          onfocus="showModelDropdown()"
+          style="width:100%">
+        <input type="hidden" id="f_urun" value="${data.urun||''}">
+        <div id="modelDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:220px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Adet</label>
+      <input id="f_adet" type="number" min="1" value="${data.adet||1}">
+    </div>
+    <div class="form-group">
+      <label>Kapı Yönü</label>
+      <select id="f_yon">
+        ${['—','Sağ','Sol','Çift Kanatlı'].map(y=>`<option ${(data.yon||'—')===y?'selected':''}>${y}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group full">
+      <label>Ölçüler — En x Boy x Duvar Kalınlığı (cm)</label>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center">
+        <input id="f_olcuEn" type="number" placeholder="En" value="${data.olcuEn||''}" style="text-align:center">
+        <span style="color:var(--text3);font-weight:700;font-size:16px">×</span>
+        <input id="f_olcuBoy" type="number" placeholder="Boy" value="${data.olcuBoy||''}" style="text-align:center">
+        <span style="color:var(--text3);font-weight:700;font-size:16px">×</span>
+        <input id="f_olcuKalinlik" type="number" placeholder="Kalınlık" value="${data.olcuKalinlik||''}" style="text-align:center">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Renk / Kaplama</label>
+      <input id="f_renk" placeholder="Antrasit, beyaz..." value="${data.renk||''}">
+    </div>
+    <hr class="form-divider">
+    <div class="form-group">
+      <label>Toplam Tutar (₺) *</label>
+      <input id="f_tutar" type="number" placeholder="0" value="${data.tutar||''}">
+    </div>
+    <div class="form-group">
+      <label>Ödeme Durumu</label>
+      <select id="f_odeme">
+        ${['Bekliyor','Kısmi','Tamamlandı'].map(o=>`<option ${(data.odeme||'Bekliyor')===o?'selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Ödenen Miktar (₺)</label>
+      <input id="f_odemeMiktar" type="number" placeholder="0" value="${data.odemeMiktar||''}">
+    </div>
+    <div class="form-group">
+      <label>Teslim Tarihi</label>
+      <input id="f_teslimTarihi" type="date" value="${data.teslimTarihi||''}">
+    </div>
+    <div class="form-group">
+      <label>Durum</label>
+      <select id="f_durum">
+        ${['Sipariş Alındı','Üretimde','Montaj','Teslim Hazır','Teslim Edildi','İptal'].map(d=>`<option ${(data.durum||'Sipariş Alındı')===d?'selected':''}>${d}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group full">
+      <label>Notlar</label>
+      <textarea id="f_notlar" placeholder="Montaj adresi, özel notlar...">${data.notlar||''}</textarea>
+    </div>
+  </div>`;
+}
+
+window.showModelDropdown = function() { filterModelDropdown(); };
+
+window.filterModelDropdown = function() {
+  const q = (document.getElementById('f_urunSearch')?.value||'').toLowerCase();
+  const dd = document.getElementById('modelDropdown');
+  if(!dd) return;
+  const filtered = q
+    ? KATALOG.filter(m => m.no.toLowerCase().includes(q) || m.seri.toLowerCase().includes(q))
+    : KATALOG;
+  if(!filtered.length) { dd.style.display='none'; return; }
+  dd.style.display = 'block';
+  // Seri grupları
+  const grups = {};
+  filtered.slice(0,40).forEach(m => {
+    if(!grups[m.seri]) grups[m.seri] = [];
+    grups[m.seri].push(m);
+  });
+  dd.innerHTML = Object.entries(grups).map(([seri, modeller]) =>
+    '<div style="padding:5px 10px;font-size:10px;color:var(--text3);background:var(--surface);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:1px">'+seri+'</div>'
+    + modeller.map(m =>
+      '<div onclick="selectModel(\''+m.no+'\')" style="padding:8px 14px;cursor:pointer;font-size:13px;font-family:var(--mono);border-bottom:1px solid var(--border)" onmouseover="this.style.background=\'var(--surface)\'" onmouseout="this.style.background=\'\'">'+m.no+'</div>'
+    ).join('')
+  ).join('');
+};
+
+window.selectModel = function(no) {
+  const inp = document.getElementById('f_urunSearch');
+  const hid = document.getElementById('f_urun');
+  const dd = document.getElementById('modelDropdown');
+  if(inp) inp.value = no;
+  if(hid) hid.value = no;
+  if(dd) dd.style.display = 'none';
+};
+
+document.addEventListener('click', e => {
+  const dd2 = document.getElementById('modelDropdown');
+  if(dd2 && !e.target.closest('#f_urunSearch') && !e.target.closest('#modelDropdown')) {
+    dd2.style.display = 'none';
+  }
+});
+
+window.showMusteriDropdown = function() {
+  filterMusteriDropdown();
+};
+
+window.filterMusteriDropdown = function() {
+  const q = (document.getElementById('f_musteriSearch')?.value||'').toLowerCase();
+  const dd = document.getElementById('musteriDropdown');
+  if(!dd) return;
+  const filtered = musteriler.filter(m => !q || (m.ad||'').toLowerCase().includes(q));
+  if(!filtered.length) {
+    dd.style.display = 'none'; return;
+  }
+  dd.style.display = 'block';
+  dd.innerHTML = filtered.slice(0,8).map(m =>
+    `<div onclick="selectMusteri('${m.id}','${m.ad.replace(/'/g,"\\'")}') "
+      style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''"
+    >${m.ad}<span style="font-size:10px;color:var(--text2);margin-left:8px">${m.telefon||''}</span></div>`
+  ).join('');
+};
+
+window.selectMusteri = function(id, ad) {
+  const inp = document.getElementById('f_musteriSearch');
+  const hid = document.getElementById('f_musteriId');
+  const dd = document.getElementById('musteriDropdown');
+  if(inp) inp.value = ad;
+  if(hid) hid.value = id;
+  if(dd) dd.style.display = 'none';
+};
+
+// Dropdown dışına tıklayınca kapat
+document.addEventListener('click', e => {
+  const dd = document.getElementById('musteriDropdown');
+  if(dd && !e.target.closest('#f_musteriSearch') && !e.target.closest('#musteriDropdown')) {
+    dd.style.display = 'none';
+  }
+});
+
+function musteriForm(data={}) {
+  return `<div class="form-grid">
+    <div class="form-group full">
+      <label>Ad Soyad / Firma Adı *</label>
+      <input id="f_ad" placeholder="Ahmet Yılmaz veya Yapı A.Ş." value="${data.ad||''}">
+    </div>
+    <div class="form-group">
+      <label>Müşteri Tipi</label>
+      <select id="f_tip">
+        <option ${(data.tip||'Bireysel')==='Bireysel'?'selected':''}>Bireysel</option>
+        <option ${data.tip==='Kurumsal'?'selected':''}>Kurumsal</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Satış Tipi</label>
+      <select id="f_satisTip">
+        <option ${(data.satisTip||'Perakende')==='Perakende'?'selected':''}>Perakende</option>
+        <option ${data.satisTip==='Toptan'?'selected':''}>Toptan</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Telefon</label>
+      <input id="f_telefon" placeholder="0532 111 2233" value="${data.telefon||''}">
+    </div>
+    <div class="form-group">
+      <label>Şehir</label>
+      <input id="f_sehir" placeholder="İstanbul" value="${data.sehir||''}">
+    </div>
+    <div class="form-group full">
+      <label>Adres</label>
+      <textarea id="f_adres" placeholder="Tam adres...">${data.adres||''}</textarea>
+    </div>
+    <div class="form-group full">
+      <label>Notlar</label>
+      <textarea id="f_mNotlar" placeholder="Müşteriyle ilgili notlar...">${data.notlar||''}</textarea>
+    </div>
+  </div>`;
+}
+
+// ─── KAYDET ──────────────────────────────────────────────────────────────────
+window.saveRecord = async function() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+
+  try {
+    if(editingType === 'siparis') {
+      const musteriId = document.getElementById('f_musteriId')?.value;
+      const musteri = musteriler.find(m => m.id === musteriId);
+      const urun = document.getElementById('f_urun')?.value?.trim();
+      const tutar = document.getElementById('f_tutar')?.value;
+      if(!musteriId) { showToast('Müşteri seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+      if(!urun || !tutar) { showToast('Model numarası ve tutar zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+
+      const sipNoVal = document.getElementById('f_sipNo')?.value?.trim() || nextSipNo();
+
+      const en = document.getElementById('f_olcuEn')?.value||'';
+      const boy = document.getElementById('f_olcuBoy')?.value||'';
+      const kalinlik = document.getElementById('f_olcuKalinlik')?.value||'';
+      const olcuStr = (en&&boy&&kalinlik) ? en+'x'+boy+'x'+kalinlik : (en&&boy ? en+'x'+boy : '');
+      const data = {
+        musteriId, musteriAd: musteri?.ad || '—',
+        sipNo: sipNoVal,
+        urun, adet: Number(document.getElementById('f_adet')?.value||1),
+        olcuEn: en, olcuBoy: boy, olcuKalinlik: kalinlik, olcu: olcuStr,
+        yon: document.getElementById('f_yon')?.value||'—',
+        renk: document.getElementById('f_renk')?.value||'',
+        tutar: Number(tutar),
+        odeme: document.getElementById('f_odeme')?.value||'Bekliyor',
+        odemeMiktar: Number(document.getElementById('f_odemeMiktar')?.value||0),
+        teslimTarihi: document.getElementById('f_teslimTarihi')?.value||'',
+        durum: document.getElementById('f_durum')?.value||'Sipariş Alındı',
+        notlar: document.getElementById('f_notlar')?.value||'',
+      };
+
+      if(editingId) {
+        await db.collection('siparisler').doc(editingId).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+        showToast('Sipariş güncellendi ✓');
+      } else {
+        await db.collection('siparisler').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+        showToast('Sipariş eklendi ✓');
+      }
+    } else {
+      const ad = document.getElementById('f_ad')?.value?.trim();
+      if(!ad) { showToast('Ad zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+      const data = {
+        ad, tip: document.getElementById('f_tip')?.value||'Bireysel',
+        satisTip: document.getElementById('f_satisTip')?.value||'Perakende',
+        telefon: document.getElementById('f_telefon')?.value||'',
+        email: document.getElementById('f_email')?.value||'',
+        sehir: document.getElementById('f_sehir')?.value||'',
+        adres: document.getElementById('f_adres')?.value||'',
+        notlar: document.getElementById('f_mNotlar')?.value||'',
+      };
+      if(editingId) {
+        await db.collection('musteriler').doc(editingId).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+        showToast('Müşteri güncellendi ✓');
+      } else {
+        await db.collection('musteriler').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+        showToast('Müşteri eklendi ✓');
+      }
+    }
+    closeModal('addModal');
+    closeModal('detailOverlay');
+  } catch(e) {
+    console.error(e);
+    showToast('Hata: ' + e.message, 'error');
+  }
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+
+// ─── DETAY PANELİ ─────────────────────────────────────────────────────────────
+window.openDetail = function(type, id) {
+  if(type==='siparis') {
+    const s = siparisler.find(x => x.id===id);
+    if(!s) return;
+    document.getElementById('detailTitle').textContent = s.sipNo || '—';
+    document.getElementById('detailSub').textContent = s.musteriAd + ' · ' + (s.durum||'');
+    document.getElementById('detailBody').innerHTML = `
+      <div class="detail-section">
+        <div class="detail-section-title">Sipariş Bilgileri</div>
+        <div class="detail-row"><span class="detail-key">Sipariş No</span><span class="detail-val mono">${s.sipNo||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Müşteri</span><span class="detail-val">${s.musteriAd||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Model No</span><span class="detail-val mono">${s.urun||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Adet</span><span class="detail-val mono">${s.adet||1}</span></div>
+        <div class="detail-row"><span class="detail-key">Ölçü (En×Boy×Kalınlık)</span><span class="detail-val mono">${s.olcu||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Kapı Yönü</span><span class="detail-val">${s.yon||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Renk / Kaplama</span><span class="detail-val">${s.renk||'—'}</span></div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Durum & Ödeme</div>
+        <div class="detail-row"><span class="detail-key">Durum</span><span class="detail-val">${durumBadge(s.durum)}</span></div>
+        <div class="detail-row"><span class="detail-key">Teslim Tarihi</span><span class="detail-val mono">${fmtDate(s.teslimTarihi)}</span></div>
+        <div class="detail-row"><span class="detail-key">Toplam Tutar</span><span class="detail-val mono" style="color:var(--accent)">${fmtMoney(s.tutar)}</span></div>
+        <div class="detail-row"><span class="detail-key">Ödeme Durumu</span><span class="detail-val">${odemeBadge(s.odeme)}</span></div>
+        <div class="detail-row"><span class="detail-key">Ödenen</span><span class="detail-val mono">${fmtMoney(s.odemeMiktar)}</span></div>
+        <div class="detail-row"><span class="detail-key">Kalan</span><span class="detail-val mono" style="color:var(--red)">${fmtMoney(Number(s.tutar||0)-Number(s.odemeMiktar||0))}</span></div>
+      </div>
+      ${s.notlar?`<div class="detail-section"><div class="detail-section-title">Notlar</div><div style="font-size:13px;color:var(--text2);line-height:1.6">${s.notlar}</div></div>`:''}
+      <div class="detail-section">
+        <div class="detail-section-title">Üretim Durumunu Güncelle</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          ${['Sipariş Alındı','Üretimde','Montaj','Teslim Hazır','Teslim Edildi'].map(d =>
+            `<button class="btn ${s.durum===d?'btn-primary':'btn-ghost'}" style="font-size:11px;padding:5px 10px" onclick="updateDurum('${id}','${d}')">${d}</button>`
+          ).join('')}
+        </div>
+      </div>`;
+    document.getElementById('detailFooter').innerHTML = `
+      <button class="btn btn-ghost" onclick="editRecord('siparis','${id}')">✎ Düzenle</button>
+      <button class="btn btn-danger" onclick="confirmDelete('siparis','${id}')">✕ Sil</button>`;
+  } else {
+    const m = musteriler.find(x => x.id===id);
+    if(!m) return;
+    const sipSayisi = siparisler.filter(s => s.musteriId===id);
+    const alacak = sipSayisi.filter(s => s.odeme!=='Tamamlandı').reduce((a,s)=>a+(Number(s.tutar||0)-Number(s.odemeMiktar||0)),0);
+    document.getElementById('detailTitle').textContent = m.ad||'—';
+    document.getElementById('detailSub').textContent = (m.tip||'Bireysel') + (m.sehir?' · '+m.sehir:'');
+    document.getElementById('detailBody').innerHTML = `
+      <div class="detail-section">
+        <div class="detail-section-title">Müşteri Bilgileri</div>
+        <div class="detail-row"><span class="detail-key">Telefon</span><span class="detail-val mono">${m.telefon||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">E-posta</span><span class="detail-val">${m.email||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Şehir</span><span class="detail-val">${m.sehir||'—'}</span></div>
+        ${m.adres?`<div class="detail-row"><span class="detail-key">Adres</span><span class="detail-val" style="font-size:11px;max-width:200px;text-align:right">${m.adres}</span></div>`:''}
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">Sipariş Özeti</div>
+        <div class="detail-row"><span class="detail-key">Toplam Sipariş</span><span class="detail-val mono">${sipSayisi.length}</span></div>
+        <div class="detail-row"><span class="detail-key">Açık Alacak</span><span class="detail-val mono" style="color:${alacak>0?'var(--red)':'var(--green)'}">${fmtMoney(alacak)}</span></div>
+      </div>
+      ${sipSayisi.length?`<div class="detail-section">
+        <div class="detail-section-title">Siparişleri</div>
+        ${sipSayisi.map(s=>`<div class="detail-row"><span class="detail-key mono" style="font-size:11px">${s.sipNo||'—'}</span><span class="detail-val">${durumBadge(s.durum)} <span class="mono" style="font-size:11px">${fmtMoney(s.tutar)}</span></span></div>`).join('')}
+      </div>`:''}
+      ${m.notlar?`<div class="detail-section"><div class="detail-section-title">Notlar</div><div style="font-size:13px;color:var(--text2)">${m.notlar}</div></div>`:''}`;
+    document.getElementById('detailFooter').innerHTML = `
+      <button class="btn btn-ghost" onclick="editRecord('musteri','${id}')">✎ Düzenle</button>
+      <button class="btn btn-danger" onclick="confirmDelete('musteri','${id}')">✕ Sil</button>`;
+  }
+  document.getElementById('detailOverlay').classList.add('open');
+};
+
+window.closeDetail = function(e) {
+  if(e.target === document.getElementById('detailOverlay')) closeModal('detailOverlay');
+};
+
+window.updateDurum = async function(id, durum) {
+  try {
+    await db.collection('siparisler').doc(id).update({durum, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    showToast(`Durum: ${durum} ✓`);
+    openDetail('siparis', id);
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+window.editRecord = function(type, id) {
+  editingId = id; editingType = type;
+  const data = type==='siparis' ? siparisler.find(x=>x.id===id) : musteriler.find(x=>x.id===id);
+  document.getElementById('addModalTitle').textContent = type==='siparis' ? 'Siparişi Düzenle' : 'Müşteriyi Düzenle';
+  document.getElementById('addModalBody').innerHTML = type==='siparis' ? siparisForm(data) : musteriForm(data);
+  closeModal('detailOverlay');
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.confirmDelete = function(type, id) {
+  const data = type==='siparis' ? siparisler.find(x=>x.id===id) : musteriler.find(x=>x.id===id);
+  document.getElementById('confirmText').textContent = `"${data?.sipNo || data?.ad || 'Bu kayıt'}" silinecek. Geri alınamaz.`;
+  document.getElementById('confirmOkBtn').onclick = () => deleteRecord(type, id);
+  document.getElementById('confirmOverlay').classList.add('open');
+};
+
+window.deleteRecord = async function(type, id) {
+  closeModal('confirmOverlay');
+  closeModal('detailOverlay');
+  try {
+    await db.collection(type==='siparis'?'siparisler':'musteriler').doc(id).delete();
+    showToast('Silindi ✓');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+// ─── NAVİGASYON ──────────────────────────────────────────────────────────────
+// ─── MDF STOK (STATİK VERİ - EXCEL'DEN) ────────────────────────────────────
+const MDF_ON = [{"kod": "101 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "101 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "102 sağ", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "102 sol", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "103", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "201", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "202", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "203", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "204 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "204 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "205", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "206", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "207", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "208", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "211", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "212", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "213", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "214", "siparis": 11, "satis": 11, "kalan": 0}, {"kod": "215 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "215 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "216 sağ", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "216 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "217 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "217 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "218", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "219", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "220", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "221", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "222", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "223", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "224", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "225", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "226", "siparis": 7, "satis": 2, "kalan": 5}, {"kod": "227", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "228", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "229", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "230", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "231", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "232", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "233", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "234", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "235", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "236", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "237", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "240", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "241", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "242", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "301", "siparis": 15, "satis": 3, "kalan": 12}, {"kod": "302", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "303", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "304 sağ", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "304 sol", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "305", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "306", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "307", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "308", "siparis": 8, "satis": 0, "kalan": 8}, {"kod": "309", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "310", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "311", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "312", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "313", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "314", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "315", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "316", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "317", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "318", "siparis": 5, "satis": 2, "kalan": 3}, {"kod": "319", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "320", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "321", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "401 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "401 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "403", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "404", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "405", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "406", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "407", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "408", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "409", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "410", "siparis": 5, "satis": 1, "kalan": 4}, {"kod": "411", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "412 sağ", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "412 sol", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "413", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "414 sağ", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "414 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "415", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "416", "siparis": 23, "satis": 3, "kalan": 20}, {"kod": "417", "siparis": 20, "satis": 2, "kalan": 18}, {"kod": "418", "siparis": 7, "satis": 1, "kalan": 6}, {"kod": "419", "siparis": 8, "satis": 5, "kalan": 3}, {"kod": "420", "siparis": 6, "satis": 5, "kalan": 1}, {"kod": "421", "siparis": 28, "satis": 0, "kalan": 28}, {"kod": "422", "siparis": 12, "satis": 1, "kalan": 11}, {"kod": "423", "siparis": 10, "satis": 1, "kalan": 9}, {"kod": "424", "siparis": 4, "satis": 3, "kalan": 1}, {"kod": "425", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "426", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "427", "siparis": 7, "satis": 0, "kalan": 7}, {"kod": "428", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "429", "siparis": 19, "satis": 1, "kalan": 18}, {"kod": "430", "siparis": 17, "satis": 0, "kalan": 17}, {"kod": "431", "siparis": 4, "satis": 4, "kalan": 0}, {"kod": "432", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "433", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "434", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "435", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "436", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "437", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "438", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "439", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "440", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "441", "siparis": 6, "satis": 2, "kalan": 4}, {"kod": "442", "siparis": 8, "satis": 2, "kalan": 6}, {"kod": "443", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "501", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "502", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "503", "siparis": 0, "satis": 0, "kalan": 0}];
+const MDF_ARKA = [{"renk": "Antrasit", "siparis": 77, "satis": 1, "kalan": 76}, {"renk": "Saruhan", "siparis": 50, "satis": 1, "kalan": 49}, {"renk": "Beyaz", "siparis": 22, "satis": 1, "kalan": 21}, {"renk": "Siyah", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Kapuçino", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Vizon", "siparis": 0, "satis": 0, "kalan": 0}, {"renk": "Kahverengi", "siparis": 2, "satis": 0, "kalan": 2}, {"renk": "Tanganika", "siparis": 12, "satis": 1, "kalan": 11}, {"renk": "Sarı", "siparis": 19, "satis": 0, "kalan": 19}, {"renk": "1219", "siparis": 3, "satis": 0, "kalan": 0}, {"renk": "1217", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1216", "siparis": 3, "satis": 0, "kalan": 0}, {"renk": "1210", "siparis": 9, "satis": 0, "kalan": 0}, {"renk": "1211", "siparis": 4, "satis": 0, "kalan": 0}, {"renk": "1212", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1231", "siparis": 3, "satis": 0, "kalan": 0}, {"renk": "1501", "siparis": 5, "satis": 0, "kalan": 0}, {"renk": "1239", "siparis": 1, "satis": 0, "kalan": 0}, {"renk": "1237", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1503", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1504", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1505", "siparis": 1, "satis": 0, "kalan": 0}, {"renk": "1511", "siparis": 4, "satis": 0, "kalan": 0}, {"renk": "1224", "siparis": 5, "satis": 0, "kalan": 0}, {"renk": "1103", "siparis": 1, "satis": 0, "kalan": 0}];
+
+window.renderMdfOn = function() {
+  const q = (document.getElementById('mdfOnSearch')?.value||'').toLowerCase();
+  const list = q ? MDF_ON.filter(m => m.kod.toLowerCase().includes(q)) : MDF_ON;
+  const el = document.getElementById('mdfOnTable');
+  if(!el) return;
+  const topKalan = MDF_ON.reduce((a,m)=>a+m.kalan,0);
+  document.getElementById('mdf-on-toplam').textContent = MDF_ON.length + ' model';
+  document.getElementById('mdf-on-kalan').textContent = topKalan + ' adet';
+  if(!list.length) { el.innerHTML = '<div class="empty-state" style="padding:30px"><div class="empty-title">Bulunamadı</div></div>'; return; }
+  const rows = list.map(m => {
+    const renk = m.kalan > 2 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
+    return '<tr>'
+      +'<td style="font-size:12px;font-family:var(--mono);font-weight:600">'+m.kod+'</td>'
+      +'<td class="mono" style="font-size:11px;text-align:center">'+m.siparis+'</td>'
+      +'<td class="mono" style="font-size:11px;text-align:center">'+m.satis+'</td>'
+      +'<td style="text-align:center"><span class="mono" style="font-size:13px;font-weight:700;color:'+renk+'">'+m.kalan+'</span></td>'
+      +'</tr>';
+  }).join('');
+  el.innerHTML = '<table class="table" style="font-size:12px"><thead><tr>'
+    +'<th>Kapı Kodu</th><th style="text-align:center">Sipariş</th><th style="text-align:center">Satış</th><th style="text-align:center">Kalan</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table>';
+};
+
+window.renderMdfArka = function() {
+  const el = document.getElementById('mdfArkaTable');
+  if(!el) return;
+  const topKalan = MDF_ARKA.reduce((a,m)=>a+m.kalan,0);
+  document.getElementById('mdf-arka-toplam').textContent = MDF_ARKA.length + ' renk';
+  document.getElementById('mdf-arka-kalan').textContent = topKalan + ' adet';
+  const rows = MDF_ARKA.map(m => {
+    const renk = m.kalan > 5 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
+    const max = Math.max(...MDF_ARKA.map(x=>x.siparis), 1);
+    const pct = Math.round((m.siparis/max)*100);
+    return '<tr>'
+      +'<td style="font-size:13px;font-weight:600">'+m.renk+'</td>'
+      +'<td style="min-width:120px">'
+        +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<div style="flex:1;background:var(--surface2);border-radius:2px;height:6px;overflow:hidden">'
+        +'<div style="height:100%;background:var(--blue);width:'+pct+'%"></div></div>'
+        +'<span class="mono" style="font-size:11px;color:var(--text2);white-space:nowrap">'+m.siparis+' sip</span></div></td>'
+      +'<td class="mono" style="font-size:11px;text-align:center">'+m.satis+'</td>'
+      +'<td style="text-align:center"><span class="mono" style="font-size:14px;font-weight:700;color:'+renk+'">'+m.kalan+'</span></td>'
+      +'</tr>';
+  }).join('');
+  el.innerHTML = '<table class="table"><thead><tr>'
+    +'<th>Renk</th><th>Sipariş Oranı</th><th style="text-align:center">Satış</th><th style="text-align:center">Kalan</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody></table>';
+};
+
+window.showPage = function(id, el) {
+  currentPage = id;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  const titles = {
+    dashboard:['Dashboard','Genel bakış'],
+    musteriler:['Müşteriler','CRM — Müşteri yönetimi'],
+    siparisler:['Siparişler','Sipariş takibi'],
+    uretim:['Üretim','İmalat süreç takibi — Kanban'],
+    stok:['Stok','Malzeme & stok takibi'],
+    mdfstok:['MDF Stok','MDF Ön Yüz & Arka Yüz stok takibi'],
+    kasa:['Kasa','Gelir-Gider takibi'],
+  };
+  const [title, sub] = titles[id] || [id,''];
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageSub').textContent = sub;
+  if(el) el.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if(n.textContent.trim().startsWith(title.substring(0,4))) n.classList.add('active');
+    });
+  }
+  document.getElementById('searchInput').value = '';
+  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem'};
+  document.getElementById('addBtn').textContent = addLabels[id] || '+ Yeni';
+
+  if(id==='siparisler') renderSiparisler();
+  if(id==='musteriler') renderMusteriler();
+  if(id==='uretim') renderUretim();
+  if(id==='dashboard') renderDashboard();
+  if(id==='stok') { renderStok(); renderHareketler(); }
+  if(id==='kasa') { renderKasa(); }
+  if(id==='mdfstok') { renderMdfOn(); renderMdfArka(); }
+};
+
+window.handleSearch = function() {
+  if(currentPage==='siparisler') renderSiparisler();
+  if(currentPage==='musteriler') renderMusteriler();
+};
+
+window.closeModal = function(id) {
+  document.getElementById(id).classList.remove('open');
+  editingId = null;
+};
+
+// ─── STOK STATE ──────────────────────────────────────────────────────────────
+let malzemeler = [];
+let stokHareketler = [];
+
+function startStokListeners() {
+  db.collection('malzemeler').orderBy('ad','asc').onSnapshot(snap => {
+    malzemeler = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    if(currentPage==='stok') renderStok();
+  }, err => console.error(err));
+
+  db.collection('stokHareketler').orderBy('createdAt','desc').limit(50).onSnapshot(snap => {
+    stokHareketler = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    if(currentPage==='stok') renderHareketler();
+  }, err => console.error(err));
+}
+
+window.renderStok = function() {
+  const katFilter = document.getElementById('stokKategoriFilter').value;
+  const durFilter = document.getElementById('stokDurumFilter').value;
+  let list = malzemeler;
+  if(katFilter) list = list.filter(m => m.kategori === katFilter);
+  if(durFilter === 'kritik') list = list.filter(m => Number(m.miktar||0) <= Number(m.minMiktar||0));
+  if(durFilter === 'normal') list = list.filter(m => Number(m.miktar||0) > Number(m.minMiktar||0));
+
+  const kritik = malzemeler.filter(m => Number(m.miktar||0) <= Number(m.minMiktar||0)).length;
+  const deger = malzemeler.reduce((a,m) => a + (Number(m.miktar||0)*Number(m.birimFiyat||0)), 0);
+  const cikisSayisi = stokHareketler.filter(h => h.tip==='Cikis').length;
+  document.getElementById('stok-toplam').textContent = malzemeler.length;
+  document.getElementById('stok-kritik').textContent = kritik;
+  document.getElementById('stok-deger').textContent = fmtMoney(deger);
+  document.getElementById('stok-cikis').textContent = cikisSayisi;
+
+  const grid = document.getElementById('stokGrid');
+  if(!list.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📦</div><div class="empty-title">Malzeme bulunamadı</div><div class="empty-sub">+ Yeni Malzeme ile ekleyin</div></div>';
+    return;
+  }
+
+  grid.innerHTML = list.map(m => {
+    const mik = Number(m.miktar||0);
+    const min = Number(m.minMiktar||0);
+    const max = Math.max(Number(m.maxMiktar||0), min*3, mik, 1);
+    const pct = Math.min(100, Math.round((mik/max)*100));
+    const renk = mik <= min ? 'var(--red)' : mik <= min*1.5 ? 'var(--accent)' : 'var(--green)';
+    const kritikMi = mik <= min;
+    return '<div class="stok-item" onclick="openDetailMalzeme(\''+m.id+'\')" style="cursor:pointer;'+(kritikMi?'border-color:rgba(224,92,92,0.4)':'')+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">'
+      +'<div><div class="stok-name">'+m.ad+'</div>'
+      +'<div class="stok-code">'+(m.kod||'—')+' · '+(m.kategori||'—')+'</div></div>'
+      +(kritikMi?'<span class="badge badge-red">KRİTİK</span>':'')+'</div>'
+      +(m.tedarikci?'<div style="font-size:10px;color:var(--text3);margin-bottom:8px">🏭 '+m.tedarikci+'</div>':'')
+      +'<div class="stok-bar-bg"><div class="stok-bar" style="width:'+pct+'%;background:'+renk+'"></div></div>'
+      +'<div class="stok-numbers"><span>Mevcut: <strong style="color:'+renk+'">'+mik+' '+(m.birim||'adet')+'</strong></span>'
+      +'<span>Min: <strong>'+min+' '+(m.birim||'adet')+'</strong></span></div>'
+      +(m.birimFiyat?'<div style="font-size:10px;color:var(--text2);margin-top:6px;font-family:\'IBM Plex Mono\',monospace">Değer: '+fmtMoney(mik*Number(m.birimFiyat))+'</div>':'')
+      +'</div>';
+  }).join('');
+};
+
+window.renderHareketler = function() {
+  const el = document.getElementById('hareketListesi');
+  if(!stokHareketler.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">↕</div><div class="empty-title">Hareket yok</div></div>';
+    return;
+  }
+  let rows = stokHareketler.slice(0,30).map(h => {
+    const m = malzemeler.find(x => x.id===h.malzemeId);
+    const tipBadge = h.tip==='Giris' ? '<span class="badge badge-green">Giriş</span>'
+      : h.tip==='Cikis' ? '<span class="badge badge-red">Çıkış</span>'
+      : '<span class="badge badge-blue">Sayım</span>';
+    const sign = h.tip==='Cikis' ? '-' : '+';
+    return '<tr><td class="mono" style="font-size:11px">'+fmtDate(h.tarih)+'</td>'
+      +'<td>'+(m?m.ad:h.malzemeAd||'—')+'</td>'
+      +'<td>'+tipBadge+'</td>'
+      +'<td class="mono">'+sign+' '+h.miktar+' '+(m?m.birim:'')+'</td>'
+      +'<td class="mono">'+(h.birimFiyat?fmtMoney(h.birimFiyat):'—')+'</td>'
+      +'<td style="font-size:12px">'+(h.aciklama||'—')+'</td></tr>';
+  }).join('');
+  el.innerHTML = '<table class="table"><thead><tr><th>Tarih</th><th>Malzeme</th><th>Tip</th><th>Miktar</th><th>Birim Fiyat</th><th>Açıklama</th></tr></thead><tbody>'+rows+'</tbody></table>';
+};
+
+window.openStokHareket = function() {
+  const sel = document.getElementById('sh_malzemeId');
+  sel.innerHTML = '<option value="">— Malzeme seç —</option>'
+    + malzemeler.map(m => '<option value="'+m.id+'">'+m.ad+' ('+( m.miktar||0)+' '+(m.birim||'adet')+')</option>').join('');
+  document.getElementById('sh_tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('sh_miktar').value = '';
+  document.getElementById('sh_birimFiyat').value = '';
+  document.getElementById('sh_aciklama').value = '';
+  document.getElementById('stokHareketModal').classList.add('open');
+};
+
+window.saveStokHareket = async function() {
+  const malzemeId = document.getElementById('sh_malzemeId').value;
+  const tipRaw = document.getElementById('sh_tip').value;
+  const miktar = parseFloat(document.getElementById('sh_miktar').value);
+  const birimFiyat = parseFloat(document.getElementById('sh_birimFiyat').value||0);
+  const tarih = document.getElementById('sh_tarih').value;
+  const aciklama = document.getElementById('sh_aciklama').value;
+  const tipKey = tipRaw === 'Giriş' ? 'Giris' : tipRaw === 'Çıkış' ? 'Cikis' : 'Sayim';
+
+  if(!malzemeId || !miktar || miktar<=0) { showToast('Malzeme ve miktar zorunlu', 'error'); return; }
+  const malzeme = malzemeler.find(m => m.id===malzemeId);
+  const mevcutMiktar = Number(malzeme?malzeme.miktar:0);
+  let yeniMiktar;
+  if(tipKey==='Giris') yeniMiktar = mevcutMiktar + miktar;
+  else if(tipKey==='Cikis') {
+    if(miktar > mevcutMiktar) { showToast('Yetersiz stok! Mevcut: '+mevcutMiktar, 'error'); return; }
+    yeniMiktar = mevcutMiktar - miktar;
+  } else { yeniMiktar = miktar; }
+
+  try {
+    await db.collection('stokHareketler').add({
+      malzemeId, malzemeAd: malzeme?malzeme.ad:'', tip: tipKey,
+      miktar, birimFiyat, tarih, aciklama, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    const updates = {miktar: yeniMiktar, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+    if(tipKey==='Giris' && birimFiyat) updates.birimFiyat = birimFiyat;
+    await db.collection('malzemeler').doc(malzemeId).update(updates);
+    showToast('Stok hareketi kaydedildi ✓');
+    closeModal('stokHareketModal');
+  } catch(e) { showToast('Hata: '+e.message, 'error'); }
+};
+
+window.openDetailMalzeme = function(id) {
+  const m = malzemeler.find(x => x.id===id);
+  if(!m) return;
+  const hareketler = stokHareketler.filter(h => h.malzemeId===id).slice(0,8);
+  document.getElementById('detailTitle').textContent = m.ad||'—';
+  document.getElementById('detailSub').textContent = (m.kategori||'') + (m.kod?' · '+m.kod:'');
+  let hHTML = '';
+  if(hareketler.length) {
+    hHTML = '<div class="detail-section"><div class="detail-section-title">Son Hareketler</div>'
+      + hareketler.map(h => '<div class="detail-row"><span class="detail-key">'+fmtDate(h.tarih)+' — '+(h.tip==='Giris'?'Giriş':h.tip==='Cikis'?'Çıkış':'Sayım')+'</span>'
+        +'<span class="detail-val mono" style="color:'+(h.tip==='Cikis'?'var(--red)':'var(--green)')+'">'+(h.tip==='Cikis'?'-':'+')+' '+h.miktar+' '+(m.birim||'')+'</span></div>').join('')
+      +'</div>';
+  }
+  document.getElementById('detailBody').innerHTML =
+    '<div class="detail-section"><div class="detail-section-title">Malzeme Bilgileri</div>'
+    +'<div class="detail-row"><span class="detail-key">Kod</span><span class="detail-val mono">'+(m.kod||'—')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Kategori</span><span class="detail-val">'+(m.kategori||'—')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Birim</span><span class="detail-val">'+(m.birim||'adet')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Tedarikçi</span><span class="detail-val">'+(m.tedarikci||'—')+'</span></div></div>'
+    +'<div class="detail-section"><div class="detail-section-title">Stok Durumu</div>'
+    +'<div class="detail-row"><span class="detail-key">Mevcut</span><span class="detail-val mono" style="color:'+(Number(m.miktar||0)<=Number(m.minMiktar||0)?'var(--red)':'var(--green)')+'">'+( m.miktar||0)+' '+(m.birim||'adet')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Min. Stok</span><span class="detail-val mono">'+(m.minMiktar||0)+' '+(m.birim||'adet')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Birim Fiyat</span><span class="detail-val mono">'+(m.birimFiyat?fmtMoney(m.birimFiyat):'—')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Toplam Değer</span><span class="detail-val mono">'+fmtMoney(Number(m.miktar||0)*Number(m.birimFiyat||0))+'</span></div></div>'
+    + hHTML;
+  document.getElementById('detailFooter').innerHTML =
+    '<button class="btn btn-ghost" onclick="openEditMalzeme(\''+id+'\')">✎ Düzenle</button>'
+    +'<button class="btn btn-primary" onclick="closeModal(\'detailOverlay\');openStokHareket()">↕ Hareket Ekle</button>'
+    +'<button class="btn btn-danger" onclick="confirmDeleteMalzeme(\''+id+'\')">✕ Sil</button>';
+  document.getElementById('detailOverlay').classList.add('open');
+};
+
+function nextMalzemeKod() {
+  const kodlar = malzemeler
+    .map(m => m.kod||'')
+    .filter(k => /^MAL-\d+$/.test(k))
+    .map(k => parseInt(k.split('-')[1]))
+    .filter(n => !isNaN(n));
+  const sonNo = kodlar.length ? Math.max(...kodlar) : 0;
+  return 'MAL-' + String(sonNo + 1).padStart(3,'0');
+}
+
+function malzemeForm(data) {
+  data = data || {};
+  return '<div class="form-grid">'
+    +'<div class="form-group full"><label>Malzeme Adı *</label>'
+    +'<input id="f_malzemeAd" placeholder="Çelik Sac 2mm..." value="'+(data.ad||'')+'"></div>'
+    +'<div class="form-group"><label>Kod</label>'
+    +'<input id="f_malzemeKod" value="'+(data.kod||(!data.ad ? nextMalzemeKod() : ''))+'" style="font-family:var(--mono)"></div>'
+    +'<div class="form-group"><label>Kategori</label>'
+    +'<select id="f_malzemeKat">'+['Hammadde','Aksesuar','Hazır Ürün','Yarı Mamul'].map(k=>'<option '+(( data.kategori||'Hammadde')===k?'selected':'')+'>'+k+'</option>').join('')+'</select></div>'
+    +'<div class="form-group"><label>Birim</label>'
+    +'<select id="f_malzemeBirim">'+['adet','kg','metre','litre','m²','rulo'].map(b=>'<option '+((data.birim||'adet')===b?'selected':'')+'>'+b+'</option>').join('')+'</select></div>'
+    +'<div class="form-group"><label>Mevcut Miktar</label>'
+    +'<input id="f_malzemeMiktar" type="number" min="0" step="0.01" value="'+(data.miktar||0)+'"></div>'
+    +'<div class="form-group"><label>Min. Stok</label>'
+    +'<input id="f_malzemeMin" type="number" min="0" step="0.01" value="'+(data.minMiktar||0)+'"></div>'
+    +'<div class="form-group"><label>Birim Fiyat (₺)</label>'
+    +'<input id="f_malzemeFiyat" type="number" min="0" step="0.01" value="'+(data.birimFiyat||'')+'"></div>'
+    +'<div class="form-group"><label>Tedarikçi</label>'
+    +'<input id="f_malzemeTedarikci" value="'+(data.tedarikci||'')+'"></div>'
+    +'<div class="form-group full"><label>Notlar</label>'
+    +'<textarea id="f_malzemeNotlar">'+(data.notlar||'')+'</textarea></div></div>';
+}
+
+window.openEditMalzeme = function(id) {
+  const data = malzemeler.find(x=>x.id===id);
+  window._editingMalzemeId = id;
+  document.getElementById('addModalTitle').textContent = 'Malzemeyi Düzenle';
+  document.getElementById('addModalBody').innerHTML = malzemeForm(data);
+  closeModal('detailOverlay');
+  document.getElementById('saveBtn').onclick = () => saveMalzeme(id);
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.confirmDeleteMalzeme = function(id) {
+  const m = malzemeler.find(x=>x.id===id);
+  document.getElementById('confirmText').textContent = '"'+(m?m.ad:'Bu malzeme')+'" silinecek.';
+  document.getElementById('confirmOkBtn').onclick = async () => {
+    closeModal('confirmOverlay'); closeModal('detailOverlay');
+    try { await db.collection('malzemeler').doc(id).delete(); showToast('Malzeme silindi ✓'); }
+    catch(e) { showToast('Hata: '+e.message,'error'); }
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
+
+async function saveMalzeme(editId) {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
+  const ad = document.getElementById('f_malzemeAd')?.value?.trim();
+  if(!ad) { showToast('Malzeme adı zorunlu','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+  const data = {
+    ad, kod: document.getElementById('f_malzemeKod').value||'',
+    kategori: document.getElementById('f_malzemeKat').value||'Hammadde',
+    birim: document.getElementById('f_malzemeBirim').value||'adet',
+    miktar: Number(document.getElementById('f_malzemeMiktar').value||0),
+    minMiktar: Number(document.getElementById('f_malzemeMin').value||0),
+    birimFiyat: Number(document.getElementById('f_malzemeFiyat').value||0),
+    tedarikci: document.getElementById('f_malzemeTedarikci').value||'',
+    notlar: document.getElementById('f_malzemeNotlar').value||'',
+  };
+  try {
+    if(editId) { await db.collection('malzemeler').doc(editId).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}); showToast('Malzeme güncellendi ✓'); }
+    else { await db.collection('malzemeler').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()}); showToast('Malzeme eklendi ✓'); }
+    closeModal('addModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Kaydet';
+}
+
+// ─── KATALOG MODELLERİ ──────────────────────────────────────────────────────
+const KATALOG = [
+  // Lüks Kabartma Seri (100)
+  ...['101','102','103','104','105'].map(n=>({no:'AYBAT-'+n,seri:'Lüks Kabartma Seri'})),
+  // Lüks Seri (200)
+  ...['201','202','203','204','205','206','207','208','209','210',
+      '211','212','213','214','215','216','217','218','219','220',
+      '221','222','223','224','225','226','227','228','229','230',
+      '231','232','233','234','235','236','237','238','239','240',
+      '241','242'].map(n=>({no:'AYBAT-'+n,seri:'Lüks Seri'})),
+  // Ultralam Yüzey Seri (300)
+  ...['301','302','303','304','305','306','307','308','309','310',
+      '311','312','313','314','315','316','317','318','319','320','321'].map(n=>({no:'AYBAT-'+n,seri:'Ultralam Yüzey Seri'})),
+  // Laminoks Yüzey Seri (400)
+  ...['401','402','403','404','405','406','407','408','409','410',
+      '411','412','413','414','415','416','417','418','419','420',
+      '421','422','423','424','425','426','427','428','429','430',
+      '431','432','433','434','435','436','437','438','439','440',
+      '441','442','443'].map(n=>({no:'AYBAT-'+n,seri:'Laminoks Yüzey Seri'})),
+  // Sac Panel Seri (500)
+  ...['501','502','503'].map(n=>({no:'AYBAT-'+n,seri:'Sac Panel Seri'})),
+  // Panjur Kapı Seri (600)
+  ...['601','602','603'].map(n=>({no:'AYBAT-'+n,seri:'Panjur Kapı Seri'})),
+  // Villa & Bina Giriş Seri (700)
+  ...['701','702','703','704'].map(n=>({no:'AYBAT-'+n,seri:'Villa & Bina Giriş Seri'})),
+  // Yangın Acil Çıkış Seri (800)
+  ...['801','802'].map(n=>({no:'AYBAT-'+n,seri:'Yangın Acil Çıkış Seri'})),
+];
+
+// ─── KASA STATE & LISTENERS ─────────────────────────────────────────────────
+let kasaIslemler = [];
+const GELIR_KATS = ['Sipariş Tahsilatı','Ön Ödeme / Kapora','Montaj Ücreti','Diğer Gelir'];
+const GIDER_KATS = ['Hammadde / Malzeme Alımı','İşçilik / Maaş','Kira & Fatura','Nakliye / Montaj Masrafı','Diğer Gider'];
+
+function startKasaListeners() {
+  db.collection('kasaIslemleri').orderBy('tarih','desc').onSnapshot(snap => {
+    kasaIslemler = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    if(currentPage==='kasa') renderKasa();
+    updateDashKasa();
+  }, err => console.error(err));
+}
+
+function updateDashKasa() {
+  const buAy = new Date().toISOString().slice(0,7);
+  const buAyGelir = kasaIslemler.filter(k=>k.tip==='Gelir'&&(k.tarih||'').startsWith(buAy)).reduce((a,k)=>a+Number(k.tutar||0),0);
+  const buAyGider = kasaIslemler.filter(k=>k.tip==='Gider'&&(k.tarih||'').startsWith(buAy)).reduce((a,k)=>a+Number(k.tutar||0),0);
+  const el = document.getElementById('dash-ciro');
+  if(el) el.textContent = fmtMoney(buAyGelir);
+}
+
+window.renderKasa = function() {
+  const buAy = new Date().toISOString().slice(0,7);
+  const tumGelir = kasaIslemler.filter(k=>k.tip==='Gelir').reduce((a,k)=>a+Number(k.tutar||0),0);
+  const tumGider = kasaIslemler.filter(k=>k.tip==='Gider').reduce((a,k)=>a+Number(k.tutar||0),0);
+  const buAyGelir = kasaIslemler.filter(k=>k.tip==='Gelir'&&(k.tarih||'').startsWith(buAy)).reduce((a,k)=>a+Number(k.tutar||0),0);
+  const buAyGider = kasaIslemler.filter(k=>k.tip==='Gider'&&(k.tarih||'').startsWith(buAy)).reduce((a,k)=>a+Number(k.tutar||0),0);
+  const bakiye = tumGelir - tumGider;
+  const kar = buAyGelir - buAyGider;
+
+  document.getElementById('kasa-bakiye').textContent = fmtMoney(bakiye);
+  document.getElementById('kasa-bakiye').style.color = bakiye >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('kasa-gelir').textContent = fmtMoney(buAyGelir);
+  document.getElementById('kasa-gider').textContent = fmtMoney(buAyGider);
+  document.getElementById('kasa-kar').textContent = fmtMoney(kar);
+  document.getElementById('kasa-kar').style.color = kar >= 0 ? 'var(--accent)' : 'var(--red)';
+
+  // Yıl filtresi
+  const yillar = [...new Set(kasaIslemler.map(k=>(k.tarih||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  if(!yillar.length) yillar.push(new Date().getFullYear().toString());
+  const yilSel = document.getElementById('kasaYilFilter');
+  const mevcutYil = yilSel.value || yillar[0];
+  yilSel.innerHTML = yillar.map(y=>'<option '+(y===mevcutYil?'selected':'')+'>'+y+'</option>').join('');
+
+  // Ay filtresi
+  const aylar = [...new Set(kasaIslemler.map(k=>(k.tarih||'').slice(0,7)).filter(Boolean))].sort().reverse();
+  const aySel = document.getElementById('kasaAyFilter');
+  const mevcutAy = aySel.value;
+  aySel.innerHTML = '<option value="">Tüm Aylar</option>' + aylar.map(a=>'<option '+(a===mevcutAy?'selected':'')+'>'+a+'</option>').join('');
+
+  renderKasaAylik();
+  renderKasaHareketler();
+};
+
+window.renderKasaAylik = function() {
+  const yil = document.getElementById('kasaYilFilter').value || new Date().getFullYear().toString();
+  const ayIsim = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const el = document.getElementById('kasaAylikTablo');
+  const rows = [];
+  for(let i=1;i<=12;i++) {
+    const ayStr = yil+'-'+(i<10?'0':'')+i;
+    const gelir = kasaIslemler.filter(k=>k.tip==='Gelir'&&(k.tarih||'').startsWith(ayStr)).reduce((a,k)=>a+Number(k.tutar||0),0);
+    const gider = kasaIslemler.filter(k=>k.tip==='Gider'&&(k.tarih||'').startsWith(ayStr)).reduce((a,k)=>a+Number(k.tutar||0),0);
+    const net = gelir - gider;
+    if(gelir===0&&gider===0) continue;
+    rows.push('<tr>'
+      +'<td class="mono" style="font-size:12px">'+ayIsim[i-1]+' '+yil+'</td>'
+      +'<td class="mono" style="color:var(--green)">'+fmtMoney(gelir)+'</td>'
+      +'<td class="mono" style="color:var(--red)">'+fmtMoney(gider)+'</td>'
+      +'<td class="mono" style="color:'+(net>=0?'var(--accent)':'var(--red)')+'">'+fmtMoney(net)+'</td>'
+      +'<td><div style="background:var(--surface2);border-radius:2px;height:6px;overflow:hidden;min-width:80px">'
+      +(gelir>0?'<div style="height:100%;background:var(--green);width:'+Math.round((gelir/Math.max(gelir,gider))*100)+'%"></div>':'')
+      +'</div></td></tr>');
+  }
+  if(!rows.length) { el.innerHTML = '<div class="empty-state" style="padding:30px"><div class="empty-title">'+yil+' için kayıt yok</div></div>'; return; }
+  el.innerHTML = '<table class="table"><thead><tr><th>Ay</th><th>Gelir</th><th>Gider</th><th>Net</th><th>Oran</th></tr></thead><tbody>'+rows.join('')+'</tbody></table>';
+};
+
+window.renderKasaHareketler = function() {
+  const tipF = document.getElementById('kasaTipFilter').value;
+  const ayF = document.getElementById('kasaAyFilter').value;
+  let list = kasaIslemler;
+  if(tipF) list = list.filter(k=>k.tip===tipF);
+  if(ayF) list = list.filter(k=>(k.tarih||'').startsWith(ayF));
+  const el = document.getElementById('kasaHareketListesi');
+  if(!list.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:40px"><div class="empty-icon">💰</div><div class="empty-title">İşlem bulunamadı</div></div>';
+    return;
+  }
+  let cumBakiye = kasaIslemler.filter(k=>k.tip==='Gelir').reduce((a,k)=>a+Number(k.tutar||0),0)
+    - kasaIslemler.filter(k=>k.tip==='Gider').reduce((a,k)=>a+Number(k.tutar||0),0);
+  const rows = list.map(k => {
+    const isGelir = k.tip==='Gelir';
+    const row = '<tr onclick="openKasaDetay(\''+k.id+'\')" style="cursor:pointer">'
+      +'<td class="mono" style="font-size:11px">'+k.tarih+'</td>'
+      +'<td><strong>'+(k.aciklama||'—')+'</strong><br><span style="font-size:10px;color:var(--text2)">'+( k.kategori||'')+(k.odemeYontemi?' · '+k.odemeYontemi:'')+'</span></td>'
+      +'<td>'+(k.sipAno?'<span class="badge badge-gray">'+k.sipAno+'</span>':'—')+'</td>'
+      +'<td>'+(isGelir?'<span class="badge badge-green">Gelir</span>':'<span class="badge badge-red">Gider</span>')+'</td>'
+      +'<td class="mono" style="color:'+(isGelir?'var(--green)':'var(--red)')+'">'+(isGelir?'+':'-')+fmtMoney(k.tutar)+'</td>'
+      +'</tr>';
+    return row;
+  }).join('');
+  el.innerHTML = '<table class="table"><thead><tr><th>Tarih</th><th>Açıklama</th><th>Sipariş</th><th>Tip</th><th>Tutar</th></tr></thead><tbody>'+rows+'</tbody></table>';
+};
+
+window.openKasaIslem = function(prefillSip) {
+  updateKasaKategori();
+  document.getElementById('ki_tarih').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ki_aciklama').value = '';
+  document.getElementById('ki_tutar').value = '';
+  document.getElementById('ki_not').value = '';
+  window._editKasaId = null;
+  // Sipariş dropdown
+  const sipSel = document.getElementById('ki_siparis');
+  sipSel.innerHTML = '<option value="">— Bağlı sipariş (opsiyonel) —</option>'
+    + siparisler.map(s=>'<option value="'+s.sipNo+'" '+(prefillSip&&prefillSip===s.sipNo?'selected':'')+'>'+s.sipNo+' — '+s.musteriAd+'</option>').join('');
+  document.getElementById('kasaModalTitle').textContent = 'Yeni İşlem';
+  document.getElementById('kasaModal').classList.add('open');
+};
+
+window.updateKasaKategori = function() {
+  const tip = document.getElementById('ki_tip').value;
+  const kats = tip==='Gelir' ? GELIR_KATS : GIDER_KATS;
+  document.getElementById('ki_kategori').innerHTML = kats.map(k=>'<option>'+k+'</option>').join('');
+};
+
+window.saveKasaIslem = async function() {
+  const aciklama = document.getElementById('ki_aciklama').value.trim();
+  const tutar = parseFloat(document.getElementById('ki_tutar').value);
+  const tarih = document.getElementById('ki_tarih').value;
+  if(!aciklama || !tutar || !tarih) { showToast('Açıklama, tutar ve tarih zorunlu','error'); return; }
+  const data = {
+    tip: document.getElementById('ki_tip').value,
+    kategori: document.getElementById('ki_kategori').value,
+    aciklama, tutar, tarih,
+    sipAno: document.getElementById('ki_siparis').value||'',
+    odemeYontemi: document.getElementById('ki_odemeYontemi').value,
+    not: document.getElementById('ki_not').value||'',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    if(window._editKasaId) {
+      await db.collection('kasaIslemleri').doc(window._editKasaId).update({...data});
+      showToast('İşlem güncellendi ✓');
+    } else {
+      await db.collection('kasaIslemleri').add(data);
+      showToast('İşlem kaydedildi ✓');
+    }
+    closeModal('kasaModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+window.openKasaDetay = function(id) {
+  const k = kasaIslemler.find(x=>x.id===id);
+  if(!k) return;
+  const isGelir = k.tip==='Gelir';
+  document.getElementById('detailTitle').textContent = k.aciklama||'İşlem';
+  document.getElementById('detailSub').textContent = k.tarih+' · '+k.tip;
+  document.getElementById('detailBody').innerHTML =
+    '<div class="detail-section"><div class="detail-section-title">İşlem Detayı</div>'
+    +'<div class="detail-row"><span class="detail-key">Tip</span><span class="detail-val">'+(isGelir?'<span class="badge badge-green">Gelir</span>':'<span class="badge badge-red">Gider</span>')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Kategori</span><span class="detail-val">'+(k.kategori||'—')+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Tutar</span><span class="detail-val mono" style="font-size:16px;color:'+(isGelir?'var(--green)':'var(--red)')+'">'+fmtMoney(k.tutar)+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Tarih</span><span class="detail-val mono">'+k.tarih+'</span></div>'
+    +'<div class="detail-row"><span class="detail-key">Ödeme Yöntemi</span><span class="detail-val">'+(k.odemeYontemi||'—')+'</span></div>'
+    +(k.sipAno?'<div class="detail-row"><span class="detail-key">Sipariş</span><span class="detail-val mono">'+k.sipAno+'</span></div>':'')
+    +(k.not?'<div class="detail-row"><span class="detail-key">Not</span><span class="detail-val" style="font-size:12px">'+k.not+'</span></div>':'')
+    +'</div>';
+  document.getElementById('detailFooter').innerHTML =
+    '<button class="btn btn-ghost" onclick="editKasaIslem(\''+id+'\')">✎ Düzenle</button>'
+    +'<button class="btn btn-danger" onclick="confirmDeleteKasa(\''+id+'\')">✕ Sil</button>';
+  document.getElementById('detailOverlay').classList.add('open');
+};
+
+window.editKasaIslem = function(id) {
+  const k = kasaIslemler.find(x=>x.id===id);
+  if(!k) return;
+  window._editKasaId = id;
+  document.getElementById('ki_tip').value = k.tip;
+  updateKasaKategori();
+  document.getElementById('ki_kategori').value = k.kategori||'';
+  document.getElementById('ki_aciklama').value = k.aciklama||'';
+  document.getElementById('ki_tutar').value = k.tutar||'';
+  document.getElementById('ki_tarih').value = k.tarih||'';
+  document.getElementById('ki_not').value = k.not||'';
+  document.getElementById('ki_odemeYontemi').value = k.odemeYontemi||'Nakit';
+  const sipSel = document.getElementById('ki_siparis');
+  sipSel.innerHTML = '<option value="">—</option>'+siparisler.map(s=>'<option value="'+s.sipNo+'" '+(k.sipAno===s.sipNo?'selected':'')+'>'+s.sipNo+' — '+s.musteriAd+'</option>').join('');
+  document.getElementById('kasaModalTitle').textContent = 'İşlemi Düzenle';
+  closeModal('detailOverlay');
+  document.getElementById('kasaModal').classList.add('open');
+};
+
+window.confirmDeleteKasa = function(id) {
+  const k = kasaIslemler.find(x=>x.id===id);
+  document.getElementById('confirmText').textContent = '"'+(k?k.aciklama:'Bu işlem')+'" silinecek.';
+  document.getElementById('confirmOkBtn').onclick = async () => {
+    closeModal('confirmOverlay'); closeModal('detailOverlay');
+    try { await db.collection('kasaIslemleri').doc(id).delete(); showToast('İşlem silindi ✓'); }
+    catch(e) { showToast('Hata: '+e.message,'error'); }
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
+
+// Override openAddModal for stok page
+const _origOpenAddModal = window.openAddModal;
+window.openAddModal = function() {
+  if(currentPage === 'stok') {
+    window._editingMalzemeId = null;
+    document.getElementById('addModalTitle').textContent = 'Yeni Malzeme';
+    document.getElementById('addModalBody').innerHTML = malzemeForm();
+    document.getElementById('saveBtn').onclick = () => saveMalzeme(null);
+    document.getElementById('addModal').classList.add('open');
+  } else {
+    _origOpenAddModal();
+    document.getElementById('saveBtn').onclick = saveRecord;
+  }
+};
+
+// Override openAddModal for kasa
+const _origOpenAddModal2 = window.openAddModal;
+window.openAddModal = function() {
+  if(currentPage === 'kasa') { openKasaIslem(); }
+  else { _origOpenAddModal2(); }
+};
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+try {
+  startListeners();
+  startStokListeners();
+  startKasaListeners();
+} catch(e) {
+  setSyncStatus(false);
+  console.error(e);
+}
+</script>
+</body>
+</html>
