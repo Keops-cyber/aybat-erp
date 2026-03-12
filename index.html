@@ -1698,12 +1698,32 @@ window.renderMusteriler = function() {
   if(search && currentPage==='musteriler') list = list.filter(m =>
     (m.ad||'').toLowerCase().includes(search) || (m.telefon||'').includes(search)
   );
-  // Sıralama
-  if(sortVal==='ad_az') list.sort((a,b)=>(a.ad||'').localeCompare(b.ad||'','tr'));
+
+  // Her müşteri için canlı istatistik hesapla (geçmiş + ERP siparişleri)
+  const stats = {};
+  list.forEach(m => {
+    const erpSiparisler = siparisler.filter(s => s.musteriId === m.id);
+    const erpAdet   = erpSiparisler.reduce((a,s) => a + Number(s.adet||1), 0);
+    const erpCiro   = erpSiparisler.reduce((a,s) => a + Number(s.tutar||0), 0);
+    const erpAlacak = erpSiparisler
+      .filter(s => s.odeme !== 'Tamamlandı')
+      .reduce((a,s) => a + (Number(s.tutar||0) - Number(s.odemeMiktar||0)), 0);
+    const gecmisSayisi = Number(m.satisSayisi||0);
+    const gecmisCiro   = Number(m.toplamCiro||0);
+    stats[m.id] = {
+      satisSayisi: gecmisSayisi + erpAdet,
+      toplamCiro:  gecmisCiro  + erpCiro,
+      alacak:      erpAlacak,
+      sonSatis:    m.sonSatis || m.ilkSatis || '',
+    };
+  });
+
+  // Sıralama — canlı stats kullan
+  if(sortVal==='ad_az')      list.sort((a,b)=>(a.ad||'').localeCompare(b.ad||'','tr'));
   else if(sortVal==='ad_za') list.sort((a,b)=>(b.ad||'').localeCompare(a.ad||'','tr'));
-  else if(sortVal==='son_satis') list.sort((a,b)=>(b.sonSatis||b.ilkSatis||'').localeCompare(a.sonSatis||a.ilkSatis||''));
-  else if(sortVal==='ciro_desc') list.sort((a,b)=>(Number(b.toplamCiro)||0)-(Number(a.toplamCiro)||0));
-  else if(sortVal==='satis_desc') list.sort((a,b)=>(Number(b.satisSayisi)||0)-(Number(a.satisSayisi)||0));
+  else if(sortVal==='son_satis')  list.sort((a,b)=>(stats[b.id].sonSatis).localeCompare(stats[a.id].sonSatis));
+  else if(sortVal==='ciro_desc')  list.sort((a,b)=>stats[b.id].toplamCiro - stats[a.id].toplamCiro);
+  else if(sortVal==='satis_desc') list.sort((a,b)=>stats[b.id].satisSayisi - stats[a.id].satisSayisi);
 
   const grid = document.getElementById('musteriGrid');
   if(!list.length) {
@@ -1711,12 +1731,7 @@ window.renderMusteriler = function() {
     return;
   }
   grid.innerHTML = list.map(m => {
-    const sipSayisi = siparisler.filter(s => s.musteriId === m.id).length;
-    const alacak = siparisler.filter(s => s.musteriId === m.id && s.odeme !== 'Tamamlandı')
-      .reduce((a,s) => a + (Number(s.tutar||0) - Number(s.odemeMiktar||0)), 0);
-    const toplamCiro = m.toplamCiro || 0;
-    const satisSayisi = m.satisSayisi || sipSayisi;
-    const sonTarih = m.sonSatis || '';
+    const st = stats[m.id];
     return `<div class="musteri-card" onclick="openDetail('musteri','${m.id}')">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
         <div class="musteri-avatar" style="background:${musteriRenk(m.ad)};flex-shrink:0">${(m.ad||'?')[0].toUpperCase()}</div>
@@ -1729,16 +1744,16 @@ window.renderMusteriler = function() {
       ${m.telefon?`<div class="musteri-meta">📞 ${m.telefon}</div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
         <div style="text-align:center">
-          <div style="font-size:18px;font-weight:700;color:var(--accent);font-family:var(--mono)">${satisSayisi}</div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent);font-family:var(--mono)">${st.satisSayisi}</div>
           <div style="font-size:10px;color:var(--text3)">satış</div>
         </div>
         <div style="text-align:center">
-          <div style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--mono)">${toplamCiro>0?fmtMoney(toplamCiro):(sipSayisi>0?'—':'—')}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--green);font-family:var(--mono)">${st.toplamCiro>0?fmtMoney(st.toplamCiro):'—'}</div>
           <div style="font-size:10px;color:var(--text3)">toplam ciro</div>
         </div>
       </div>
-      ${sonTarih?`<div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:right">Son satış: ${sonTarih}</div>`:''}
-      ${alacak>0?`<div style="font-size:11px;color:var(--red);margin-top:4px;text-align:right">Alacak: ${fmtMoney(alacak)}</div>`:''}
+      ${st.sonSatis?`<div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:right">Son satış: ${st.sonSatis}</div>`:''}
+      ${st.alacak>0?`<div style="font-size:11px;color:var(--red);margin-top:4px;text-align:right">Alacak: ${fmtMoney(st.alacak)}</div>`:''}
     </div>`;
   }).join('');
 };
@@ -2165,6 +2180,12 @@ window.saveRecord = async function() {
   const btn = document.getElementById('saveBtn');
   btn.disabled = true; btn.textContent = 'Kaydediliyor...';
 
+  // Gizli inputlardan oku (JS değişkeni kaybolmuşsa buradan al)
+  const hidId   = document.getElementById('_editId')?.value;
+  const hidType = document.getElementById('_editType')?.value;
+  if(hidId)   editingId   = hidId;
+  if(hidType) editingType = hidType;
+
   // Aktivite
   if(editingType === 'aktivite') {
     const musteriId = document.getElementById('fa_musteri')?.value;
@@ -2380,7 +2401,10 @@ window.editRecord = function(type, id) {
   editingId = id; editingType = type;
   const data = type==='siparis' ? siparisler.find(x=>x.id===id) : musteriler.find(x=>x.id===id);
   document.getElementById('addModalTitle').textContent = type==='siparis' ? 'Siparişi Düzenle' : 'Müşteriyi Düzenle';
-  document.getElementById('addModalBody').innerHTML = type==='siparis' ? siparisForm(data) : musteriForm(data);
+  // Form içine gizli alanlar göm — editingId kaybolmasın
+  const formHTML = type==='siparis' ? siparisForm(data) : musteriForm(data);
+  document.getElementById('addModalBody').innerHTML =
+    `<input type="hidden" id="_editId" value="${id}"><input type="hidden" id="_editType" value="${type}">` + formHTML;
   document.getElementById('saveBtn').onclick = saveRecord;
   closeModal('detailOverlay');
   document.getElementById('addModal').classList.add('open');
