@@ -1403,7 +1403,7 @@
     <div class="modal-body" id="addModalBody"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('addModal')">İptal</button>
-      <button class="btn btn-primary" id="saveBtn" onclick="saveRecord()">Kaydet</button>
+      <button class="btn btn-primary" id="saveBtn">Kaydet</button>
     </div>
   </div>
 </div>
@@ -1809,6 +1809,7 @@ window.openAddModal = function() {
   editingType = type;
   document.getElementById('addModalTitle').textContent = type === 'musteri' ? 'Yeni Müşteri' : 'Yeni Sipariş';
   document.getElementById('addModalBody').innerHTML = type === 'musteri' ? musteriForm() : siparisForm();
+  document.getElementById('saveBtn').onclick = saveRecord;
   document.getElementById('addModal').classList.add('open');
 };
 
@@ -2163,6 +2164,28 @@ function musteriForm(data={}) {
 window.saveRecord = async function() {
   const btn = document.getElementById('saveBtn');
   btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+
+  // Aktivite
+  if(editingType === 'aktivite') {
+    const musteriId = document.getElementById('fa_musteri')?.value;
+    const notlar = document.getElementById('fa_notlar')?.value?.trim();
+    if(!musteriId || !notlar) { showToast('Müşteri ve not zorunlu','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+    const musteri = musteriler.find(m => m.id===musteriId);
+    try {
+      await db.collection('aktiviteler').add({
+        musteriId, musteriAd: musteri?.ad||'—',
+        tip: document.getElementById('fa_tip')?.value||'Not',
+        tarih: document.getElementById('fa_tarih')?.value||'',
+        notlar,
+        sonrakiAksiyonTarihi: document.getElementById('fa_aksiyonTarihi')?.value||'',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Aktivite eklendi ✓');
+      closeModal('addModal');
+    } catch(e) { showToast('Hata: '+e.message,'error'); }
+    btn.disabled=false; btn.textContent='Kaydet';
+    return;
+  }
 
   try {
     if(editingType === 'siparis') {
@@ -2979,17 +3002,11 @@ window.openAddModal = function() {
     document.getElementById('addModalBody').innerHTML = malzemeForm();
     document.getElementById('saveBtn').onclick = () => saveMalzeme(null);
     document.getElementById('addModal').classList.add('open');
+  } else if(currentPage === 'kasa') {
+    openKasaIslem();
   } else {
     _origOpenAddModal();
-    document.getElementById('saveBtn').onclick = saveRecord;
   }
-};
-
-// Override openAddModal for kasa
-const _origOpenAddModal2 = window.openAddModal;
-window.openAddModal = function() {
-  if(currentPage === 'kasa') { openKasaIslem(); }
-  else { _origOpenAddModal2(); }
 };
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
@@ -3114,6 +3131,7 @@ window.openAktiviteModal = function(prefillMusteriId) {
 
   editingId = null;
   editingType = 'aktivite';
+  document.getElementById('saveBtn').onclick = saveRecord;
   document.getElementById('addModal').classList.add('open');
 };
 
@@ -3123,35 +3141,6 @@ window.deleteAktivite = async function(id) {
     await db.collection('aktiviteler').doc(id).delete();
     showToast('Aktivite silindi');
   } catch(e) { showToast('Hata: '+e.message,'error'); }
-};
-
-// saveRecord için aktivite case ekle
-const _origSave = window.saveRecord;
-window.saveRecord = async function() {
-  if(editingType !== 'aktivite') return _origSave();
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
-  const musteriId = document.getElementById('fa_musteri')?.value;
-  const notlar = document.getElementById('fa_notlar')?.value?.trim();
-  if(!musteriId || !notlar) {
-    showToast('Müşteri ve not zorunlu','error');
-    btn.disabled=false; btn.textContent='Kaydet'; return;
-  }
-  const musteri = musteriler.find(m => m.id===musteriId);
-  try {
-    await db.collection('aktiviteler').add({
-      musteriId,
-      musteriAd: musteri?.ad||'—',
-      tip: document.getElementById('fa_tip')?.value||'Not',
-      tarih: document.getElementById('fa_tarih')?.value||'',
-      notlar,
-      sonrakiAksiyonTarihi: document.getElementById('fa_aksiyonTarihi')?.value||'',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    showToast('Aktivite eklendi ✓');
-    closeModal('addModal');
-  } catch(e) { showToast('Hata: '+e.message,'error'); }
-  btn.disabled=false; btn.textContent='Kaydet';
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
