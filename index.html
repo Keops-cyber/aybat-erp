@@ -79,7 +79,8 @@
   .table td{padding:11px 18px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text);}
   .table tr:last-child td{border-bottom:none;}
   .table tbody tr:hover td{background:var(--surface2);cursor:pointer;}
-  .table tr.kalem-sub-row td{border-top:none;border-bottom:none;padding-top:1px;padding-bottom:6px;}
+  .table tr.kalem-first-row td{border-bottom:none;}
+  .table tr.kalem-sub-row td{border-top:none;padding-top:2px;}
   .table tr.kalem-sub-row:hover td{background:var(--surface2);}
   .mono{font-family:'IBM Plex Mono',monospace;}
 
@@ -1841,7 +1842,7 @@ window.renderSiparisler = function() {
     if(kalemler) {
       kalemler.forEach((k, ki) => {
         const ilk = ki === 0;
-  rows.push(`<tr onclick="openDetail('siparis','${s.id}')" ${ki>0?'class="kalem-sub-row"':''}>
+  rows.push(`<tr onclick="openDetail('siparis','${s.id}')" ${ki===0 && kalemler.length>1 ? 'class="kalem-first-row"' : ki>0 ? 'class="kalem-sub-row"' : ''}>
           <td class="mono" style="font-size:11px;color:var(--accent)">${ilk ? s.sipNo||'—' : ''}</td>
           <td class="mono" style="font-size:11px;color:var(--text2)">${ilk ? (s.sipTarihi||'—') : ''}</td>
           <td>${ilk ? `<strong>${s.musteriAd||'—'}</strong>` : ''}</td>
