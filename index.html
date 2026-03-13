@@ -2012,6 +2012,13 @@ function kalemSatiriHTML(k, idx) {
           ${['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'].map(r=>`<option ${k.sacRenk===r?'selected':''}>${r}</option>`).join('')}
         </select>
       </div>
+      <div class="form-group" id="k_laminoksTipAlan_${idx}" style="display:${(()=>{const no=parseInt((k.urun||'').replace('AYBAT-',''));return(no>=401&&no<=499)?'block':'none';})()}">
+        <label style="font-size:11px;color:var(--accent);font-weight:700">&#9881; Laminoks Tipi</label>
+        <select class="k_laminoksTip" id="k_laminoksTip_${idx}" onchange="kalemGuncelle(${idx})" style="border-color:var(--accent)">
+          <option value="Standart" ${(k.laminoksTip||'Standart')==='Standart'?'selected':''}>Standart</option>
+          <option value="Ekonomik" ${k.laminoksTip==='Ekonomik'?'selected':''}>Ekonomik</option>
+        </select>
+      </div>
       <div class="form-group" id="k_fiyatAlan_${idx}">
         <label style="font-size:11px">Birim Fiyat (₺)</label>
         <input type="number" class="k_birimFiyat" id="k_birimFiyat_${idx}" placeholder="0" value="${k.birimFiyat||''}" oninput="kalemGuncelle(${idx});hesaplaToplamK()">
@@ -2124,6 +2131,7 @@ window.kalemGuncelle = function(idx) {
   _kalemler[idx].olcuBoy     = document.getElementById('k_boy_'+idx)?.value||'';
   _kalemler[idx].olcuKalinlik= document.getElementById('k_kalinlik_'+idx)?.value||'';
   _kalemler[idx].sacRenk     = document.getElementById('k_sacRenk_'+idx)?.value||'';
+  _kalemler[idx].laminoksTip = document.getElementById('k_laminoksTip_'+idx)?.value||'Standart';
   _kalemler[idx].birimFiyat  = Number(document.getElementById('k_birimFiyat_'+idx)?.value||0);
   // Kalem tutarı = adet × birim fiyat
   const kalemTutar = _kalemler[idx].adet * _kalemler[idx].birimFiyat;
@@ -2182,6 +2190,15 @@ window.secilenModelK = function(idx, modelNo) {
     if(no>=601&&no<=699) { renkSel.value='Yok (Panjur)'; renkSel.disabled=true; }
     else if(no>=801&&no<=899) { renkSel.value='Yok (Yangın Çıkış)'; renkSel.disabled=true; }
     else { renkSel.disabled=false; }
+  }
+  // Laminoks tipi alanını göster/gizle
+  const laminoksTipAlan = document.getElementById('k_laminoksTipAlan_'+idx);
+  if(laminoksTipAlan) {
+    laminoksTipAlan.style.display = (no>=401&&no<=499) ? 'block' : 'none';
+    if(no<401||no>499) {
+      const tipSel = document.getElementById('k_laminoksTip_'+idx);
+      if(tipSel) tipSel.value = 'Standart';
+    }
   }
   kalemGuncelle(idx);
 };
@@ -2560,6 +2577,7 @@ window.openDetail = function(type, id) {
             <th style="text-align:left;padding:4px 6px;font-weight:500">Model</th>
             <th style="text-align:left;padding:4px 6px;font-weight:500">Renk</th>
             <th style="text-align:left;padding:4px 6px;font-weight:500">Yön</th>
+            <th style="text-align:left;padding:4px 6px;font-weight:500">Tip</th>
             <th style="text-align:center;padding:4px 6px;font-weight:500">Adet</th>
             <th style="text-align:left;padding:4px 6px;font-weight:500">Ölçü</th>
           </tr></thead>
@@ -2569,6 +2587,7 @@ window.openDetail = function(type, id) {
               <td style="padding:5px 6px;font-family:var(--mono);color:var(--accent)">${k.urun||'—'}</td>
               <td style="padding:5px 6px;color:var(--text2)">${k.renk||'—'}</td>
               <td style="padding:5px 6px;color:var(--text2)">${k.yon||'—'}</td>
+              <td style="padding:5px 6px">${(()=>{const no=parseInt((k.urun||'').replace('AYBAT-',''));return(no>=401&&no<=499)?`<span style="font-size:11px;padding:2px 6px;border-radius:3px;font-weight:600;background:${k.laminoksTip==='Ekonomik'?'#7c4dff22':'#e8a02022'};color:${k.laminoksTip==='Ekonomik'?'#9c6ce0':'var(--accent)'}">${k.laminoksTip||'Standart'}</span>`:'<span style="color:var(--text3);font-size:11px">—</span>';})()}</td>
               <td style="padding:5px 6px;text-align:center;font-family:var(--mono)">${k.adet||1}</td>
               <td style="padding:5px 6px;font-family:var(--mono);font-size:11px">${k.olcuEn&&k.olcuBoy?k.olcuEn+'×'+k.olcuBoy:(k.olcuTip||'Standart')}${k.olcuKalinlik?' / '+k.olcuKalinlik+'cm':''}</td>
             </tr>`).join('')}
