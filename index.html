@@ -79,8 +79,6 @@
   .table td{padding:11px 18px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text);}
   .table tr:last-child td{border-bottom:none;}
   .table tbody tr:hover td{background:var(--surface2);cursor:pointer;}
-  .table tr[style*="border-top:none"] td{border-bottom:none;padding-top:2px;padding-bottom:6px;}
-  .table tr[style*="border-top:none"]:hover td{background:var(--surface2);}
   .mono{font-family:'IBM Plex Mono',monospace;}
 
   .badge{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;font-weight:600;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;}
@@ -1841,16 +1839,16 @@ window.renderSiparisler = function() {
     if(kalemler) {
       kalemler.forEach((k, ki) => {
         const ilk = ki === 0;
-  rows.push(`<tr onclick="openDetail('siparis','${s.id}')" style="${ki>0?'border-top:none':''}">
-          <td class="mono" style="font-size:11px;color:var(--accent)">${ilk ? s.sipNo||'—' : ''}</td>
+        rows.push(`<tr onclick="openDetail('siparis','${s.id}')" style="${ki>0?'border-top:none':''}">
+          <td class="mono" style="font-size:11px;color:var(--accent)">${ilk ? s.sipNo||'—' : '<span style="color:var(--text3);font-size:10px">↳</span>'}</td>
           <td class="mono" style="font-size:11px;color:var(--text2)">${ilk ? (s.sipTarihi||'—') : ''}</td>
           <td>${ilk ? `<strong>${s.musteriAd||'—'}</strong>` : ''}</td>
-          <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${ki>0?'padding-left:28px':''}">
-            ${ki>0?'<span style="color:var(--text3);margin-right:4px">└</span>':''}<span style="font-family:var(--mono);color:var(--text)">${k.urun||'—'}</span>${k.renk?` · <span style='color:var(--text3)'>${k.renk}</span>`:''}
+          <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            <span style="color:var(--accent);font-family:var(--mono)">${k.urun||'—'}</span>${k.renk?` · <span style='color:var(--text3)'>${k.renk}</span>`:''}
             ${k.yon&&k.yon!=='—'?` <span style='color:var(--text3);font-size:11px'>${k.yon}</span>`:''}
           </td>
-          <td class="mono" style="${ki>0?'color:var(--text2)':''}">${k.adet||1}</td>
-          <td class="mono">${ilk ? fmtMoney(s.tutar) : (k.tutar?`<span style="font-size:11px;color:var(--text2)">${fmtMoney(k.tutar)}</span>`:'')}</td>
+          <td class="mono">${k.adet||1}</td>
+          <td class="mono">${ilk ? fmtMoney(s.tutar) : (k.tutar?fmtMoney(k.tutar):'')}</td>
           <td class="mono" style="font-size:11px">${ilk ? fmtDate(s.teslimTarihi) : ''}</td>
           <td>${ilk ? durumBadge(s.durum) : ''}</td>
           <td>${ilk ? odemeBadge(s.odeme) : ''}</td>
