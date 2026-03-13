@@ -1884,26 +1884,89 @@ function nextSipNo() {
   return String(sonNo + 1).padStart(3,'0');
 }
 
+// Kalem satırı state (global, form içinde kullanılır)
+let _kalemler = [];
+
+function kalemSatiriHTML(k, idx) {
+  const MDF_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'];
+  return `<div class="kalem-row" id="kalem_${idx}" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:12px;margin-bottom:8px;position:relative">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:11px;font-weight:700;color:var(--accent);font-family:var(--mono)">KALEM ${idx+1}</span>
+      ${idx>0?`<button type="button" onclick="kalemSil(${idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px">✕</button>`:''}
+    </div>
+    <div class="form-grid" style="gap:8px">
+      <div class="form-group full">
+        <label style="font-size:11px">Kapı Modeli *</label>
+        <div style="position:relative">
+          <input class="k_urunSearch" data-idx="${idx}" placeholder="Ara... (örn: 201, Lüks)" autocomplete="off"
+            value="${k.urun||''}" oninput="filterModelDropdownK(${idx})" onfocus="filterModelDropdownK(${idx})" style="width:100%">
+          <input type="hidden" class="k_urun" id="k_urun_${idx}" value="${k.urun||''}">
+          <div class="k_modelDrop" id="k_modelDrop_${idx}" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:180px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px">Arka MDF Renk</label>
+        <select class="k_renk" id="k_renk_${idx}" onchange="kalemGuncelle(${idx})">
+          <option value="">—</option>
+          <option value="Yok (Panjur)">Yok (Panjur)</option>
+          <option value="Yok (Yangın Çıkış)">Yok (Yangın Çıkış)</option>
+          ${MDF_RENKLER.map(r=>`<option ${k.renk===r?'selected':''}>${r}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px">Kapı Yönü</label>
+        <select class="k_yon" id="k_yon_${idx}" onchange="kalemGuncelle(${idx})">
+          ${['—','Sağ','Sol','Çift Kanatlı'].map(y=>`<option ${(k.yon||'—')===y?'selected':''}>${y}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px">Adet</label>
+        <input type="number" class="k_adet" id="k_adet_${idx}" min="1" value="${k.adet||1}" oninput="kalemGuncelle(${idx});hesaplaToplamK()">
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px">Ölçü Tipi</label>
+        <select class="k_olcuTip" id="k_olcuTip_${idx}" onchange="kalemOlcuToggle(${idx})">
+          <option value="Standart" ${!k.olcuEn?'selected':''}>Standart</option>
+          <option value="Özel" ${k.olcuEn?'selected':''}>Özel Ölçü</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px">Duvar Kalınlığı (cm)</label>
+        <input type="number" class="k_kalinlik" id="k_kalinlik_${idx}" placeholder="18" value="${k.olcuKalinlik||''}" oninput="kalemGuncelle(${idx})">
+      </div>
+      <div class="form-group" id="k_olcuAlan_${idx}" style="display:${k.olcuEn?'block':'none'}">
+        <label style="font-size:11px">En × Boy (cm)</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" class="k_en" id="k_en_${idx}" placeholder="En" value="${k.olcuEn||''}" style="width:70px;text-align:center" oninput="kalemGuncelle(${idx})">
+          <span style="color:var(--text3)">×</span>
+          <input type="number" class="k_boy" id="k_boy_${idx}" placeholder="Boy" value="${k.olcuBoy||''}" style="width:70px;text-align:center" oninput="kalemGuncelle(${idx})">
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px">Sac Rengi</label>
+        <select class="k_sacRenk" id="k_sacRenk_${idx}" onchange="kalemGuncelle(${idx})">
+          <option value="">—</option>
+          ${['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'].map(r=>`<option ${k.sacRenk===r?'selected':''}>${r}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+  </div>`;
+}
+
 function siparisForm(data={}) {
   const autoSipNo = data.sipNo || nextSipNo();
   const bugun = new Date().toISOString().split('T')[0];
-  const ozelOlcu = data.olcuEn || data.olcuBoy ? true : false;
-  const MDF_RENKLER = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan'];
+  // Kalem state başlat
+  if(data.kalemler && data.kalemler.length) {
+    _kalemler = JSON.parse(JSON.stringify(data.kalemler));
+  } else if(data.urun) {
+    _kalemler = [{urun:data.urun, renk:data.renk||'', yon:data.yon||'—', adet:data.adet||1,
+      olcuEn:data.olcuEn||'', olcuBoy:data.olcuBoy||'', olcuKalinlik:data.olcuKalinlik||'', sacRenk:data.sacRenk||'', olcuTip:data.olcuTip||'Standart'}];
+  } else {
+    _kalemler = [{}];
+  }
   return `<div class="form-grid">
     <div class="form-group full">
-      <label>Müşteri Tipi</label>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
-          <input type="radio" name="sipMusteriTip" id="r_toptan" value="toptan"
-            ${!(data.perakende)?'checked':''} onchange="toggleMusteriTip()"> Kayıtlı Müşteri (Toptan)
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400;font-size:13px">
-          <input type="radio" name="sipMusteriTip" id="r_perakende" value="perakende"
-            ${data.perakende?'checked':''} onchange="toggleMusteriTip()"> Tek Seferlik Perakende
-        </label>
-      </div>
-    </div>
-    <div class="form-group full" id="musteriKayitliAlan">
       <label>Müşteri *</label>
       <div style="position:relative">
         <input id="f_musteriSearch" placeholder="Müşteri adı yaz..." autocomplete="off"
@@ -1915,14 +1978,6 @@ function siparisForm(data={}) {
         <div id="musteriDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:200px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
       </div>
     </div>
-    <div class="form-group" id="perakendeAdAlan" style="display:${data.perakende?'block':'none'}">
-      <label>Ad Soyad *</label>
-      <input id="f_perakendeAd" placeholder="Müşteri adı..." value="${data.musteriAd&&data.perakende?data.musteriAd:''}">
-    </div>
-    <div class="form-group" id="perakendeTelAlan" style="display:${data.perakende?'block':'none'}">
-      <label>Telefon <span style="color:var(--text3);font-weight:400">(opsiyonel)</span></label>
-      <input id="f_perakendeTel" placeholder="05xx..." value="${data.perakendeTel||''}">
-    </div>
     <div class="form-group">
       <label>Sipariş No</label>
       <input id="f_sipNo" value="${autoSipNo}" style="font-family:'IBM Plex Mono',monospace" readonly>
@@ -1931,78 +1986,19 @@ function siparisForm(data={}) {
       <label>Sipariş Tarihi</label>
       <input id="f_sipTarihi" type="date" value="${data.sipTarihi||bugun}">
     </div>
+    <hr class="form-divider">
     <div class="form-group full">
-      <label>Kapı Modeli *</label>
-      <div style="position:relative">
-        <input id="f_urunSearch" placeholder="Ara veya seç... (örn: 201, Lüks)" autocomplete="off"
-          value="${data.urun||''}"
-          oninput="filterModelDropdown()"
-          onfocus="showModelDropdown()"
-          style="width:100%">
-        <input type="hidden" id="f_urun" value="${data.urun||''}">
-        <div id="modelDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:220px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label style="margin:0">Kapı Kalemleri</label>
+        <button type="button" class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="kalemEkle()">+ Kalem Ekle</button>
       </div>
-    </div>
-    <div class="form-group full">
-      <label>Arka MDF Renk *</label>
-      <div style="position:relative">
-        <input id="f_renkSearch" placeholder="Renk ara..." autocomplete="off"
-          value="${data.renk||''}"
-          oninput="filterRenkDropdown()"
-          onfocus="filterRenkDropdown()"
-          style="width:100%">
-        <div id="renkDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:180px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Adet</label>
-      <input id="f_adet" type="number" min="1" value="${data.adet||1}" oninput="hesaplaToplam()">
-    </div>
-    <div class="form-group">
-      <label>Kapı Yönü / Menteşe</label>
-      <select id="f_yon">
-        ${['—','Sağ','Sol','Çift Kanatlı'].map(y=>`<option ${(data.yon||'—')===y?'selected':''}>${y}</option>`).join('')}
-      </select>
-    </div>
-    <div class="form-group full">
-      <label>Ölçü Tipi</label>
-      <div style="display:flex;gap:10px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-          <input type="radio" name="olcuTip" id="r_standart" value="standart" ${!ozelOlcu?'checked':''} onchange="toggleOlcuFields()"> Standart Ölçü
-        </label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400">
-          <input type="radio" name="olcuTip" id="r_ozel" value="ozel" ${ozelOlcu?'checked':''} onchange="toggleOlcuFields()"> Özel Ölçü
-        </label>
-      </div>
-    </div>
-    <div class="form-group full" id="ozelOlcuAlani" style="display:${ozelOlcu?'block':'none'}">
-      <label>En × Boy (cm)</label>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
-        <input id="f_olcuEn" type="number" placeholder="En" value="${data.olcuEn||''}" style="text-align:center">
-        <span style="color:var(--text3);font-weight:700;font-size:18px">×</span>
-        <input id="f_olcuBoy" type="number" placeholder="Boy" value="${data.olcuBoy||''}" style="text-align:center">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Duvar Kalınlığı (cm)</label>
-      <input id="f_olcuKalinlik" type="number" placeholder="örn: 18" value="${data.olcuKalinlik||''}">
-    </div>
-    <div class="form-group">
-      <label>Sac Rengi</label>
-      <div style="position:relative">
-        <input id="f_sacRenk" placeholder="Renk ara..." autocomplete="off"
-          value="${data.sacRenk||''}"
-          oninput="filterSacRenkDropdown()"
-          onfocus="filterSacRenkDropdown()"
-          style="width:100%">
-        <div id="sacRenkDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--accent);border-top:none;z-index:50;max-height:180px;overflow-y:auto;border-radius:0 0 3px 3px"></div>
-      </div>
+      <div id="kalemlerContainer">${_kalemler.map((k,i)=>kalemSatiriHTML(k,i)).join('')}</div>
     </div>
     <hr class="form-divider">
     <div class="form-group">
       <label>Birim Fiyat (₺) *</label>
       <input id="f_birimFiyat" type="number" placeholder="0" value="${data.birimFiyat||''}"
-        oninput="hesaplaToplam()">
+        oninput="hesaplaToplamK()">
     </div>
     <div class="form-group">
       <label>Toplam Tutar (₺)</label>
@@ -2031,25 +2027,93 @@ function siparisForm(data={}) {
     </div>
     <div class="form-group full">
       <label>Notlar</label>
-      <textarea id="f_notlar" placeholder="Montaj adresi, özel notlar...">${data.notlar||''}</textarea>
+      <textarea id="f_notlar" placeholder="Özel notlar...">${data.notlar||''}</textarea>
     </div>
   </div>`;
 }
 
-window.toggleOlcuFields = function() {
-  const ozel = document.getElementById('r_ozel')?.checked;
-  const alan = document.getElementById('ozelOlcuAlani');
-  if(alan) alan.style.display = ozel ? 'block' : 'none';
+window.toggleOlcuFields = function() {}; // artık kalem bazlı
+
+window.kalemOlcuToggle = function(idx) {
+  const tip = document.getElementById('k_olcuTip_'+idx)?.value;
+  const alan = document.getElementById('k_olcuAlan_'+idx);
+  if(alan) alan.style.display = tip==='Özel' ? 'block' : 'none';
+  kalemGuncelle(idx);
 };
 
-window.toggleMusteriTip = function() {
-  const perakende = document.getElementById('r_perakende')?.checked;
-  const kayitliAlan  = document.getElementById('musteriKayitliAlan');
-  const adAlan       = document.getElementById('perakendeAdAlan');
-  const telAlan      = document.getElementById('perakendeTelAlan');
-  if(kayitliAlan) kayitliAlan.style.display = perakende ? 'none' : '';
-  if(adAlan)      adAlan.style.display      = perakende ? 'block' : 'none';
-  if(telAlan)     telAlan.style.display     = perakende ? 'block' : 'none';
+window.kalemGuncelle = function(idx) {
+  if(!_kalemler[idx]) return;
+  _kalemler[idx].urun       = document.getElementById('k_urun_'+idx)?.value||'';
+  _kalemler[idx].renk       = document.getElementById('k_renk_'+idx)?.value||'';
+  _kalemler[idx].yon        = document.getElementById('k_yon_'+idx)?.value||'—';
+  _kalemler[idx].adet       = Number(document.getElementById('k_adet_'+idx)?.value||1);
+  _kalemler[idx].olcuTip    = document.getElementById('k_olcuTip_'+idx)?.value||'Standart';
+  _kalemler[idx].olcuEn     = document.getElementById('k_en_'+idx)?.value||'';
+  _kalemler[idx].olcuBoy    = document.getElementById('k_boy_'+idx)?.value||'';
+  _kalemler[idx].olcuKalinlik = document.getElementById('k_kalinlik_'+idx)?.value||'';
+  _kalemler[idx].sacRenk    = document.getElementById('k_sacRenk_'+idx)?.value||'';
+};
+
+window.kalemEkle = function() {
+  // Mevcut kalem değerlerini kaydet
+  _kalemler.forEach((_,i)=>kalemGuncelle(i));
+  _kalemler.push({});
+  const cont = document.getElementById('kalemlerContainer');
+  if(cont) cont.innerHTML = _kalemler.map((k,i)=>kalemSatiriHTML(k,i)).join('');
+};
+
+window.kalemSil = function(idx) {
+  _kalemler.forEach((_,i)=>kalemGuncelle(i));
+  _kalemler.splice(idx,1);
+  const cont = document.getElementById('kalemlerContainer');
+  if(cont) cont.innerHTML = _kalemler.map((k,i)=>kalemSatiriHTML(k,i)).join('');
+  hesaplaToplamK();
+};
+
+// Model dropdown — kalem bazlı
+window.filterModelDropdownK = function(idx) {
+  const q = document.querySelector(`[data-idx="${idx}"].k_urunSearch`)?.value?.toLowerCase()||'';
+  const drop = document.getElementById('k_modelDrop_'+idx);
+  if(!drop) return;
+  const filtered = window.KATALOG.filter(m =>
+    m.no.toLowerCase().includes(q) || (m.seri||'').toLowerCase().includes(q)
+  ).slice(0,30);
+  if(!filtered.length) { drop.style.display='none'; return; }
+  drop.style.display='block';
+  drop.innerHTML = filtered.map(m =>
+    `<div style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+      onmousedown="secilenModelK(${idx},'${m.no}')"
+      onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">
+      <span style="font-family:var(--mono);color:var(--accent)">${m.no}</span>
+      <span style="color:var(--text3);font-size:11px;margin-left:8px">${m.seri||''}</span>
+    </div>`
+  ).join('');
+};
+
+window.secilenModelK = function(idx, modelNo) {
+  const searchInput = document.querySelector(`[data-idx="${idx}"].k_urunSearch`);
+  const hidInput    = document.getElementById('k_urun_'+idx);
+  const drop        = document.getElementById('k_modelDrop_'+idx);
+  if(searchInput) searchInput.value = modelNo;
+  if(hidInput)    hidInput.value    = modelNo;
+  if(drop)        drop.style.display='none';
+  // Seri bazlı MDF otomatik
+  const no = parseInt(modelNo.replace('AYBAT-',''));
+  const renkSel = document.getElementById('k_renk_'+idx);
+  if(renkSel) {
+    if(no>=601&&no<=699) { renkSel.value='Yok (Panjur)'; renkSel.disabled=true; }
+    else if(no>=801&&no<=899) { renkSel.value='Yok (Yangın Çıkış)'; renkSel.disabled=true; }
+    else { renkSel.disabled=false; }
+  }
+  kalemGuncelle(idx);
+};
+
+window.hesaplaToplamK = function() {
+  const birim = Number(document.getElementById('f_birimFiyat')?.value||0);
+  const topAdet = _kalemler.reduce((a,k)=>a+Number(k.adet||1),0);
+  const tutar = birim * topAdet;
+  const el = document.getElementById('f_tutar');
+  if(el) el.value = tutar;
 };
 
 window.filterRenkDropdown = function() {
@@ -2289,47 +2353,44 @@ window.saveRecord = async function() {
 
   try {
     if(editingType === 'siparis') {
-      const isPerakende = document.getElementById('r_perakende')?.checked;
-      let musteriId = '', musteriAd = '';
+      const musteriId = document.getElementById('f_musteriId')?.value;
+      const musteri = musteriler.find(m => m.id === musteriId);
+      if(!musteriId) { showToast('Müşteri seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
 
-      if(isPerakende) {
-        const ad = document.getElementById('f_perakendeAd')?.value?.trim();
-        if(!ad) { showToast('Ad Soyad zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
-        musteriId = '';
-        musteriAd = ad;
-      } else {
-        musteriId = document.getElementById('f_musteriId')?.value;
-        const musteri = musteriler.find(m => m.id === musteriId);
-        musteriAd = musteri?.ad || '—';
-        if(!musteriId) { showToast('Müşteri seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
-      }
+      // Kalemleri güncelle ve doğrula
+      _kalemler.forEach((_,i)=>kalemGuncelle(i));
+      const gecerliKalemler = _kalemler.filter(k=>k.urun);
+      if(!gecerliKalemler.length) { showToast('En az bir kapı modeli seçilmeli', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
 
-      const urun = document.getElementById('f_urun')?.value?.trim();
-      if(!urun) { showToast('Kapı modeli seçilmedi', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
       const birimFiyat = Number(document.getElementById('f_birimFiyat')?.value||0);
       if(!birimFiyat) { showToast('Birim fiyat zorunlu', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
 
       const sipNoVal = document.getElementById('f_sipNo')?.value?.trim() || nextSipNo();
+      // Toplam adet ve tutar
+      const toplamAdet = gecerliKalemler.reduce((a,k)=>a+Number(k.adet||1),0);
+      const toplamTutar = birimFiyat * toplamAdet;
 
-      const ozelOlcu = document.getElementById('r_ozel')?.checked;
-      const en = ozelOlcu ? (document.getElementById('f_olcuEn')?.value||'') : '';
-      const boy = ozelOlcu ? (document.getElementById('f_olcuBoy')?.value||'') : '';
-      const kalinlik = document.getElementById('f_olcuKalinlik')?.value||'';
-      const olcuStr = (en&&boy) ? en+'x'+boy : (ozelOlcu ? '' : 'Standart');
+      // Özet: ilk kalemin bilgisi ana alanlara, tüm kalemler array'e
+      const ilkKalem = gecerliKalemler[0];
       const data = {
-        musteriId, musteriAd,
-        perakende: isPerakende || false,
-        perakendeTel: isPerakende ? (document.getElementById('f_perakendeTel')?.value||'') : '',
+        musteriId, musteriAd: musteri?.ad || '—',
         sipNo: sipNoVal,
         sipTarihi: document.getElementById('f_sipTarihi')?.value || new Date().toISOString().split('T')[0],
-        urun, adet: Number(document.getElementById('f_adet')?.value||1),
-        olcuEn: en, olcuBoy: boy, olcuKalinlik: kalinlik, olcu: olcuStr,
-        olcuTip: ozelOlcu ? 'Özel' : 'Standart',
-        yon: document.getElementById('f_yon')?.value||'—',
-        renk: document.getElementById('f_renkSearch')?.value||'',
-        sacRenk: document.getElementById('f_sacRenk')?.value||'',
-        birimFiyat: Number(document.getElementById('f_birimFiyat')?.value||0),
-        tutar: Number(document.getElementById('f_tutar')?.value||0),
+        // İlk kalem özeti (liste görünümü için)
+        urun: ilkKalem.urun,
+        renk: ilkKalem.renk||'',
+        yon: ilkKalem.yon||'—',
+        adet: toplamAdet,
+        olcuEn: ilkKalem.olcuEn||'', olcuBoy: ilkKalem.olcuBoy||'',
+        olcuKalinlik: ilkKalem.olcuKalinlik||'',
+        olcu: (ilkKalem.olcuEn&&ilkKalem.olcuBoy) ? ilkKalem.olcuEn+'x'+ilkKalem.olcuBoy : 'Standart',
+        olcuTip: ilkKalem.olcuTip||'Standart',
+        sacRenk: ilkKalem.sacRenk||'',
+        // Tüm kalemler
+        kalemler: gecerliKalemler,
+        kalemSayisi: gecerliKalemler.length,
+        birimFiyat,
+        tutar: toplamTutar,
         odeme: document.getElementById('f_odeme')?.value||'Bekliyor',
         odemeMiktar: Number(document.getElementById('f_odemeMiktar')?.value||0),
         teslimTarihi: document.getElementById('f_teslimTarihi')?.value||'',
@@ -2384,14 +2445,42 @@ window.openDetail = function(type, id) {
       <div class="detail-section">
         <div class="detail-section-title">Sipariş Bilgileri</div>
         <div class="detail-row"><span class="detail-key">Sipariş No</span><span class="detail-val mono">${s.sipNo||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Tarih</span><span class="detail-val mono">${s.sipTarihi||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Müşteri</span><span class="detail-val">${s.musteriAd||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Toplam Adet</span><span class="detail-val mono">${s.adet||1}</span></div>
+      </div>
+      ${(s.kalemler&&s.kalemler.length) ? `
+      <div class="detail-section">
+        <div class="detail-section-title">Kalemler (${s.kalemler.length})</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="color:var(--text3)">
+            <th style="text-align:left;padding:4px 6px;font-weight:500">#</th>
+            <th style="text-align:left;padding:4px 6px;font-weight:500">Model</th>
+            <th style="text-align:left;padding:4px 6px;font-weight:500">Renk</th>
+            <th style="text-align:left;padding:4px 6px;font-weight:500">Yön</th>
+            <th style="text-align:center;padding:4px 6px;font-weight:500">Adet</th>
+            <th style="text-align:left;padding:4px 6px;font-weight:500">Ölçü</th>
+          </tr></thead>
+          <tbody>
+            ${s.kalemler.map((k,i)=>`<tr style="border-top:1px solid var(--border)">
+              <td style="padding:5px 6px;color:var(--text3);font-family:var(--mono)">${i+1}</td>
+              <td style="padding:5px 6px;font-family:var(--mono);color:var(--accent)">${k.urun||'—'}</td>
+              <td style="padding:5px 6px;color:var(--text2)">${k.renk||'—'}</td>
+              <td style="padding:5px 6px;color:var(--text2)">${k.yon||'—'}</td>
+              <td style="padding:5px 6px;text-align:center;font-family:var(--mono)">${k.adet||1}</td>
+              <td style="padding:5px 6px;font-family:var(--mono);font-size:11px">${k.olcuEn&&k.olcuBoy?k.olcuEn+'×'+k.olcuBoy:(k.olcuTip||'Standart')}${k.olcuKalinlik?' / '+k.olcuKalinlik+'cm':''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : `
+      <div class="detail-section">
+        <div class="detail-section-title">Ürün</div>
         <div class="detail-row"><span class="detail-key">Model No</span><span class="detail-val mono">${s.urun||'—'}</span></div>
-        <div class="detail-row"><span class="detail-key">Adet</span><span class="detail-val mono">${s.adet||1}</span></div>
-        <div class="detail-row"><span class="detail-key">Ölçü (En×Boy×Kalınlık)</span><span class="detail-val mono">${s.olcu||'—'}</span></div>
-        <div class="detail-row"><span class="detail-key">Kapı Yönü / Menteşe</span><span class="detail-val">${s.yon||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Ölçü</span><span class="detail-val mono">${s.olcu||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Kapı Yönü</span><span class="detail-val">${s.yon||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Renk / Kaplama</span><span class="detail-val">${s.renk||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Sac Rengi</span><span class="detail-val">${s.sacRenk||'—'}</span></div>
-      </div>
+      </div>`}
       <div class="detail-section">
         <div class="detail-section-title">Durum & Ödeme</div>
         <div class="detail-row"><span class="detail-key">Durum</span><span class="detail-val">${durumBadge(s.durum)}</span></div>
