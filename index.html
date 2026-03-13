@@ -2413,7 +2413,6 @@ window.saveRecord = async function() {
       const sipNoVal = document.getElementById('f_sipNo')?.value?.trim() || nextSipNo();
       // Toplam adet ve tutar
       const toplamAdet = gecerliKalemler.reduce((a,k)=>a+Number(k.adet||1),0);
-      const cokKalem = gecerliKalemler.length > 1;
       const toplamTutar = cokKalem
         ? gecerliKalemler.reduce((a,k)=>a+Number(k.tutar||0),0)
         : birimFiyat * toplamAdet;
