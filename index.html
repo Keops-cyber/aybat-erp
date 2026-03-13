@@ -1844,13 +1844,13 @@ window.renderSiparisler = function() {
         const ilk = ki === 0;
   rows.push(`<tr onclick="openDetail('siparis','${s.id}')" ${ki===0 && kalemler.length>1 ? 'class="kalem-first-row"' : ki>0 ? 'class="kalem-sub-row"' : ''}>
           <td class="mono" style="font-size:11px;color:var(--accent)">${ilk ? s.sipNo||'—' : ''}</td>
-          <td class="mono" style="font-size:11px;color:var(--text2)">${ilk ? (s.sipTarihi||'—') : ''}</td>
+          <td class="mono" style="font-size:11px;color:var(--text2)">${ilk ? fmtDate(s.sipTarihi) : ''}</td>
           <td>${ilk ? `<strong>${s.musteriAd||'—'}</strong>` : ''}</td>
           <td style="font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             <span style="font-family:var(--mono);color:var(--text)">${k.urun||'—'}</span>${k.renk?` · <span style='color:var(--text3)'>${k.renk}</span>`:''}${k.yon&&k.yon!=='—'?` <span style='color:var(--text3);font-size:11px'>${k.yon}</span>`:''}
           </td>
           <td class="mono">${k.adet||1}</td>
-          <td class="mono">${ilk ? fmtMoney(s.tutar) : (k.tutar?`<span style="font-size:11px;color:var(--text2)">${fmtMoney(k.tutar)}</span>`:'')}</td>
+          <td class="mono">${ilk ? fmtMoney(s.tutar) : (k.tutar?fmtMoney(k.tutar):'')}</td>
           <td class="mono" style="font-size:11px">${ilk ? fmtDate(s.teslimTarihi) : ''}</td>
           <td>${ilk ? durumBadge(s.durum) : ''}</td>
           <td>${ilk ? odemeBadge(s.odeme) : ''}</td>
@@ -1890,10 +1890,24 @@ window.renderUretim = function() {
       <div class="kanban-col-body scrollbar-thin">
         ${cards.length ? cards.map(s => {
           const kalemler = (s.kalemler && s.kalemler.length > 1) ? s.kalemler : [{urun:s.urun, renk:s.renk, yon:s.yon, adet:s.adet}];
+          // Üretim süresi: sipariş tarihinden bugüne veya teslim tarihine kadar gün sayısı
+          let uretimSuresi = '';
+          if(s.sipTarihi) {
+            const baslangic = new Date(s.sipTarihi);
+            const bitis = (col==='Teslim Hazır' || col==='Teslim Edildi') && s.teslimTarihi
+              ? new Date(s.teslimTarihi)
+              : new Date();
+            const gun = Math.round((bitis - baslangic) / (1000*60*60*24));
+            if(gun >= 0) {
+              const renk = gun <= 7 ? 'var(--green)' : gun <= 14 ? 'var(--accent)' : 'var(--red)';
+              const etiket = col==='Teslim Hazır'||col==='Teslim Edildi' ? `${gun} günde üretildi` : `${gun} gündür üretimde`;
+              uretimSuresi = `<div style="font-size:10px;font-weight:600;color:${renk};margin-top:5px;padding:2px 6px;background:rgba(0,0,0,0.2);border-radius:3px;display:inline-block">⏱ ${etiket}</div>`;
+            }
+          }
           return `<div class="kanban-card" onclick="openDetail('siparis','${s.id}')">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
               <span class="mono" style="font-size:11px;color:var(--accent);font-weight:700">${s.sipNo||'—'}</span>
-              <span style="font-size:10px;color:var(--text3)">${s.sipTarihi||''}</span>
+              <span style="font-size:10px;color:var(--text3)">${fmtDate(s.sipTarihi)}</span>
             </div>
             <div class="kanban-card-customer" style="margin-bottom:6px">${s.musteriAd||'—'}</div>
             ${kalemler.map(k=>`
@@ -1903,9 +1917,9 @@ window.renderUretim = function() {
                 ${k.yon&&k.yon!=='—'?`<span style="color:var(--text2)">${k.yon}</span>`:''}
                 <span class="mono" style="margin-left:auto;color:var(--text2)">${k.adet||1} adet</span>
               </div>`).join('')}
-            <div class="kanban-card-meta" style="margin-top:6px">
-              <span></span>
-              <span class="kanban-card-date">Teslim: ${fmtDate(s.teslimTarihi)}</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+              ${uretimSuresi}
+              <span class="kanban-card-date" style="margin-left:auto">Teslim: ${fmtDate(s.teslimTarihi)}</span>
             </div>
           </div>`;
         }).join('') : '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Boş</div>'}
