@@ -1632,6 +1632,7 @@ function startListeners() {
   // Siparişler
   db.collection('siparisler').orderBy('createdAt','desc').onSnapshot(snap => {
     siparisler = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    siparisler.sort((a,b) => (b.sipTarihi||'').localeCompare(a.sipTarihi||''));
     setSyncStatus(true);
     updateBadge();
     if(currentPage==='siparisler') renderSiparisler();
@@ -1971,13 +1972,11 @@ function kalemSatiriHTML(k, idx) {
         <label style="font-size:11px">Arka MDF Renk</label>
         <select class="k_renk" id="k_renk_${idx}" onchange="kalemGuncelle(${idx})">
           <option value="">—</option>
-          <option value="Yok (Panjur)">Yok (Panjur)</option>
-          <option value="Yok (Yangın Çıkış)">Yok (Yangın Çıkış)</option>
           ${MDF_RENKLER.map(r=>`<option ${k.renk===r?'selected':''}>${r}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
-        <label style="font-size:11px">Kapı Yönü</label>
+        <label style="font-size:11px">Kapı Yönü / Menteşe</label>
         <select class="k_yon" id="k_yon_${idx}" onchange="kalemGuncelle(${idx})">
           ${['—','Sağ','Sol','Çift Kanatlı'].map(y=>`<option ${(k.yon||'—')===y?'selected':''}>${y}</option>`).join('')}
         </select>
@@ -2576,7 +2575,7 @@ window.openDetail = function(type, id) {
             <th style="text-align:left;padding:4px 6px;font-weight:500">#</th>
             <th style="text-align:left;padding:4px 6px;font-weight:500">Model</th>
             <th style="text-align:left;padding:4px 6px;font-weight:500">Renk</th>
-            <th style="text-align:left;padding:4px 6px;font-weight:500">Yön</th>
+            <th style="text-align:left;padding:4px 6px;font-weight:500">Yön/Menteşe</th>
             <th style="text-align:left;padding:4px 6px;font-weight:500">Tip</th>
             <th style="text-align:center;padding:4px 6px;font-weight:500">Adet</th>
             <th style="text-align:left;padding:4px 6px;font-weight:500">Ölçü</th>
@@ -2598,7 +2597,7 @@ window.openDetail = function(type, id) {
         <div class="detail-section-title">Ürün</div>
         <div class="detail-row"><span class="detail-key">Model No</span><span class="detail-val mono">${s.urun||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Ölçü</span><span class="detail-val mono">${s.olcu||'—'}</span></div>
-        <div class="detail-row"><span class="detail-key">Kapı Yönü</span><span class="detail-val">${s.yon||'—'}</span></div>
+        <div class="detail-row"><span class="detail-key">Kapı Yönü / Menteşe</span><span class="detail-val">${s.yon||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Renk / Kaplama</span><span class="detail-val">${s.renk||'—'}</span></div>
         <div class="detail-row"><span class="detail-key">Sac Rengi</span><span class="detail-val">${s.sacRenk||'—'}</span></div>
       </div>`}
