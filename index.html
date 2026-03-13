@@ -1632,7 +1632,7 @@ function startListeners() {
   // Siparişler
   db.collection('siparisler').orderBy('createdAt','desc').onSnapshot(snap => {
     siparisler = snap.docs.map(d => ({id:d.id, ...d.data()}));
-    siparisler.sort((a,b) => (b.sipTarihi||'').localeCompare(a.sipTarihi||''));
+    siparisler.sort((a,b) => Number(b.sipNo||0) - Number(a.sipNo||0));
     setSyncStatus(true);
     updateBadge();
     if(currentPage==='siparisler') renderSiparisler();
@@ -1826,6 +1826,8 @@ window.renderSiparisler = function() {
   // Çoklu durum filtresi
   if(_seciliDurumlar.size > 0) list = list.filter(s => _seciliDurumlar.has(s.durum));
   if(odemeF) list = list.filter(s => s.odeme === odemeF);
+  // Her zaman sipTarihi'ye göre yeniden eskiye sırala
+  list.sort((a,b) => Number(b.sipNo||0) - Number(a.sipNo||0));
   if(search && currentPage==='siparisler') list = list.filter(s =>
     (s.musteriAd||'').toLowerCase().includes(search) ||
     (s.sipNo||'').toLowerCase().includes(search) ||
@@ -1851,7 +1853,7 @@ window.renderSiparisler = function() {
             <span style="font-family:var(--mono);color:var(--text)">${k.urun||'—'}</span>${k.renk?` · <span style='color:var(--text3)'>${k.renk}</span>`:''}${k.yon&&k.yon!=='—'?` <span style='color:var(--text3);font-size:11px'>${k.yon}</span>`:''}
           </td>
           <td class="mono">${k.adet||1}</td>
-          <td class="mono">${ilk ? fmtMoney(s.tutar) : (k.tutar?fmtMoney(k.tutar):'')}</td>
+          <td class="mono" style="color:var(--text2)">${k.birimFiyat && k.adet ? fmtMoney(Number(k.birimFiyat)*Number(k.adet)) : (k.tutar?fmtMoney(k.tutar):'—')}</td>
           <td class="mono" style="font-size:11px">${ilk ? fmtDate(s.teslimTarihi) : ''}</td>
           <td>${ilk ? durumBadge(s.durum) : ''}</td>
           <td>${ilk ? odemeBadge(s.odeme) : ''}</td>
