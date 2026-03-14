@@ -2,6 +2,9 @@
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aybat Kapı — ERP</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -2754,9 +2757,10 @@ window.printSiparis = function(id) {
           const no = parseInt((k.urun||'').replace('AYBAT-',''));
           const tip = (no>=401&&no<=499) ? (k.laminoksTip||'Standart') : '—';
           const olcu = k.olcuEn&&k.olcuBoy ? k.olcuEn+'×'+k.olcuBoy+'cm' : (k.olcuTip||'Standart');
+          const ekonomikBadge = (no>=401&&no<=499&&k.laminoksTip==='Ekonomik') ? '<span class="ekonomik-badge">EKONOMİK</span>' : '';
           return `<tr>
             <td>${i+1}</td>
-            <td><strong>${k.urun||'—'}</strong></td>
+            <td><strong>${k.urun||'—'}</strong>${ekonomikBadge}</td>
             <td>${k.renk||'—'}</td>
             <td>${k.sacRenk||'—'}</td>
             <td>${k.yon&&k.yon!=='—'?k.yon:'—'}</td>
@@ -2783,53 +2787,42 @@ window.printSiparis = function(id) {
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<title>Üretim Fişi — ${s.sipNo}</title>
+<title>${s.sipNo} — ${s.musteriAd}</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; font-size: 13px; color: #111; background:#fff; padding: 28px 32px; }
-  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 18px; }
-  .firma { font-size:18px; font-weight:700; letter-spacing:.5px; }
-  .firma-alt { font-size:11px; color:#555; margin-top:2px; }
-  .sip-no { font-size:28px; font-weight:700; text-align:right; letter-spacing:1px; }
-  .sip-no-label { font-size:10px; color:#777; text-align:right; text-transform:uppercase; letter-spacing:1px; }
-  .bilgi-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:18px; padding:14px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9; }
-  .bilgi-item label { font-size:10px; color:#777; text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:3px; }
-  .bilgi-item span { font-size:13px; font-weight:600; }
-  .section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#555; margin-bottom:8px; margin-top:18px; border-left:3px solid #111; padding-left:8px; }
-  .kalem-tablo { width:100%; border-collapse:collapse; font-size:12px; }
-  .kalem-tablo th { background:#111; color:#fff; padding:7px 8px; text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
-  .kalem-tablo td { padding:8px 8px; border-bottom:1px solid #e0e0e0; vertical-align:middle; }
-  .kalem-tablo tr:last-child td { border-bottom:2px solid #111; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #111; background:#fff; padding: 10px 14px; }
+  .header { display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
+  .firma { font-size:13px; font-weight:700; letter-spacing:.3px; }
+  .sip-no { font-size:22px; font-weight:700; text-align:right; letter-spacing:1px; line-height:1; }
+  .sip-no-label { font-size:9px; color:#777; text-align:right; text-transform:uppercase; letter-spacing:1px; }
+  .bilgi-row { display:flex; gap:24px; margin-bottom:8px; padding:7px 10px; border:1px solid #ddd; border-radius:3px; background:#f9f9f9; }
+  .bilgi-item label { font-size:9px; color:#777; text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:2px; }
+  .bilgi-item span { font-size:12px; font-weight:600; }
+  .ekonomik-badge { display:inline-block; padding:1px 7px; border-radius:2px; font-size:10px; font-weight:700; background:#111; color:#fff; margin-left:6px; vertical-align:middle; }
+  .section-title { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#555; margin-bottom:5px; margin-top:10px; border-left:3px solid #111; padding-left:6px; }
+  .kalem-tablo { width:100%; border-collapse:collapse; font-size:11px; }
+  .kalem-tablo th { background:#111; color:#fff; padding:5px 7px; text-align:left; font-size:9px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+  .kalem-tablo td { padding:5px 7px; border-bottom:1px solid #e0e0e0; vertical-align:middle; }
+  .kalem-tablo tr:last-child td { border-bottom:1.5px solid #111; }
   .kalem-tablo tr:nth-child(even) td { background:#f5f5f5; }
-  .notlar-box { border:1px solid #ccc; border-radius:4px; padding:12px; min-height:90px; margin-top:8px; }
-  .notlar-box.onceden { font-size:13px; line-height:1.6; color:#222; white-space:pre-wrap; }
-  .uretim-notu { border:1px dashed #aaa; border-radius:4px; padding:12px; min-height:80px; margin-top:8px; background:#fafafa; }
-  .imza-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-top:28px; }
-  .imza-box { text-align:center; }
-  .imza-line { border-top:1px solid #aaa; margin-top:40px; padding-top:6px; font-size:11px; color:#777; }
-  .footer { text-align:center; font-size:10px; color:#bbb; margin-top:24px; border-top:1px solid #eee; padding-top:10px; }
-  .durum-badge { display:inline-block; padding:3px 10px; border-radius:3px; font-size:11px; font-weight:700; border:1.5px solid #111; }
+  .uretim-notu { border:1px dashed #aaa; border-radius:3px; padding:6px 8px; height:34px; margin-top:5px; background:#fafafa; }
   @media print {
-    body { padding: 16px 20px; }
-    @page { size: A4; margin: 15mm 15mm; }
+    body { padding: 8px 12px; }
+    @page { size: A4; margin: 10mm 12mm; }
   }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div>
-    <div class="firma">AYBAT ÇELİK KAPI SİSTEMLERİ</div>
-    <div class="firma-alt" style="margin-top:6px">Tarih: ${new Date().toLocaleDateString('tr-TR')}</div>
-  </div>
+  <div class="firma">AYBAT ÇELİK KAPI SİSTEMLERİ</div>
   <div>
     <div class="sip-no-label">Sipariş No</div>
     <div class="sip-no">${s.sipNo||'—'}</div>
-    <div class="durum-badge" style="margin-top:6px;float:right">${s.durum||'—'}</div>
   </div>
 </div>
 
-<div class="bilgi-grid">
+<div class="bilgi-row">
   <div class="bilgi-item">
     <label>Müşteri</label>
     <span>${s.musteriAd||'—'}</span>
@@ -2838,6 +2831,10 @@ window.printSiparis = function(id) {
     <label>Sipariş Tarihi</label>
     <span>${s.sipTarihi ? s.sipTarihi.split('-').reverse().join('-') : '—'}</span>
   </div>
+  <div class="bilgi-item">
+    <label>Durum</label>
+    <span>${s.durum||'—'}</span>
+  </div>
 </div>
 
 <div class="section-title">Kapı Kalemleri</div>
@@ -2845,8 +2842,6 @@ ${kalemlerHTML}
 
 <div class="section-title">Üretim Notu</div>
 <div class="uretim-notu"></div>
-
-<div class="footer">Aybat Kapı ERP — Bu belge sistem tarafından otomatik oluşturulmuştur.</div>
 
 <script>window.onload = function(){ window.print(); }<\/script>
 </body>
