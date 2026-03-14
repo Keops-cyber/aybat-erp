@@ -269,6 +269,10 @@
     <div class="nav-item" onclick="showPage('kasa',this)">
       <span class="icon">💰</span> Kasa
     </div>
+    <div class="nav-section" style="margin-top:8px">Araçlar</div>
+    <div class="nav-item" onclick="showPage('araclar',this)">
+      <span class="icon">🛠</span> Araçlar
+    </div>
   </nav>
   <div class="sidebar-footer">
     <div class="sync-status">
@@ -1375,6 +1379,31 @@
       </div>
 
       <div id="crmListesi"><div class="loading"><span class="spinner"></span>Yükleniyor...</div></div>
+    </div>
+
+    <!-- ARAÇLAR -->
+    <div class="page" id="page-araclar">
+      <div style="max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:8px">
+
+        <!-- Yedekleme -->
+        <div class="card" style="padding:24px">
+          <div style="display:flex;align-items:flex-start;gap:16px">
+            <div style="font-size:32px;line-height:1">💾</div>
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Siparişleri Yedekle</div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+                Tüm siparişleri Excel (.xlsx) dosyası olarak indirir.<br>
+                İndirilen dosyayı Google Drive'a kaydedebilirsin.
+              </div>
+              <button class="btn btn-primary" onclick="yedekAl()" id="yedekBtn">
+                ⬇ Excel Olarak İndir
+              </button>
+              <div id="yedekDurum" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- PERFORMANS ANALİZ -->
@@ -2961,6 +2990,7 @@ window.showPage = function(id, el) {
     stok:['Stok','Malzeme & stok takibi'],
     mdfstok:['MDF Stok','MDF Ön Yüz & Arka Yüz stok takibi'],
     kasa:['Kasa','Gelir-Gider takibi'],
+    araclar:['Araçlar','Yedekleme & sistem araçları'],
   };
   const [title, sub] = titles[id] || [id,''];
   document.getElementById('pageTitle').textContent = title;
@@ -2972,7 +3002,7 @@ window.showPage = function(id, el) {
     });
   }
   document.getElementById('searchInput').value = '';
-  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem'};
+  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',araclar:''};
   document.getElementById('addBtn').textContent = addLabels[id] || '+ Yeni';
 
   if(id==='siparisler') {
@@ -3769,6 +3799,103 @@ window.editAktivite = function(id) {
 // ═══════════════════════════════════════════════════════════════════════════
 // PERFORMANS ANALİZİ
 // ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ARAÇLAR — YEDEKLEME
+// ═══════════════════════════════════════════════════════════════════════════
+
+window.yedekAl = async function() {
+  const btn = document.getElementById('yedekBtn');
+  const durum = document.getElementById('yedekDurum');
+  btn.disabled = true;
+  btn.textContent = '⏳ Hazırlanıyor...';
+  durum.textContent = '';
+
+  try {
+    // SheetJS yükle
+    await new Promise((resolve, reject) => {
+      if(window.XLSX) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+
+    // Siparişleri düzleştir
+    const rows = [];
+    siparisler.forEach(s => {
+      const kalemler = (s.kalemler && s.kalemler.length) ? s.kalemler : null;
+      if(kalemler) {
+        kalemler.forEach((k, i) => {
+          const no = parseInt((k.urun||'').replace('AYBAT-',''));
+          rows.push({
+            'Sipariş No':    s.sipNo||'',
+            'Sipariş Tarihi':s.sipTarihi||'',
+            'Müşteri':       s.musteriAd||'',
+            'Durum':         s.durum||'',
+            'Ödeme':         s.odeme||'',
+            'Kalem No':      i+1,
+            'Model':         k.urun||'',
+            'Arka MDF Renk': k.renk||'',
+            'Sac Rengi':     k.sacRenk||'',
+            'Yön/Menteşe':   k.yon||'',
+            'Laminoks Tipi': (no>=401&&no<=499) ? (k.laminoksTip||'Standart') : '',
+            'Adet':          k.adet||1,
+            'Ölçü':          k.olcuEn&&k.olcuBoy ? k.olcuEn+'x'+k.olcuBoy : (k.olcuTip||'Standart'),
+            'Duvar (cm)':    k.olcuKalinlik||'',
+            'Kalem Tutarı':  k.birimFiyat&&k.adet ? Number(k.birimFiyat)*Number(k.adet) : (k.tutar||0),
+            'Toplam Tutar':  i===0 ? (s.tutar||0) : '',
+            'Teslim Tarihi': s.teslimTarihi||'',
+            'Not':           i===0 ? (s.notlar||'') : '',
+          });
+        });
+      } else {
+        rows.push({
+          'Sipariş No':    s.sipNo||'',
+          'Sipariş Tarihi':s.sipTarihi||'',
+          'Müşteri':       s.musteriAd||'',
+          'Durum':         s.durum||'',
+          'Ödeme':         s.odeme||'',
+          'Kalem No':      1,
+          'Model':         s.urun||'',
+          'Arka MDF Renk': s.renk||'',
+          'Sac Rengi':     s.sacRenk||'',
+          'Yön/Menteşe':   s.yon||'',
+          'Laminoks Tipi': '',
+          'Adet':          s.adet||1,
+          'Ölçü':          s.olcu||'Standart',
+          'Duvar (cm)':    '',
+          'Kalem Tutarı':  s.tutar||0,
+          'Toplam Tutar':  s.tutar||0,
+          'Teslim Tarihi': s.teslimTarihi||'',
+          'Not':           s.notlar||'',
+        });
+      }
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // Sütun genişlikleri
+    ws['!cols'] = [
+      {wch:10},{wch:13},{wch:20},{wch:14},{wch:12},{wch:8},
+      {wch:12},{wch:14},{wch:12},{wch:12},{wch:13},{wch:6},
+      {wch:12},{wch:10},{wch:14},{wch:14},{wch:13},{wch:30}
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Siparişler');
+
+    const tarih = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, 'aybat-siparisler-'+tarih+'.xlsx');
+
+    durum.textContent = '✓ ' + rows.length + ' satır indirildi — ' + tarih;
+    durum.style.color = 'var(--green)';
+  } catch(e) {
+    durum.textContent = 'Hata: ' + e.message;
+    durum.style.color = 'var(--red)';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '⬇ Excel Olarak İndir';
+};
 
 window.renderAnaliz = function() {
   const bugun = new Date();
