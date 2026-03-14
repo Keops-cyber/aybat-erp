@@ -2817,18 +2817,14 @@ window.printSiparis = function(id) {
 </head>
 <body>
 
-<div class="header">
-  <div class="firma">AYBAT ÇELİK KAPI SİSTEMLERİ</div>
-  <div>
-    <div class="sip-no-label">Sipariş No</div>
-    <div class="sip-no">${s.sipNo||'—'}</div>
-  </div>
-</div>
-
-<div class="bilgi-row">
+<div class="bilgi-row" style="grid-template-columns:1fr 1fr 1fr">
   <div class="bilgi-item">
     <label>Müşteri</label>
     <span>${s.musteriAd||'—'}</span>
+  </div>
+  <div class="bilgi-item">
+    <label>Sipariş No</label>
+    <span style="font-size:15px;font-weight:800;letter-spacing:1px">${s.sipNo||'—'}</span>
   </div>
   <div class="bilgi-item">
     <label>Sipariş Tarihi</label>
@@ -2839,8 +2835,7 @@ window.printSiparis = function(id) {
 <div class="section-title">Kapı Kalemleri</div>
 ${kalemlerHTML}
 
-<div class="section-title">Üretim Notu</div>
-<div class="uretim-notu"></div>
+${s.notlar ? `<div style="font-size:11px;margin-top:8px"><span style="font-weight:700;text-transform:uppercase;letter-spacing:.5px">Üretim Notu:</span> <span style="font-size:12px">${s.notlar}</span></div>` : ''}
 
 <script>
 window.onload = function(){
@@ -3051,40 +3046,71 @@ window.renderStok = function() {
   const katIkon = {Hammadde:'🔩',Aksesuar:'🪛','Yarı Mamul':'⚙️','Hazır Ürün':'📦'};
   const katRenk = {Hammadde:'var(--accent)',Aksesuar:'var(--blue)','Yarı Mamul':'var(--purple)','Hazır Ürün':'var(--green)'};
 
-  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
-  Object.entries(grups).forEach(([kat, items]) => {
-    if(!items.length) return;
-    const rows = items.map(m => {
-      const mik = Number(m.miktar||0);
-      const min = Number(m.minMiktar||0);
-      const max = Math.max(min*2, mik, 1);
-      const pct = Math.min(100, Math.round((mik/max)*100));
-      const rc = mik <= min ? 'var(--red)' : mik <= min*1.5 ? 'var(--accent)' : 'var(--green)';
-      const kritik = mik <= min;
-      return '<tr onclick="openDetailMalzeme(\''+m.id+'\')" style="cursor:pointer;border-bottom:1px solid var(--border);'+(kritik?'background:rgba(224,92,92,0.05)':'')+'">'
-        +'<td style="padding:5px 8px">'
-          +'<div style="font-size:12px;font-weight:600">'+m.ad+'</div>'
-          +'<div style="font-size:10px;color:var(--text3);font-family:var(--mono)">'+(m.kod||'—')+(m.tedarikci?' · '+m.tedarikci:'')+'</div>'
-        +'</td>'
-        +'<td style="padding:5px 8px;width:110px">'
-          +'<div style="display:flex;align-items:center;gap:5px">'
-          +'<div style="flex:1;background:var(--surface2);border-radius:2px;height:4px"><div style="height:100%;background:'+rc+';width:'+pct+'%;border-radius:2px"></div></div>'
-          +'<span style="font-family:var(--mono);font-size:11px;color:'+rc+';font-weight:700;white-space:nowrap">'+mik+' <span style="font-size:9px;color:var(--text3)">'+(m.birim||'adet')+'</span></span>'
-          +'</div>'
-        +'</td>'
-        +'<td style="padding:5px 6px;font-size:10px;color:var(--text3);font-family:var(--mono)">min '+min+'</td>'
-        +'<td style="padding:5px 6px;width:50px">'+(kritik?'<span style="font-size:9px;font-weight:700;color:var(--red)">KRİTİK</span>':'')+'</td>'
-        +'</tr>';
-    }).join('');
-    html += '<div class="card" style="padding:0;overflow:hidden">'
+  const AKS_ALTKAT = ['Kilit Sistemi','Çekme Kol','Açma Kol','Mandal','Tak-Tak','Rozet','Tas','Dürbün','Genel'];
+
+  function malzemeRow(m) {
+    const mik = Number(m.miktar||0);
+    const min = Number(m.minMiktar||0);
+    const max = Math.max(min*2, mik, 1);
+    const pct = Math.min(100, Math.round((mik/max)*100));
+    const rc = mik <= min ? 'var(--red)' : mik <= min*1.5 ? 'var(--accent)' : 'var(--green)';
+    const kritik = mik <= min;
+    return '<tr onclick="openDetailMalzeme(\''+m.id+'\')" style="cursor:pointer;border-bottom:1px solid var(--border);'+(kritik?'background:rgba(224,92,92,0.05)':'')+'">'
+      +'<td style="padding:5px 8px">'
+        +'<div style="font-size:12px;font-weight:600">'+m.ad+'</div>'
+        +'<div style="font-size:10px;color:var(--text3);font-family:var(--mono)">'+(m.kod||'—')+(m.tedarikci?' · '+m.tedarikci:'')+'</div>'
+      +'</td>'
+      +'<td style="padding:5px 8px;width:110px">'
+        +'<div style="display:flex;align-items:center;gap:5px">'
+        +'<div style="flex:1;background:var(--surface2);border-radius:2px;height:4px"><div style="height:100%;background:'+rc+';width:'+pct+'%;border-radius:2px"></div></div>'
+        +'<span style="font-family:var(--mono);font-size:11px;color:'+rc+';font-weight:700;white-space:nowrap">'+mik+' <span style="font-size:9px;color:var(--text3)">'+(m.birim||'adet')+'</span></span>'
+        +'</div>'
+      +'</td>'
+      +'<td style="padding:5px 6px;font-size:10px;color:var(--text3);font-family:var(--mono)">min '+min+'</td>'
+      +'<td style="padding:5px 6px;width:50px">'+(kritik?'<span style="font-size:9px;font-weight:700;color:var(--red)">KRİTİK</span>':'')+'</td>'
+      +'</tr>';
+  }
+
+  function katBlock(baslik, items, renk, ikon) {
+    if(!items.length) return '';
+    return '<div class="card" style="padding:0;overflow:hidden">'
       +'<div style="padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface2)">'
-      +'<span>'+katIkon[kat]+'</span>'
-      +'<span style="font-size:12px;font-weight:600;color:'+(katRenk[kat]||'var(--text)')+'">'+kat+'</span>'
+      +'<span>'+ikon+'</span>'
+      +'<span style="font-size:12px;font-weight:600;color:'+renk+'">'+baslik+'</span>'
       +'<span style="font-size:10px;color:var(--text3);margin-left:auto">'+items.length+' kalem</span>'
       +'</div>'
-      +'<table style="width:100%;border-collapse:collapse"><tbody>'+rows+'</tbody></table>'
+      +'<table style="width:100%;border-collapse:collapse"><tbody>'+items.map(malzemeRow).join('')+'</tbody></table>'
       +'</div>';
+  }
+
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+
+  Object.entries(grups).forEach(([kat, items]) => {
+    if(!items.length || kat === 'Aksesuar') return;
+    html += katBlock(kat, items, katRenk[kat]||'var(--text)', katIkon[kat]||'📦');
   });
+
+  const aksList = grups['Aksesuar'] || [];
+  if(aksList.length) {
+    html += '<div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:6px;margin-bottom:-2px">'
+      +'<span style="font-size:13px">🪛</span>'
+      +'<span style="font-size:13px;font-weight:700;color:var(--blue)">Aksesuar</span>'
+      +'<span style="font-size:11px;color:var(--text3)">· '+aksList.length+' kalem toplam</span>'
+      +'<div style="flex:1;height:1px;background:var(--border);margin-left:4px"></div>'
+      +'</div>';
+    const altGrups = {};
+    AKS_ALTKAT.forEach(k => { altGrups[k] = []; });
+    aksList.forEach(m => {
+      const ak = m.altKategori||'Genel';
+      if(!altGrups[ak]) altGrups[ak] = [];
+      altGrups[ak].push(m);
+    });
+    AKS_ALTKAT.forEach(ak => {
+      if(!altGrups[ak].length) return;
+      html += katBlock(ak, altGrups[ak], 'var(--blue)', '🪛');
+    });
+  }
+
   html += '</div>';
   grid.innerHTML = html;
 };
@@ -3194,6 +3220,12 @@ function nextMalzemeKod() {
   return String(sonNo + 1).padStart(3,'0');
 }
 
+window.toggleAltKat = function() {
+  const kat = document.getElementById('f_malzemeKat')?.value;
+  const el = document.getElementById('altKatGrup');
+  if(el) el.style.display = kat === 'Aksesuar' ? 'block' : 'none';
+};
+
 function malzemeForm(data) {
   data = data || {};
   return '<div class="form-grid">'
@@ -3202,7 +3234,9 @@ function malzemeForm(data) {
     +'<div class="form-group"><label>Kod</label>'
     +'<input id="f_malzemeKod" value="'+(data.kod||(!data.ad ? nextMalzemeKod() : ''))+'" style="font-family:var(--mono)"></div>'
     +'<div class="form-group"><label>Kategori</label>'
-    +'<select id="f_malzemeKat">'+['Hammadde','Aksesuar','Hazır Ürün','Yarı Mamul'].map(k=>'<option '+(( data.kategori||'Hammadde')===k?'selected':'')+'>'+k+'</option>').join('')+'</select></div>'
+    +'<select id="f_malzemeKat" onchange="toggleAltKat()">'+['Hammadde','Aksesuar','Hazır Ürün','Yarı Mamul'].map(k=>'<option '+((data.kategori||'Hammadde')===k?'selected':'')+'>'+k+'</option>').join('')+'</select></div>'
+    +'<div class="form-group" id="altKatGrup" style="display:'+(( data.kategori==='Aksesuar')?'block':'none')+'"><label>Aksesuar Bölümü</label>'
+    +'<select id="f_altKat">'+['Kilit Sistemi','Çekme Kol','Açma Kol','Mandal','Tak-Tak','Rozet','Tas','Dürbün','Genel'].map(k=>'<option '+((data.altKategori||'Genel')===k?'selected':'')+'>'+k+'</option>').join('')+'</select></div>'
     +'<div class="form-group"><label>Birim</label>'
     +'<select id="f_malzemeBirim">'+['adet','kg','metre','litre','m²','rulo'].map(b=>'<option '+((data.birim||'adet')===b?'selected':'')+'>'+b+'</option>').join('')+'</select></div>'
     +'<div class="form-group"><label>Mevcut Miktar</label>'
@@ -3246,6 +3280,7 @@ async function saveMalzeme(editId) {
   const data = {
     ad, kod: document.getElementById('f_malzemeKod').value||'',
     kategori: document.getElementById('f_malzemeKat').value||'Hammadde',
+    altKategori: (document.getElementById('f_malzemeKat').value==='Aksesuar') ? (document.getElementById('f_altKat')?.value||'Genel') : '',
     birim: document.getElementById('f_malzemeBirim').value||'adet',
     miktar: Number(document.getElementById('f_malzemeMiktar').value||0),
     minMiktar: Number(document.getElementById('f_malzemeMin').value||0),
