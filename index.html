@@ -2744,7 +2744,6 @@ window.printSiparis = function(id) {
           <th>Arka MDF Renk</th>
           <th>Sac Rengi</th>
           <th>Yön / Menteşe</th>
-          <th>Tip</th>
           <th>Adet</th>
           <th>Ölçü</th>
           <th>Duvar (cm)</th>
@@ -2761,7 +2760,6 @@ window.printSiparis = function(id) {
             <td>${k.renk||'—'}</td>
             <td>${k.sacRenk||'—'}</td>
             <td>${k.yon&&k.yon!=='—'?k.yon:'—'}</td>
-            <td>${tip}</td>
             <td style="text-align:center"><strong>${k.adet||1}</strong></td>
             <td>${olcu}</td>
             <td style="text-align:center">${k.olcuKalinlik||'—'}</td>
@@ -2794,7 +2792,7 @@ window.printSiparis = function(id) {
   .firma-alt { font-size:11px; color:#555; margin-top:2px; }
   .sip-no { font-size:28px; font-weight:700; text-align:right; letter-spacing:1px; }
   .sip-no-label { font-size:10px; color:#777; text-align:right; text-transform:uppercase; letter-spacing:1px; }
-  .bilgi-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px; margin-bottom:18px; padding:14px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9; }
+  .bilgi-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-bottom:18px; padding:14px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9; }
   .bilgi-item label { font-size:10px; color:#777; text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:3px; }
   .bilgi-item span { font-size:13px; font-weight:600; }
   .section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#555; margin-bottom:8px; margin-top:18px; border-left:3px solid #111; padding-left:8px; }
@@ -2822,7 +2820,6 @@ window.printSiparis = function(id) {
 <div class="header">
   <div>
     <div class="firma">AYBAT ÇELİK KAPI SİSTEMLERİ</div>
-    <div class="firma-alt">Mersin — Davut Aybat</div>
     <div class="firma-alt" style="margin-top:6px">Tarih: ${new Date().toLocaleDateString('tr-TR')}</div>
   </div>
   <div>
@@ -2841,22 +2838,6 @@ window.printSiparis = function(id) {
     <label>Sipariş Tarihi</label>
     <span>${s.sipTarihi ? s.sipTarihi.split('-').reverse().join('-') : '—'}</span>
   </div>
-  <div class="bilgi-item">
-    <label>Teslim Tarihi</label>
-    <span>${s.teslimTarihi ? s.teslimTarihi.split('-').reverse().join('-') : '—'}</span>
-  </div>
-  <div class="bilgi-item">
-    <label>Toplam Adet</label>
-    <span>${s.adet||1} adet</span>
-  </div>
-  <div class="bilgi-item">
-    <label>Ödeme</label>
-    <span>${s.odeme||'—'}</span>
-  </div>
-  <div class="bilgi-item">
-    <label>Sipariş Notu</label>
-    <span>${s.notlar||'—'}</span>
-  </div>
 </div>
 
 <div class="section-title">Kapı Kalemleri</div>
@@ -2864,12 +2845,6 @@ ${kalemlerHTML}
 
 <div class="section-title">Üretim Notu</div>
 <div class="uretim-notu"></div>
-
-<div class="imza-row">
-  <div class="imza-box"><div class="imza-line">Hazırlayan</div></div>
-  <div class="imza-box"><div class="imza-line">Üretim Sorumlusu</div></div>
-  <div class="imza-box"><div class="imza-line">Teslim Eden</div></div>
-</div>
 
 <div class="footer">Aybat Kapı ERP — Bu belge sistem tarafından otomatik oluşturulmuştur.</div>
 
