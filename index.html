@@ -2663,6 +2663,7 @@ window.openDetail = function(type, id) {
       </div>`;
     document.getElementById('detailFooter').innerHTML = `
       <button class="btn btn-ghost" onclick="editRecord('siparis','${id}')">✎ Düzenle</button>
+      <button class="btn btn-ghost" style="color:var(--blue);border-color:var(--blue)" onclick="printSiparis('${id}')">🖨 Yazdır</button>
       <button class="btn btn-danger" onclick="confirmDelete('siparis','${id}')">✕ Sil</button>`;
   } else {
     const m = musteriler.find(x => x.id===id);
@@ -2725,6 +2726,160 @@ window.openDetail = function(type, id) {
       <button class="btn btn-danger" onclick="confirmDelete('musteri','${id}')">✕ Sil</button>`;
   }
   document.getElementById('detailOverlay').classList.add('open');
+};
+
+window.printSiparis = function(id) {
+  const s = siparisler.find(x => x.id===id);
+  if(!s) return;
+
+  const kalemler = (s.kalemler && s.kalemler.length) ? s.kalemler : null;
+
+  // Kalem satırları HTML
+  const kalemlerHTML = kalemler ? `
+    <table class="kalem-tablo">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Model No</th>
+          <th>Arka MDF Renk</th>
+          <th>Sac Rengi</th>
+          <th>Yön / Menteşe</th>
+          <th>Tip</th>
+          <th>Adet</th>
+          <th>Ölçü</th>
+          <th>Duvar (cm)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${kalemler.map((k,i) => {
+          const no = parseInt((k.urun||'').replace('AYBAT-',''));
+          const tip = (no>=401&&no<=499) ? (k.laminoksTip||'Standart') : '—';
+          const olcu = k.olcuEn&&k.olcuBoy ? k.olcuEn+'×'+k.olcuBoy+'cm' : (k.olcuTip||'Standart');
+          return `<tr>
+            <td>${i+1}</td>
+            <td><strong>${k.urun||'—'}</strong></td>
+            <td>${k.renk||'—'}</td>
+            <td>${k.sacRenk||'—'}</td>
+            <td>${k.yon&&k.yon!=='—'?k.yon:'—'}</td>
+            <td>${tip}</td>
+            <td style="text-align:center"><strong>${k.adet||1}</strong></td>
+            <td>${olcu}</td>
+            <td style="text-align:center">${k.olcuKalinlik||'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>` : `
+    <table class="kalem-tablo">
+      <thead><tr><th>Model No</th><th>Arka MDF Renk</th><th>Sac Rengi</th><th>Yön / Menteşe</th><th>Adet</th><th>Ölçü</th></tr></thead>
+      <tbody><tr>
+        <td><strong>${s.urun||'—'}</strong></td>
+        <td>${s.renk||'—'}</td>
+        <td>${s.sacRenk||'—'}</td>
+        <td>${s.yon||'—'}</td>
+        <td style="text-align:center"><strong>${s.adet||1}</strong></td>
+        <td>${s.olcu||'Standart'}</td>
+      </tr></tbody>
+    </table>`;
+
+  const printHTML = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Üretim Fişi — ${s.sipNo}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #111; background:#fff; padding: 28px 32px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 18px; }
+  .firma { font-size:18px; font-weight:700; letter-spacing:.5px; }
+  .firma-alt { font-size:11px; color:#555; margin-top:2px; }
+  .sip-no { font-size:28px; font-weight:700; text-align:right; letter-spacing:1px; }
+  .sip-no-label { font-size:10px; color:#777; text-align:right; text-transform:uppercase; letter-spacing:1px; }
+  .bilgi-grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px; margin-bottom:18px; padding:14px; border:1px solid #ddd; border-radius:4px; background:#f9f9f9; }
+  .bilgi-item label { font-size:10px; color:#777; text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:3px; }
+  .bilgi-item span { font-size:13px; font-weight:600; }
+  .section-title { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#555; margin-bottom:8px; margin-top:18px; border-left:3px solid #111; padding-left:8px; }
+  .kalem-tablo { width:100%; border-collapse:collapse; font-size:12px; }
+  .kalem-tablo th { background:#111; color:#fff; padding:7px 8px; text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; }
+  .kalem-tablo td { padding:8px 8px; border-bottom:1px solid #e0e0e0; vertical-align:middle; }
+  .kalem-tablo tr:last-child td { border-bottom:2px solid #111; }
+  .kalem-tablo tr:nth-child(even) td { background:#f5f5f5; }
+  .notlar-box { border:1px solid #ccc; border-radius:4px; padding:12px; min-height:90px; margin-top:8px; }
+  .notlar-box.onceden { font-size:13px; line-height:1.6; color:#222; white-space:pre-wrap; }
+  .uretim-notu { border:1px dashed #aaa; border-radius:4px; padding:12px; min-height:80px; margin-top:8px; background:#fafafa; }
+  .imza-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-top:28px; }
+  .imza-box { text-align:center; }
+  .imza-line { border-top:1px solid #aaa; margin-top:40px; padding-top:6px; font-size:11px; color:#777; }
+  .footer { text-align:center; font-size:10px; color:#bbb; margin-top:24px; border-top:1px solid #eee; padding-top:10px; }
+  .durum-badge { display:inline-block; padding:3px 10px; border-radius:3px; font-size:11px; font-weight:700; border:1.5px solid #111; }
+  @media print {
+    body { padding: 16px 20px; }
+    @page { size: A4; margin: 15mm 15mm; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="firma">AYBAT ÇELİK KAPI SİSTEMLERİ</div>
+    <div class="firma-alt">Mersin — Davut Aybat</div>
+    <div class="firma-alt" style="margin-top:6px">Tarih: ${new Date().toLocaleDateString('tr-TR')}</div>
+  </div>
+  <div>
+    <div class="sip-no-label">Sipariş No</div>
+    <div class="sip-no">${s.sipNo||'—'}</div>
+    <div class="durum-badge" style="margin-top:6px;float:right">${s.durum||'—'}</div>
+  </div>
+</div>
+
+<div class="bilgi-grid">
+  <div class="bilgi-item">
+    <label>Müşteri</label>
+    <span>${s.musteriAd||'—'}</span>
+  </div>
+  <div class="bilgi-item">
+    <label>Sipariş Tarihi</label>
+    <span>${s.sipTarihi ? s.sipTarihi.split('-').reverse().join('-') : '—'}</span>
+  </div>
+  <div class="bilgi-item">
+    <label>Teslim Tarihi</label>
+    <span>${s.teslimTarihi ? s.teslimTarihi.split('-').reverse().join('-') : '—'}</span>
+  </div>
+  <div class="bilgi-item">
+    <label>Toplam Adet</label>
+    <span>${s.adet||1} adet</span>
+  </div>
+  <div class="bilgi-item">
+    <label>Ödeme</label>
+    <span>${s.odeme||'—'}</span>
+  </div>
+  <div class="bilgi-item">
+    <label>Sipariş Notu</label>
+    <span>${s.notlar||'—'}</span>
+  </div>
+</div>
+
+<div class="section-title">Kapı Kalemleri</div>
+${kalemlerHTML}
+
+<div class="section-title">Üretim Notu</div>
+<div class="uretim-notu"></div>
+
+<div class="imza-row">
+  <div class="imza-box"><div class="imza-line">Hazırlayan</div></div>
+  <div class="imza-box"><div class="imza-line">Üretim Sorumlusu</div></div>
+  <div class="imza-box"><div class="imza-line">Teslim Eden</div></div>
+</div>
+
+<div class="footer">Aybat Kapı ERP — Bu belge sistem tarafından otomatik oluşturulmuştur.</div>
+
+<script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(printHTML);
+  win.document.close();
 };
 
 window.closeDetail = function(e) {
