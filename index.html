@@ -1408,61 +1408,143 @@
 
     <!-- PERFORMANS ANALİZ -->
     <div class="page" id="page-analiz">
-      <!-- KPI Kartları -->
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px">
-        <div class="kasa-card" style="border-top:2px solid var(--accent)">
-          <div class="kasa-label">2025 Ciro</div>
-          <div class="kasa-amount" id="an-ciro-2025" style="color:var(--accent);font-size:16px">—</div>
-        </div>
-        <div class="kasa-card" style="border-top:2px solid var(--green)">
-          <div class="kasa-label">2026 Ciro</div>
-          <div class="kasa-amount" id="an-ciro-2026" style="color:var(--green);font-size:16px">—</div>
-        </div>
-        <div class="kasa-card" style="border-top:2px solid var(--blue)">
-          <div class="kasa-label">Bu Ay Ciro</div>
-          <div class="kasa-amount" id="an-buay-ciro" style="color:var(--blue);font-size:16px">—</div>
-        </div>
-        <div class="kasa-card" style="border-top:2px solid var(--purple)">
-          <div class="kasa-label">Bu Ay Sipariş</div>
-          <div class="kasa-amount" id="an-buay-sip" style="color:var(--purple)">—</div>
-        </div>
-        <div class="kasa-card" style="border-top:2px solid var(--text3)">
-          <div class="kasa-label">Ort. Sipariş Tutarı</div>
-          <div class="kasa-amount" id="an-ort-tutar" style="color:var(--text2);font-size:16px">—</div>
-        </div>
+
+      <!-- Sekme seçici -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:10px">
+        <button id="anTab-aylik" class="btn btn-primary" style="font-size:12px;padding:5px 16px" onclick="anTabSec('aylik')">📅 Aylık Satışlar</button>
+        <button id="anTab-genel" class="btn btn-ghost" style="font-size:12px;padding:5px 16px" onclick="anTabSec('genel')">📊 Genel Analiz</button>
       </div>
-      <!-- Grafik satırı 1 -->
-      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px">
-        <div class="card">
-          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-            <span class="card-title">Aylık Ciro — 2025 vs 2026</span>
-            <div style="display:flex;gap:10px;font-size:11px">
-              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--accent);border-radius:1px;display:inline-block"></span>2025</span>
-              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--green);border-radius:1px;display:inline-block"></span>2026</span>
+
+      <!-- AYLIK SATIŞ TABLOSU -->
+      <div id="an-tab-aylik">
+        <!-- Ay seçici + KPI -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+          <select id="anYilSec" class="filter-select" onchange="renderAylikSatislar()" style="width:90px">
+            <option value="2026">2026</option>
+            <option value="2025">2025</option>
+          </select>
+          <div style="display:flex;gap:4px;flex-wrap:wrap" id="anAyBtnlar"></div>
+        </div>
+        <!-- KPI özet satırı -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px">
+          <div class="kasa-card" style="border-top:2px solid var(--green);padding:10px 14px">
+            <div class="kasa-label">Toplam Ciro</div>
+            <div class="kasa-amount" id="ay-toplam-ciro" style="color:var(--green);font-size:15px">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--blue);padding:10px 14px">
+            <div class="kasa-label">Toptan Ciro</div>
+            <div class="kasa-amount" id="ay-toptan-ciro" style="color:var(--blue);font-size:15px">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--accent);padding:10px 14px">
+            <div class="kasa-label">Perakende Ciro</div>
+            <div class="kasa-amount" id="ay-perakende-ciro" style="color:var(--accent);font-size:15px">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--purple);padding:10px 14px">
+            <div class="kasa-label">Toplam Adet</div>
+            <div class="kasa-amount" id="ay-toplam-adet" style="color:var(--purple)">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--text3);padding:10px 14px">
+            <div class="kasa-label">Sipariş Sayısı</div>
+            <div class="kasa-amount" id="ay-sip-sayisi" style="color:var(--text2)">—</div>
+          </div>
+        </div>
+        <!-- Ana tablo + Özet -->
+        <div style="display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start">
+          <!-- Satış tablosu -->
+          <div class="card" style="padding:0;overflow:hidden">
+            <div style="overflow-x:auto">
+              <table style="width:100%;border-collapse:collapse;font-size:12px" id="ay-satis-tablo">
+                <thead>
+                  <tr style="background:var(--surface2)">
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600;white-space:nowrap">TARİH</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600">FİRMA</th>
+                    <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);font-weight:600">T/P</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600">KAPI SERİSİ</th>
+                    <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);font-weight:600">ADET</th>
+                    <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);font-weight:600">SATIŞ FİYATI</th>
+                    <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);font-weight:600">FİYAT</th>
+                  </tr>
+                </thead>
+                <tbody id="ay-satis-tbody"></tbody>
+                <tfoot id="ay-satis-tfoot"></tfoot>
+              </table>
             </div>
           </div>
-          <div id="an-aylik-chart" style="padding:12px 16px 8px"></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Top 10 Müşteri (Ciro)</span></div>
-          <div id="an-top-musteri" style="padding:12px;max-height:300px;overflow-y:auto"></div>
-        </div>
-      </div>
-      <!-- Grafik satırı 2 -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
-        <div class="card">
-          <div class="card-header"><span class="card-title">Seri Bazlı Dağılım (Adet)</span></div>
-          <div id="an-seri-chart" style="padding:12px"></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Toptan / Perakende</span></div>
-          <div id="an-tp-chart" style="padding:12px"></div>
-        </div>
-        <div class="card">
-          <div class="card-header"><span class="card-title">Bu Ay — Günlük Satış</span></div>
-          <div id="an-gunluk-chart" style="padding:12px"></div>
+          <!-- Toptan/Perakende özet -->
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="card" style="padding:0;overflow:hidden">
+              <div style="padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border)">
+                <span style="font-size:11px;font-weight:700;color:var(--blue)">TOPTAN</span>
+              </div>
+              <div id="ay-toptan-ozet" style="padding:8px"></div>
+            </div>
+            <div class="card" style="padding:0;overflow:hidden">
+              <div style="padding:8px 12px;background:var(--surface2);border-bottom:1px solid var(--border)">
+                <span style="font-size:11px;font-weight:700;color:var(--accent)">PERAKENDE</span>
+              </div>
+              <div id="ay-perakende-ozet" style="padding:8px"></div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- GENEL ANALİZ -->
+      <div id="an-tab-genel" style="display:none">
+        <!-- KPI Kartları -->
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px">
+          <div class="kasa-card" style="border-top:2px solid var(--accent)">
+            <div class="kasa-label">2025 Ciro</div>
+            <div class="kasa-amount" id="an-ciro-2025" style="color:var(--accent);font-size:16px">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--green)">
+            <div class="kasa-label">2026 Ciro</div>
+            <div class="kasa-amount" id="an-ciro-2026" style="color:var(--green);font-size:16px">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--blue)">
+            <div class="kasa-label">Bu Ay Ciro</div>
+            <div class="kasa-amount" id="an-buay-ciro" style="color:var(--blue);font-size:16px">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--purple)">
+            <div class="kasa-label">Bu Ay Sipariş</div>
+            <div class="kasa-amount" id="an-buay-sip" style="color:var(--purple)">—</div>
+          </div>
+          <div class="kasa-card" style="border-top:2px solid var(--text3)">
+            <div class="kasa-label">Ort. Sipariş Tutarı</div>
+            <div class="kasa-amount" id="an-ort-tutar" style="color:var(--text2);font-size:16px">—</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px">
+          <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+              <span class="card-title">Aylık Ciro — 2025 vs 2026</span>
+              <div style="display:flex;gap:10px;font-size:11px">
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--accent);border-radius:1px;display:inline-block"></span>2025</span>
+                <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--green);border-radius:1px;display:inline-block"></span>2026</span>
+              </div>
+            </div>
+            <div id="an-aylik-chart" style="padding:12px 16px 8px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Top 10 Müşteri (Ciro)</span></div>
+            <div id="an-top-musteri" style="padding:12px;max-height:300px;overflow-y:auto"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Seri Bazlı Dağılım (Adet)</span></div>
+            <div id="an-seri-chart" style="padding:12px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Toptan / Perakende</span></div>
+            <div id="an-tp-chart" style="padding:12px"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">Bu Ay — Günlük Satış</span></div>
+            <div id="an-gunluk-chart" style="padding:12px"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
 
@@ -3016,7 +3098,7 @@ window.showPage = function(id, el) {
   if(id==='stok') { renderStok(); renderHareketler(); }
   if(id==='kasa') { renderKasa(); }
   if(id==='mdfstok') { renderMdfOn(); renderMdfArka(); }
-  if(id==='analiz') renderAnaliz();
+  if(id==='analiz') { renderAylikSatislar(); }
   if(id==='crm') renderCRM();
 };
 
@@ -3962,6 +4044,171 @@ window.yedekAl = async function() {
 
   btn.disabled = false;
   btn.textContent = '⬇ Excel Olarak İndir';
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AYLIK SATIŞ TABLOSU
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AYLAR_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+let _anAktifAy = new Date().getMonth(); // 0-indexed
+let _anAktifTab = 'aylik';
+
+window.anTabSec = function(tab) {
+  _anAktifTab = tab;
+  document.getElementById('an-tab-aylik').style.display  = tab==='aylik'  ? '' : 'none';
+  document.getElementById('an-tab-genel').style.display  = tab==='genel'  ? '' : 'none';
+  document.getElementById('anTab-aylik').className = 'btn ' + (tab==='aylik'  ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('anTab-genel').className = 'btn ' + (tab==='genel'  ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('anTab-aylik').style.cssText += ';font-size:12px;padding:5px 16px';
+  document.getElementById('anTab-genel').style.cssText += ';font-size:12px;padding:5px 16px';
+  if(tab==='genel') renderAnaliz();
+  if(tab==='aylik') renderAylikSatislar();
+};
+
+window.aySecBtn = function(ayIdx) {
+  _anAktifAy = ayIdx;
+  document.querySelectorAll('.an-ay-btn').forEach((b,i) => {
+    b.className = 'btn an-ay-btn ' + (i===ayIdx ? 'btn-primary' : 'btn-ghost');
+    b.style.cssText = 'font-size:11px;padding:3px 10px';
+  });
+  renderAylikSatislar();
+};
+
+window.renderAylikSatislar = function() {
+  const yil = document.getElementById('anYilSec')?.value || '2026';
+  const ay  = _anAktifAy; // 0-indexed
+
+  // Ay butonlarını oluştur (ilk çalışmada)
+  const btnDiv = document.getElementById('anAyBtnlar');
+  if(btnDiv && btnDiv.children.length === 0) {
+    AYLAR_TR.forEach((ad, i) => {
+      const b = document.createElement('button');
+      b.className = 'btn an-ay-btn ' + (i===ay ? 'btn-primary' : 'btn-ghost');
+      b.style.cssText = 'font-size:11px;padding:3px 10px';
+      b.textContent = ad;
+      b.onclick = () => aySecBtn(i);
+      btnDiv.appendChild(b);
+    });
+  }
+
+  const ayStr = yil + '-' + String(ay+1).padStart(2,'0'); // "2026-03"
+  const SERİ_AD = {'1':'Lüks Kabartma','2':'Lüks','3':'Ultralam','4':'Laminoks','5':'Sac Panel','6':'Panjur','7':'Villa/Bina','8':'Yangın'};
+
+  // O aya ait siparişleri filtrele (iptal olmayanlar)
+  const aySip = siparisler.filter(s => s.durum !== 'İptal' && (s.sipTarihi||'').startsWith(ayStr));
+
+  // Satır verilerini düzleştir
+  const satirlar = [];
+  aySip.forEach(s => {
+    const musteri = musteriler.find(m => m.id === s.musteriId);
+    const tp = s.perakende ? 'P' : (musteri?.satisTip === 'Perakende' ? 'P' : 'T');
+    const kalemler = (s.kalemler && s.kalemler.length) ? s.kalemler : null;
+    if(kalemler) {
+      kalemler.forEach(k => {
+        const no = parseInt((k.urun||'').replace('AYBAT-',''));
+        const seriKey = isNaN(no) ? '?' : String(Math.floor(no/100));
+        const tutar = k.birimFiyat && k.adet ? Number(k.birimFiyat)*Number(k.adet) : Number(k.tutar||0);
+        satirlar.push({
+          tarih: s.sipTarihi||'', firma: s.musteriAd||'—', tp,
+          seri: SERİ_AD[seriKey]||('Seri '+seriKey),
+          model: k.urun||'', adet: Number(k.adet||1),
+          birimFiyat: Number(k.birimFiyat||0), tutar, sipId: s.id
+        });
+      });
+    } else {
+      const no = parseInt((s.urun||'').replace('AYBAT-',''));
+      const seriKey = isNaN(no) ? '?' : String(Math.floor(no/100));
+      satirlar.push({
+        tarih: s.sipTarihi||'', firma: s.musteriAd||'—', tp,
+        seri: SERİ_AD[seriKey]||('Seri '+seriKey),
+        model: s.urun||'', adet: Number(s.adet||1),
+        birimFiyat: Number(s.birimFiyat||0), tutar: Number(s.tutar||0), sipId: s.id
+      });
+    }
+  });
+
+  // Tarihe göre sırala
+  satirlar.sort((a,b) => a.tarih.localeCompare(b.tarih));
+
+  // KPI hesapla
+  const toplamCiro = satirlar.reduce((a,r) => a+r.tutar, 0);
+  const toptanCiro = satirlar.filter(r=>r.tp==='T').reduce((a,r) => a+r.tutar, 0);
+  const perakendeCiro = satirlar.filter(r=>r.tp==='P').reduce((a,r) => a+r.tutar, 0);
+  const toplamAdet = satirlar.reduce((a,r) => a+r.adet, 0);
+  document.getElementById('ay-toplam-ciro').textContent = fmtMoney(toplamCiro);
+  document.getElementById('ay-toptan-ciro').textContent = fmtMoney(toptanCiro);
+  document.getElementById('ay-perakende-ciro').textContent = fmtMoney(perakendeCiro);
+  document.getElementById('ay-toplam-adet').textContent = toplamAdet + ' adet';
+  document.getElementById('ay-sip-sayisi').textContent = aySip.length + ' sipariş';
+
+  // Tablo body
+  const tbody = document.getElementById('ay-satis-tbody');
+  if(!satirlar.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">${AYLAR_TR[ay]} ${yil} için sipariş bulunamadı</td></tr>`;
+    document.getElementById('ay-satis-tfoot').innerHTML = '';
+  } else {
+    tbody.innerHTML = satirlar.map((r,i) => {
+      const bg = i%2===0 ? '' : 'background:var(--surface2)';
+      const tpBadge = r.tp==='T'
+        ? '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:2px;background:var(--blue);color:#fff">T</span>'
+        : '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:2px;background:var(--accent);color:#000">P</span>';
+      return `<tr style="${bg};cursor:pointer;border-bottom:1px solid var(--border)" onclick="openDetail('siparis','${r.sipId}')">
+        <td style="padding:6px 10px;font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap">${r.tarih.split('-').reverse().join('.')}</td>
+        <td style="padding:6px 10px;font-weight:600;font-size:12px">${r.firma}</td>
+        <td style="padding:6px 6px;text-align:center">${tpBadge}</td>
+        <td style="padding:6px 10px;font-size:11px;color:var(--text3)">${r.seri}</td>
+        <td style="padding:6px 6px;text-align:center;font-family:var(--mono);font-weight:700">${r.adet}</td>
+        <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text3)">${r.birimFiyat ? fmtMoney(r.birimFiyat) : '—'}</td>
+        <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--green)">${fmtMoney(r.tutar)}</td>
+      </tr>`;
+    }).join('');
+
+    // Footer — TOTAL satırı
+    document.getElementById('ay-satis-tfoot').innerHTML = `
+      <tr style="border-top:2px solid var(--border);background:var(--surface2)">
+        <td colspan="4" style="padding:7px 10px;font-size:11px;font-weight:700;color:var(--text3)">TOPLAM</td>
+        <td style="padding:7px 6px;text-align:center;font-family:var(--mono);font-weight:700">${toplamAdet}</td>
+        <td style="padding:7px 10px"></td>
+        <td style="padding:7px 10px;text-align:right;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--green)">${fmtMoney(toplamCiro)}</td>
+      </tr>`;
+  }
+
+  // Toptan özet
+  const toptanMap = {};
+  satirlar.filter(r=>r.tp==='T').forEach(r => {
+    toptanMap[r.firma] = (toptanMap[r.firma]||{ad:r.firma,adet:0,ciro:0});
+    toptanMap[r.firma].adet += r.adet;
+    toptanMap[r.firma].ciro += r.tutar;
+  });
+  const toptanList = Object.values(toptanMap).sort((a,b)=>b.ciro-a.ciro);
+
+  const perakendeMap = {};
+  satirlar.filter(r=>r.tp==='P').forEach(r => {
+    perakendeMap[r.firma] = (perakendeMap[r.firma]||{ad:r.firma,adet:0,ciro:0});
+    perakendeMap[r.firma].adet += r.adet;
+    perakendeMap[r.firma].ciro += r.tutar;
+  });
+  const perakendeList = Object.values(perakendeMap).sort((a,b)=>b.ciro-a.ciro);
+
+  function ozetHTML(liste, renk) {
+    if(!liste.length) return '<div style="font-size:11px;color:var(--text3);padding:6px">Bu ay kayıt yok</div>';
+    return '<table style="width:100%;border-collapse:collapse;font-size:11px">'
+      + liste.map((m,i) => `<tr style="${i%2===0?'':'background:var(--surface2)'}">
+          <td style="padding:4px 8px;font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.ad}</td>
+          <td style="padding:4px 4px;text-align:center;color:var(--text3)">${m.adet} ad</td>
+          <td style="padding:4px 8px;text-align:right;font-family:var(--mono);font-weight:700;color:${renk}">${fmtMoney(m.ciro)}</td>
+        </tr>`).join('')
+      + `<tr style="border-top:1px solid var(--border)">
+          <td style="padding:5px 8px;font-weight:700;font-size:10px;color:var(--text3)">TOPLAM</td>
+          <td style="padding:5px 4px;text-align:center;font-family:var(--mono);font-weight:700">${liste.reduce((a,m)=>a+m.adet,0)}</td>
+          <td style="padding:5px 8px;text-align:right;font-family:var(--mono);font-weight:700;color:${renk}">${fmtMoney(liste.reduce((a,m)=>a+m.ciro,0))}</td>
+        </tr>`
+      + '</table>';
+  }
+
+  document.getElementById('ay-toptan-ozet').innerHTML = ozetHTML(toptanList, 'var(--blue)');
+  document.getElementById('ay-perakende-ozet').innerHTML = ozetHTML(perakendeList, 'var(--accent)');
 };
 
 window.renderAnaliz = function() {
