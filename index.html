@@ -259,15 +259,19 @@
     <div class="nav-item" onclick="showPage('analiz',this)">
       <span class="icon">📈</span> Performans
     </div>
-    <div class="nav-section">Stok & Finans</div>
+    <div class="nav-section">Stok</div>
     <div class="nav-item" onclick="showPage('stok',this)">
       <span class="icon">📦</span> Stok
     </div>
     <div class="nav-item" onclick="showPage('mdfstok',this)">
       <span class="icon">🪵</span> MDF Stok
     </div>
+    <div class="nav-section" style="margin-top:8px">Finans</div>
     <div class="nav-item" onclick="showPage('kasa',this)">
       <span class="icon">💰</span> Kasa
+    </div>
+    <div class="nav-item" onclick="showPage('cari',this)">
+      <span class="icon">📒</span> Cari Ekstre
     </div>
     <div class="nav-section" style="margin-top:8px">Araçlar</div>
     <div class="nav-item" onclick="showPage('araclar',this)">
@@ -470,7 +474,34 @@
     </div>
 
     <!-- KASA -->
-    <div class="page" id="page-kasa">
+    <!-- CARİ EKSTRE -->
+    <div class="page" id="page-cari">
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start">
+
+        <!-- Sol: Cari müşteri listesi -->
+        <div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:12px;font-weight:700;color:var(--text)">Cari Müşteriler</span>
+              <button class="btn btn-primary" style="font-size:10px;padding:3px 10px" onclick="openCariMusteriEkle()">+ Ekle</button>
+            </div>
+            <div id="cariMusteriListesi" style="max-height:600px;overflow-y:auto"></div>
+          </div>
+        </div>
+
+        <!-- Sağ: Seçilen müşterinin ekstresi -->
+        <div id="cariDetayAlan">
+          <div class="empty-state" style="padding:60px 0">
+            <div class="empty-icon">📒</div>
+            <div class="empty-title">Müşteri seçin</div>
+            <div class="empty-sub">Sol listeden bir müşteri seçerek cari hesabını görüntüleyin</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+        <div class="page" id="page-kasa">
       <!-- Özet Kartlar -->
       <div class="kasa-summary">
         <div class="kasa-card" style="border-top:2px solid var(--green)">
@@ -2882,7 +2913,6 @@ window.openDetail = function(type, id) {
       ${m.notlar?`<div class="detail-section"><div class="detail-section-title">Notlar</div><div style="font-size:13px;color:var(--text2)">${m.notlar}</div></div>`:''}`;
     document.getElementById('detailFooter').innerHTML = `
       <button class="btn btn-ghost" onclick="editRecord('musteri','${id}')">✎ Düzenle</button>
-      <button class="btn btn-ghost" style="color:var(--green);border-color:var(--green)" onclick="printEkstre('${id}')">📄 Cari Ekstre</button>
       <button class="btn btn-danger" onclick="confirmDelete('musteri','${id}')">✕ Sil</button>`;
   }
   document.getElementById('detailOverlay').classList.add('open');
@@ -3136,127 +3166,6 @@ ${notlar?`<div class="not-bar"><strong>Not:</strong> ${notlar}</div>`:''}
 };
 
 
-window.printEkstre = function(musteriId) {
-  const m = musteriler.find(x => x.id===musteriId);
-  if(!m) return;
-
-  // O müşterinin tüm siparişleri — tarihe göre sıralı
-  const mSip = siparisler
-    .filter(s => s.musteriId===musteriId && s.durum!=='İptal')
-    .sort((a,b) => (a.sipTarihi||'').localeCompare(b.sipTarihi||''));
-
-  let bakiye = 0;
-  const satirlar = mSip.map((s,i) => {
-    const tutar = Number(s.tutar||0);
-    const odenen = Number(s.odemeMiktar||0);
-    const borc = tutar;
-    const alacak = odenen;
-    bakiye += borc - alacak;
-    const bg = i%2===0?'#fff':'#f9f9f9';
-    const tarihStr = s.sipTarihi ? s.sipTarihi.split('-').reverse().join('.') : '—';
-    return `<tr style="background:${bg};border-bottom:1px solid #eee">
-      <td style="padding:7px 10px;font-family:monospace;font-size:11px;color:#777">${tarihStr}</td>
-      <td style="padding:7px 10px;font-family:monospace;font-weight:700;color:#e8a020">${s.sipNo||'—'}</td>
-      <td style="padding:7px 10px;font-size:11px">${(()=>{
-        const kalemler=(s.kalemler&&s.kalemler.length)?s.kalemler:null;
-        if(kalemler) return kalemler.map(k=>k.urun).join(', ');
-        return s.urun||'—';
-      })()}</td>
-      <td style="padding:7px 10px;text-align:center"><span style="font-size:10px;padding:2px 7px;border-radius:3px;font-weight:700;background:${s.odeme==='Tamamlandı'?'#2ecc71':s.odeme==='Kısmi'?'#f39c12':'#e74c3c'};color:#fff">${s.odeme||'—'}</span></td>
-      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#e74c3c;font-weight:600">${borc.toLocaleString('tr-TR')}₺</td>
-      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#2ecc71;font-weight:600">${alacak>0?alacak.toLocaleString('tr-TR')+'₺':'—'}</td>
-      <td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:700;color:${bakiye>0?'#e74c3c':'#2ecc71'}">${bakiye.toLocaleString('tr-TR')}₺</td>
-    </tr>`;
-  });
-
-  const topBorc = mSip.reduce((a,s)=>a+Number(s.tutar||0),0);
-  const topAlacak = mSip.reduce((a,s)=>a+Number(s.odemeMiktar||0),0);
-  const netBakiye = topBorc - topAlacak;
-  const bugun = new Date().toLocaleDateString('tr-TR');
-
-  const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
-<title>Cari Ekstre — ${m.ad}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;background:#fff;padding:24px 28px}
-  .top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2px solid #111;margin-bottom:18px}
-  .firma-ad{font-size:18px;font-weight:800}
-  .belge-tip{font-size:20px;font-weight:800;text-align:right;letter-spacing:1px}
-  .belge-tarih{font-size:10px;color:#888;text-align:right;margin-top:3px}
-  .musteri-kutu{border:1.5px solid #111;border-radius:4px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start}
-  .mus-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#888;margin-bottom:2px}
-  .mus-val{font-size:14px;font-weight:800}
-  .mus-alt{font-size:11px;color:#555;margin-top:2px}
-  .ekstre-tablo{width:100%;border-collapse:collapse;margin-bottom:16px}
-  .ekstre-tablo thead tr{background:#111;color:#fff}
-  .ekstre-tablo th{padding:8px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
-  .ekstre-tablo th:nth-child(n+5){text-align:right}
-  .ekstre-tablo th:nth-child(4){text-align:center}
-  .ozet-alt{display:flex;justify-content:flex-end}
-  .ozet-kutu{border:1.5px solid #111;border-radius:4px;overflow:hidden;min-width:280px}
-  .oz{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #eee;font-size:12px}
-  .oz:last-child{border-bottom:none;background:#111;color:#fff;font-weight:800;font-size:14px}
-  .oz.kirmizi{color:#c0392b;font-weight:700}
-  .footer{text-align:center;font-size:9px;color:#ccc;margin-top:16px;border-top:1px solid #eee;padding-top:8px}
-  @media print{body{padding:12px 16px}@page{size:A4;margin:10mm 12mm}}
-</style></head><body>
-
-<div class="top">
-  <div>
-    <div class="firma-ad">AYBAT ÇELİK KAPI</div>
-    <div style="font-size:10px;color:#888;margin-top:2px">Mersin</div>
-  </div>
-  <div>
-    <div class="belge-tip">CARİ HESAP EKSTRESİ</div>
-    <div class="belge-tarih">Düzenlenme tarihi: ${bugun}</div>
-  </div>
-</div>
-
-<div class="musteri-kutu">
-  <div>
-    <div class="mus-label">Cari Hesap Sahibi</div>
-    <div class="mus-val">${m.ad||'—'}</div>
-    <div class="mus-alt">${m.sehir||''}</div>
-    ${m.adres?`<div class="mus-alt">${m.adres}</div>`:''}
-  </div>
-  <div style="text-align:right">
-    ${m.telefon?`<div class="mus-label">Telefon</div><div style="font-size:12px;font-weight:700">📞 ${m.telefon}</div>`:''}
-    <div class="mus-label" style="margin-top:8px">Müşteri Tipi</div>
-    <div style="font-size:11px;font-weight:600">${m.satisTip||m.tip||'—'}</div>
-  </div>
-</div>
-
-<table class="ekstre-tablo">
-  <thead><tr>
-    <th style="text-align:left;width:90px">Tarih</th>
-    <th style="text-align:left;width:70px">Sipariş No</th>
-    <th style="text-align:left">Ürünler</th>
-    <th style="text-align:center;width:90px">Ödeme</th>
-    <th style="text-align:right;width:110px">Borç (₺)</th>
-    <th style="text-align:right;width:110px">Alacak (₺)</th>
-    <th style="text-align:right;width:110px">Bakiye (₺)</th>
-  </tr></thead>
-  <tbody>${satirlar.join('')}</tbody>
-</table>
-
-<div class="ozet-alt">
-  <div class="ozet-kutu">
-    <div class="oz"><span>Toplam Borç</span><span style="font-family:monospace;color:#e74c3c;font-weight:700">${topBorc.toLocaleString('tr-TR')}₺</span></div>
-    <div class="oz"><span>Toplam Ödenen</span><span style="font-family:monospace;color:#2ecc71;font-weight:700">${topAlacak.toLocaleString('tr-TR')}₺</span></div>
-    <div class="oz ${netBakiye>0?'kirmizi':''}"><span>Net Bakiye</span><span style="font-family:monospace">${netBakiye.toLocaleString('tr-TR')}₺</span></div>
-  </div>
-</div>
-
-<div style="margin-top:20px;font-size:10px;color:#888;text-align:center">
-  Bu ekstre ${bugun} tarihi itibarıyla ${mSip.length} sipariş kaydını kapsamaktadır.
-</div>
-<div class="footer">Aybat Kapı ERP · Bu belge sistem tarafından oluşturulmuştur.</div>
-<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script>
-</body></html>`;
-
-  const w = window.open('','_blank','width=900,height=750');
-  w.document.write(html); w.document.close();
-};
 
 window.printSiparis = function(id) {
   const s = siparisler.find(x => x.id===id);
@@ -3488,6 +3397,7 @@ window.showPage = function(id, el) {
     stok:['Stok','Malzeme & stok takibi'],
     mdfstok:['MDF Stok','MDF Ön Yüz & Arka Yüz stok takibi'],
     kasa:['Kasa','Gelir-Gider takibi'],
+    cari:['Cari Ekstre','Müşteri cari hesap takibi'],
     araclar:['Araçlar','Yedekleme & sistem araçları'],
   };
   const [title, sub] = titles[id] || [id,''];
@@ -3500,7 +3410,7 @@ window.showPage = function(id, el) {
     });
   }
   document.getElementById('searchInput').value = '';
-  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',araclar:''};
+  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',cari:'',araclar:''};
   document.getElementById('addBtn').textContent = addLabels[id] || '+ Yeni';
 
   if(id==='siparisler') {
@@ -3516,6 +3426,7 @@ window.showPage = function(id, el) {
   if(id==='mdfstok') { renderMdfOn(); renderMdfArka(); }
   if(id==='analiz') { renderAylikSatislar(); }
   if(id==='crm') renderCRM();
+  if(id==='cari') renderCari();
 };
 
 window.handleSearch = function() {
@@ -3858,6 +3769,426 @@ let kasaIslemler = [];
 const GELIR_KATS = ['Sipariş Tahsilatı','Ön Ödeme / Kapora','Montaj Ücreti','Diğer Gelir'];
 const GIDER_KATS = ['Hammadde / Malzeme Alımı','İşçilik / Maaş','Kira & Fatura','Nakliye / Montaj Masrafı','Diğer Gider'];
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CARİ EKSTRE
+// ═══════════════════════════════════════════════════════════════════════════
+
+let cariMusteriler = []; // Firebase'den gelen cari müşteri kayıtları
+let cariHareketler = []; // Firebase'den gelen cari hareketler
+let _seciliCariId = null;
+
+function startCariListeners() {
+  db.collection('cariMusteriler').orderBy('ad','asc').onSnapshot(snap => {
+    cariMusteriler = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if(currentPage==='cari') renderCari();
+  }, err => console.error(err));
+
+  db.collection('cariHareketler').orderBy('tarih','desc').onSnapshot(snap => {
+    cariHareketler = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if(currentPage==='cari' && _seciliCariId) renderCariDetay(_seciliCariId);
+  }, err => console.error(err));
+}
+
+window.renderCari = function() {
+  const el = document.getElementById('cariMusteriListesi');
+  if(!el) return;
+  if(!cariMusteriler.length) {
+    el.innerHTML = '<div style="padding:20px;text-align:center;font-size:11px;color:var(--text3)">Henüz cari müşteri yok.<br>+ Ekle butonuyla ekleyin.</div>';
+    return;
+  }
+  el.innerHTML = cariMusteriler.map(m => {
+    // Bu müşterinin toplam bakiyesini hesapla
+    const mHar = cariHareketler.filter(h => h.cariMusteriId === m.id);
+    const bakiye = mHar.reduce((a,h) => a + (h.tip==='borc'?Number(h.tutar||0):-Number(h.tutar||0)), 0);
+    const aktif = _seciliCariId === m.id;
+    return `<div onclick="renderCariDetay('${m.id}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);background:${aktif?'var(--accent)22':'transparent'};transition:background .15s">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;font-weight:600;color:${aktif?'var(--accent)':'var(--text)'}">${m.ad}</span>
+        <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${bakiye>0?'var(--red)':bakiye<0?'var(--green)':'var(--text3)'}">${bakiye>0?'+':''}${bakiye.toLocaleString('tr-TR')}₺</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${m.telefon||''}</div>
+    </div>`;
+  }).join('');
+};
+
+window.openCariMusteriEkle = function() {
+  // Mevcut müşterilerden seç veya manuel gir
+  const mOpts = musteriler.slice().sort((a,b)=>(a.ad||'').localeCompare(b.ad||'','tr'))
+    .map(m=>`<option value="${m.id}" data-ad="${m.ad}" data-tel="${m.telefon||''}">${m.ad}</option>`).join('');
+
+  document.getElementById('addModalTitle').textContent = 'Cari Hesap Aç';
+  document.getElementById('addModalBody').innerHTML = `<div class="form-grid">
+    <div class="form-group full">
+      <label>Müşteri Listesinden Seç</label>
+      <select id="cari_mSec" onchange="cariMusteriSecildi(this)">
+        <option value="">— Listeden seç —</option>${mOpts}
+      </select>
+    </div>
+    <div class="form-group full" style="text-align:center;color:var(--text3);font-size:11px">— veya manuel girin —</div>
+    <div class="form-group full">
+      <label>Cari Hesap Adı *</label>
+      <input id="cari_ad" placeholder="Müşteri / Firma adı">
+    </div>
+    <div class="form-group">
+      <label>Telefon</label>
+      <input id="cari_tel" placeholder="0532...">
+    </div>
+    <div class="form-group">
+      <label>Not</label>
+      <input id="cari_not" placeholder="Opsiyonel">
+    </div>
+  </div>`;
+  document.getElementById('saveBtn').onclick = saveCariMusteri;
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.cariMusteriSecildi = function(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if(opt.value) {
+    document.getElementById('cari_ad').value = opt.dataset.ad || '';
+    document.getElementById('cari_tel').value = opt.dataset.tel || '';
+  }
+};
+
+window.saveCariMusteri = async function() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+  const ad = document.getElementById('cari_ad')?.value?.trim();
+  if(!ad) { showToast('Ad zorunlu','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+  // Zaten ekli mi?
+  if(cariMusteriler.find(m=>m.ad===ad)) { showToast('Bu müşteri zaten cari listede','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+  try {
+    const ref = await db.collection('cariMusteriler').add({
+      ad, telefon: document.getElementById('cari_tel')?.value||'',
+      not: document.getElementById('cari_not')?.value||'',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast(ad+' cari hesaba eklendi ✓');
+    closeModal('addModal');
+    _seciliCariId = ref.id;
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+
+window.renderCariDetay = function(cariId) {
+  _seciliCariId = cariId;
+  renderCari(); // Sol listeyi güncelle (seçili rengi için)
+  const cm = cariMusteriler.find(x=>x.id===cariId);
+  if(!cm) return;
+
+  const alan = document.getElementById('cariDetayAlan');
+
+  // Filtre değerleri
+  const bas = document.getElementById('cari_filtreBas')?.value || '';
+  const bit = document.getElementById('cari_filtrebit')?.value || '';
+
+  // Hareketleri filtrele
+  let har = cariHareketler.filter(h => h.cariMusteriId === cariId);
+  if(bas) har = har.filter(h => (h.tarih||'') >= bas);
+  if(bit) har = har.filter(h => (h.tarih||'') <= bit);
+  har = har.slice().sort((a,b)=>(a.tarih||'').localeCompare(b.tarih||''));
+
+  // Kümülatif bakiye
+  let bakiye = 0;
+  const tipLabel = {borc:'Borç',odeme:'Ödeme',duzeltme:'Düzeltme'};
+  const odemeYontemleri = ['Nakit','Kredi Kartı','Çek','Senet','EFT/Havale','Diğer'];
+
+  const satirlar = har.map((h,i) => {
+    const tutar = Number(h.tutar||0);
+    if(h.tip==='borc') bakiye += tutar;
+    else bakiye -= tutar;
+    const bg = i%2===0?'':'background:var(--surface2)';
+    const tarihStr = h.tarih ? h.tarih.split('-').reverse().join('.') : '—';
+    return `<tr style="${bg};border-bottom:1px solid var(--border)">
+      <td style="padding:6px 10px;font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap">${tarihStr}</td>
+      <td style="padding:6px 10px">
+        <span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:3px;background:${h.tip==='borc'?'rgba(224,92,92,.15)':'rgba(76,175,125,.15)'};color:${h.tip==='borc'?'var(--red)':'var(--green)'}">${tipLabel[h.tip]||h.tip}</span>
+      </td>
+      <td style="padding:6px 10px;font-size:11px;color:var(--text2)">${h.aciklama||'—'}</td>
+      <td style="padding:6px 10px;font-size:11px;color:var(--text3)">${h.odemeYontemi||'—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--red);font-weight:600">${h.tip==='borc'?tutar.toLocaleString('tr-TR')+'₺':'—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--green);font-weight:600">${h.tip!=='borc'?tutar.toLocaleString('tr-TR')+'₺':'—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px;font-weight:700;color:${bakiye>0?'var(--red)':bakiye<0?'var(--green)':'var(--text3)'}">${bakiye.toLocaleString('tr-TR')}₺</td>
+      <td style="padding:6px 8px;text-align:center">
+        <button class="btn btn-ghost" style="padding:2px 6px;font-size:10px;color:var(--red)" onclick="deleteCariHareket('${h.id}')">✕</button>
+      </td>
+    </tr>`;
+  });
+
+  const netBakiye = har.reduce((a,h)=>h.tip==='borc'?a+Number(h.tutar||0):a-Number(h.tutar||0),0);
+  const topBorc = har.filter(h=>h.tip==='borc').reduce((a,h)=>a+Number(h.tutar||0),0);
+  const topOdeme = har.filter(h=>h.tip!=='borc').reduce((a,h)=>a+Number(h.tutar||0),0);
+
+  alan.innerHTML = `
+    <div class="card" style="padding:0;overflow:hidden">
+      <!-- Başlık -->
+      <div style="padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-size:14px;font-weight:700">${cm.ad}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${cm.telefon||''} ${cm.not?'· '+cm.not:''}</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary" style="font-size:11px;padding:4px 12px" onclick="openCariHareketEkle('${cariId}')">+ Hareket Ekle</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 12px;color:var(--blue);border-color:var(--blue)" onclick="printCariEkstre('${cariId}')">🖨 Ekstre Yazdır</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 12px;color:var(--red)" onclick="deleteCariMusteri('${cariId}')">Cariyi Sil</button>
+        </div>
+      </div>
+
+      <!-- Filtre -->
+      <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text3);font-weight:600">Dönem Filtresi:</span>
+        <input type="date" id="cari_filtreBas" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px" onchange="renderCariDetay('${cariId}')">
+        <span style="font-size:11px;color:var(--text3)">—</span>
+        <input type="date" id="cari_filtrebit" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px" onchange="renderCariDetay('${cariId}')">
+        <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="document.getElementById('cari_filtreBas').value='';document.getElementById('cari_filtrebit').value='';renderCariDetay('${cariId}')">Temizle</button>
+      </div>
+
+      <!-- KPI satırı -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--border)">
+        <div style="padding:10px 16px;border-right:1px solid var(--border)">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">Toplam Borç</div>
+          <div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--red);margin-top:2px">${topBorc.toLocaleString('tr-TR')}₺</div>
+        </div>
+        <div style="padding:10px 16px;border-right:1px solid var(--border)">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">Toplam Ödeme</div>
+          <div style="font-size:16px;font-weight:700;font-family:var(--mono);color:var(--green);margin-top:2px">${topOdeme.toLocaleString('tr-TR')}₺</div>
+        </div>
+        <div style="padding:10px 16px">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">Net Bakiye</div>
+          <div style="font-size:16px;font-weight:700;font-family:var(--mono);color:${netBakiye>0?'var(--red)':netBakiye<0?'var(--green)':'var(--text3)'};margin-top:2px">${netBakiye.toLocaleString('tr-TR')}₺</div>
+        </div>
+      </div>
+
+      <!-- Tablo -->
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--surface2)">
+            <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Tarih</th>
+            <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Tür</th>
+            <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Açıklama</th>
+            <th style="padding:7px 10px;text-align:left;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Ödeme Yöntemi</th>
+            <th style="padding:7px 10px;text-align:right;font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.8px">Borç (₺)</th>
+            <th style="padding:7px 10px;text-align:right;font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.8px">Alacak (₺)</th>
+            <th style="padding:7px 10px;text-align:right;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Bakiye (₺)</th>
+            <th style="width:32px"></th>
+          </tr></thead>
+          <tbody>${satirlar.length ? satirlar.join('') : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Bu dönemde hareket yok</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+};
+
+window.openCariHareketEkle = function(cariId) {
+  const bugun = new Date().toISOString().split('T')[0];
+  const cm = cariMusteriler.find(x=>x.id===cariId);
+  // Mevcut siparişlerden otomatik borç ekle seçeneği
+  const sipOpts = siparisler.filter(s=>s.musteriId===cm?.id||true)
+    .filter(s=>s.durum!=='İptal').slice(0,20)
+    .map(s=>`<option value="${s.sipNo}|${s.tutar||0}">${s.sipNo} — ${s.musteriAd} — ${s.tutar?Number(s.tutar).toLocaleString('tr-TR')+'₺':''}</option>`).join('');
+
+  document.getElementById('addModalTitle').textContent = 'Hareket Ekle — '+cm?.ad;
+  document.getElementById('addModalBody').innerHTML = `<div class="form-grid">
+    <div class="form-group full">
+      <label>İşlem Türü *</label>
+      <select id="ch_tip" onchange="cariTipDegisti()">
+        <option value="borc">Borç (Satış / Fatura)</option>
+        <option value="odeme">Ödeme (Nakit / Çek / Kart)</option>
+        <option value="duzeltme">Düzeltme</option>
+      </select>
+    </div>
+    <div class="form-group" id="ch_sipGrup">
+      <label>Sipariş No (opsiyonel)</label>
+      <select id="ch_sipSec" onchange="cariSipSecildi(this)">
+        <option value="">— Seç —</option>${sipOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Tarih *</label>
+      <input id="ch_tarih" type="date" value="${bugun}">
+    </div>
+    <div class="form-group full">
+      <label>Açıklama *</label>
+      <input id="ch_aciklama" placeholder="Sipariş no, fatura, açıklama...">
+    </div>
+    <div class="form-group">
+      <label>Tutar (₺) *</label>
+      <input id="ch_tutar" type="number" min="0" step="0.01" placeholder="0">
+    </div>
+    <div class="form-group" id="ch_odemeGrup">
+      <label>Ödeme Yöntemi</label>
+      <select id="ch_odemeYontemi">
+        <option value="">—</option>
+        ${['Nakit','Kredi Kartı','Çek','Senet','EFT/Havale','Diğer'].map(y=>`<option>${y}</option>`).join('')}
+      </select>
+    </div>
+  </div>`;
+
+  // Borç seçiliyse ödeme yöntemi gizle
+  document.getElementById('ch_odemeGrup').style.display = 'none';
+  document.getElementById('saveBtn').onclick = () => saveCariHareket(cariId);
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.cariTipDegisti = function() {
+  const tip = document.getElementById('ch_tip')?.value;
+  const odemeGrup = document.getElementById('ch_odemeGrup');
+  const sipGrup = document.getElementById('ch_sipGrup');
+  if(odemeGrup) odemeGrup.style.display = tip==='odeme' ? '' : 'none';
+  if(sipGrup) sipGrup.style.display = tip==='borc' ? '' : 'none';
+};
+
+window.cariSipSecildi = function(sel) {
+  const val = sel.value;
+  if(val) {
+    const [sipNo, tutar] = val.split('|');
+    document.getElementById('ch_aciklama').value = 'Sipariş No: '+sipNo;
+    document.getElementById('ch_tutar').value = tutar;
+  }
+};
+
+window.saveCariHareket = async function(cariId) {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
+  const tip = document.getElementById('ch_tip')?.value;
+  const tarih = document.getElementById('ch_tarih')?.value;
+  const aciklama = document.getElementById('ch_aciklama')?.value?.trim();
+  const tutar = Number(document.getElementById('ch_tutar')?.value||0);
+  if(!tarih||!aciklama||!tutar) {
+    showToast('Tarih, açıklama ve tutar zorunlu','error');
+    btn.disabled=false; btn.textContent='Kaydet'; return;
+  }
+  try {
+    await db.collection('cariHareketler').add({
+      cariMusteriId: cariId,
+      tip, tarih, aciklama, tutar,
+      odemeYontemi: document.getElementById('ch_odemeYontemi')?.value||'',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('Hareket eklendi ✓');
+    closeModal('addModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+
+window.deleteCariHareket = async function(id) {
+  if(!confirm('Bu hareket silinecek. Emin misin?')) return;
+  try { await db.collection('cariHareketler').doc(id).delete(); showToast('Hareket silindi'); }
+  catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+window.deleteCariMusteri = async function(id) {
+  if(!confirm('Bu cari hesap ve tüm hareketleri silinecek!')) return;
+  try {
+    // Önce tüm hareketleri sil
+    const snap = await db.collection('cariHareketler').where('cariMusteriId','==',id).get();
+    const batch = db.batch();
+    snap.docs.forEach(d => batch.delete(d.ref));
+    batch.delete(db.collection('cariMusteriler').doc(id));
+    await batch.commit();
+    _seciliCariId = null;
+    document.getElementById('cariDetayAlan').innerHTML = '<div class="empty-state" style="padding:60px 0"><div class="empty-icon">📒</div><div class="empty-title">Müşteri seçin</div></div>';
+    showToast('Cari hesap silindi');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+window.printCariEkstre = function(cariId) {
+  const cm = cariMusteriler.find(x=>x.id===cariId);
+  if(!cm) return;
+  const bas = document.getElementById('cari_filtreBas')?.value || '';
+  const bit = document.getElementById('cari_filtrebit')?.value || '';
+  let har = cariHareketler.filter(h=>h.cariMusteriId===cariId);
+  if(bas) har = har.filter(h=>(h.tarih||'')>=bas);
+  if(bit) har = har.filter(h=>(h.tarih||'')<=bit);
+  har = har.slice().sort((a,b)=>(a.tarih||'').localeCompare(b.tarih||''));
+
+  let bakiye = 0;
+  const satirlar = har.map((h,i) => {
+    const tutar = Number(h.tutar||0);
+    if(h.tip==='borc') bakiye += tutar; else bakiye -= tutar;
+    const tarihStr = h.tarih?h.tarih.split('-').reverse().join('.'):'—';
+    return `<tr style="${i%2===1?'background:#f9f9f9':''}">
+      <td style="padding:7px 10px;font-family:monospace;font-size:11px;color:#777">${tarihStr}</td>
+      <td style="padding:7px 10px"><span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;background:${h.tip==='borc'?'#ffe5e5':'#e5f5ee'};color:${h.tip==='borc'?'#c0392b':'#27ae60'}">${h.tip==='borc'?'BORÇ':'ÖDEME'}</span></td>
+      <td style="padding:7px 10px;font-size:11px">${h.aciklama||'—'}</td>
+      <td style="padding:7px 10px;font-size:11px;color:#777">${h.odemeYontemi||'—'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;color:#c0392b;font-weight:600">${h.tip==='borc'?tutar.toLocaleString('tr-TR')+'₺':'—'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;color:#27ae60;font-weight:600">${h.tip!=='borc'?tutar.toLocaleString('tr-TR')+'₺':'—'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;font-size:11px;font-weight:700;color:${bakiye>0?'#c0392b':bakiye<0?'#27ae60':'#999'}">${bakiye.toLocaleString('tr-TR')}₺</td>
+    </tr>`;
+  });
+
+  const topBorc = har.filter(h=>h.tip==='borc').reduce((a,h)=>a+Number(h.tutar||0),0);
+  const topOdeme = har.filter(h=>h.tip!=='borc').reduce((a,h)=>a+Number(h.tutar||0),0);
+  const net = topBorc - topOdeme;
+  const bugun = new Date().toLocaleDateString('tr-TR');
+  const donem = bas&&bit ? bas.split('-').reverse().join('.')+' — '+bit.split('-').reverse().join('.') : bas ? bas.split('-').reverse().join('.')+' — ...' : 'Tüm Hareketler';
+
+  const html = `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+<title>Cari Ekstre — ${cm.ad}</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;font-size:12px;color:#111;background:#fff;padding:24px 28px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:2.5px solid #111;margin-bottom:16px}
+.firma-ad{font-family:'DM Serif Display',serif;font-size:20px;color:#111}
+.firma-alt{font-size:10px;color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px}
+.belge-tip{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#888;text-align:right}
+.belge-ad{font-family:'DM Serif Display',serif;font-size:18px;text-align:right;margin-top:4px}
+.musteri-bar{border:1.5px solid #111;padding:12px 16px;display:flex;justify-content:space-between;margin-bottom:14px;border-radius:3px}
+.mus-ad{font-size:14px;font-weight:700}
+.mus-alt{font-size:10px;color:#888;margin-top:2px}
+.donem-badge{font-size:10px;font-weight:600;background:#f5f5f5;border:1px solid #ddd;padding:3px 10px;border-radius:3px;letter-spacing:.3px}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1.5px solid #111;margin-bottom:14px;border-radius:3px;overflow:hidden}
+.kpi{padding:10px 14px;border-right:1px solid #ddd}
+.kpi:last-child{border-right:none}
+.kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:3px}
+.kpi-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:500}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:2px solid #111}
+th{padding:6px 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#666;text-align:left}
+th.r{text-align:right}
+tbody tr{border-bottom:1px solid #eee}
+td{padding:7px 10px;vertical-align:middle}
+tfoot tr{border-top:2px solid #111}
+tfoot td{padding:8px 10px;font-weight:700;font-size:11px}
+@media print{body{padding:10px 14px}@page{size:A4;margin:8mm 10mm}}
+</style></head><body>
+<div class="header">
+  <div><div class="firma-ad">Aybat Çelik Kapı</div><div class="firma-alt">Mersin</div></div>
+  <div><div class="belge-tip">Cari Hesap</div><div class="belge-ad">Ekstre</div></div>
+</div>
+<div class="musteri-bar">
+  <div><div class="mus-ad">${cm.ad}</div><div class="mus-alt">${cm.telefon||''}</div></div>
+  <div style="text-align:right"><div style="font-size:10px;color:#888;margin-bottom:4px">Dönem</div><div class="donem-badge">${donem}</div><div style="font-size:10px;color:#aaa;margin-top:4px">${bugun}</div></div>
+</div>
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-label">Toplam Borç</div><div class="kpi-val" style="color:#c0392b">${topBorc.toLocaleString('tr-TR')}₺</div></div>
+  <div class="kpi"><div class="kpi-label">Toplam Ödeme</div><div class="kpi-val" style="color:#27ae60">${topOdeme.toLocaleString('tr-TR')}₺</div></div>
+  <div class="kpi"><div class="kpi-label">Net Bakiye</div><div class="kpi-val" style="color:${net>0?'#c0392b':net<0?'#27ae60':'#999'}">${net.toLocaleString('tr-TR')}₺</div></div>
+</div>
+<table>
+  <thead><tr>
+    <th style="width:80px">Tarih</th><th style="width:70px">Tür</th>
+    <th>Açıklama</th><th style="width:100px">Ödeme Yöntemi</th>
+    <th class="r" style="width:100px">Borç (₺)</th>
+    <th class="r" style="width:100px">Alacak (₺)</th>
+    <th class="r" style="width:100px">Bakiye (₺)</th>
+  </tr></thead>
+  <tbody>${satirlar.length?satirlar.join(''):'<tr><td colspan="7" style="text-align:center;padding:20px;color:#999">Bu dönemde hareket yok</td></tr>'}</tbody>
+  <tfoot><tr>
+    <td colspan="4" style="color:#888;font-size:10px">${har.length} işlem</td>
+    <td style="text-align:right;font-family:monospace;color:#c0392b">${topBorc.toLocaleString('tr-TR')}₺</td>
+    <td style="text-align:right;font-family:monospace;color:#27ae60">${topOdeme.toLocaleString('tr-TR')}₺</td>
+    <td style="text-align:right;font-family:monospace;color:${net>0?'#c0392b':net<0?'#27ae60':'#999'}">${net.toLocaleString('tr-TR')}₺</td>
+  </tr></tfoot>
+</table>
+<script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script>
+</body></html>`;
+
+  const w = window.open('','_blank','width=860,height=700');
+  w.document.write(html); w.document.close();
+};
+
 function startKasaListeners() {
   db.collection('kasaIslemleri').orderBy('tarih','desc').onSnapshot(snap => {
     kasaIslemler = snap.docs.map(d => ({id:d.id, ...d.data()}));
@@ -4078,6 +4409,7 @@ try {
   startListeners();
   startStokListeners();
   startKasaListeners();
+  startCariListeners();
 } catch(e) {
   setSyncStatus(false);
   console.error(e);
