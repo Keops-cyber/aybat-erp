@@ -2194,14 +2194,16 @@ function kalemSatiriHTML(k, idx) {
         </div>
       </div>
       <div class="form-group">
-        <label style="font-size:11px">Arka MDF Renk</label>
+        <label style="font-size:11px" id="k_renkLabel_${idx}">Arka MDF Renk</label>
         <select class="k_renk" id="k_renk_${idx}" onchange="kalemGuncelle(${idx})">
           <option value="">—</option>
+          <option value="Yok (Panjur)" ${k.renk==='Yok (Panjur)'?'selected':''}>Yok (Panjur)</option>
+          <option value="Yok (Yangın Çıkış)" ${k.renk==='Yok (Yangın Çıkış)'?'selected':''}>Yok (Yangın Çıkış)</option>
           ${MDF_RENKLER.map(r=>`<option ${k.renk===r?'selected':''}>${r}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
-        <label style="font-size:11px">Kapı Yönü / Menteşe</label>
+        <label style="font-size:11px" id="k_yonLabel_${idx}">Kapı Yönü</label>
         <select class="k_yon" id="k_yon_${idx}" onchange="kalemGuncelle(${idx})">
           ${['—','Sağ','Sol','Çift Kanatlı'].map(y=>`<option ${(k.yon||'—')===y?'selected':''}>${y}</option>`).join('')}
         </select>
@@ -2409,11 +2411,26 @@ window.secilenModelK = function(idx, modelNo) {
   if(drop)        drop.style.display='none';
   // Seri bazlı MDF otomatik
   const no = parseInt(modelNo.replace('AYBAT-',''));
+  const isPanjurK = (no>=601&&no<=699);
+  const isYanginK = (no>=801&&no<=899);
   const renkSel = document.getElementById('k_renk_'+idx);
+  const renkLabel = document.getElementById('k_renkLabel_'+idx);
+  const yonLabel  = document.getElementById('k_yonLabel_'+idx);
   if(renkSel) {
-    if(no>=601&&no<=699) { renkSel.value='Yok (Panjur)'; renkSel.disabled=true; }
-    else if(no>=801&&no<=899) { renkSel.value='Yok (Yangın Çıkış)'; renkSel.disabled=true; }
-    else { renkSel.disabled=false; }
+    if(isPanjurK) {
+      renkSel.value='Yok (Panjur)'; renkSel.disabled=true;
+      if(renkLabel) renkLabel.textContent='Arka MDF';
+    } else if(isYanginK) {
+      renkSel.value='Yok (Yangın Çıkış)'; renkSel.disabled=true;
+      if(renkLabel) renkLabel.textContent='Arka MDF';
+    } else {
+      renkSel.disabled=false;
+      if(renkLabel) renkLabel.textContent='Arka MDF Renk';
+    }
+  }
+  // Kapı Yönü / Menteşe etiketi
+  if(yonLabel) {
+    yonLabel.textContent = isPanjurK ? 'Menteşe' : 'Kapı Yönü';
   }
   // Laminoks tipi alanını göster/gizle
   const laminoksTipAlan = document.getElementById('k_laminoksTipAlan_'+idx);
@@ -2711,6 +2728,13 @@ window.saveRecord = async function() {
         showToast('Tüm kalemlere birim fiyat girilmeli', 'error'); btn.disabled=false; btn.textContent='Kaydet'; return;
       }
 
+      // Tek kalem: genel birimFiyat kalem objesine de yazılsın
+      // (performans sayfası kalem.birimFiyat üzerinden hesap yapar)
+      if(!cokKalem && birimFiyat > 0) {
+        gecerliKalemler[0].birimFiyat = birimFiyat;
+        gecerliKalemler[0].tutar = birimFiyat * Number(gecerliKalemler[0].adet||1);
+      }
+
       const sipNoVal = document.getElementById('f_sipNo')?.value?.trim() || nextSipNo();
       // Toplam adet ve tutar
       const toplamAdet = gecerliKalemler.reduce((a,k)=>a+Number(k.adet||1),0);
@@ -3001,18 +3025,17 @@ window._printSiparisFisiCoklu = function(idler) {
           // Özellikler — 2 sütun
           const sol = [];
           const sag = [];
-          if(k.renk&&k.renk!=='—') sol.push(['Arka MDF', k.renk]);
+          sol.push(['Arka MDF', (k.renk&&k.renk!=='—') ? k.renk : 'Yok']);
           if(k.sacRenk&&k.sacRenk!=='—') sol.push(['Sac', k.sacRenk]);
           if(k.yon&&k.yon!=='—') sag.push(['Yön', k.yon]);
           if(k.olcuKalinlik) sag.push(['Duvar', k.olcuKalinlik+' cm']);
           if(k.olcuEn&&k.olcuBoy) sag.push(['Ölçü', k.olcuEn+'×'+k.olcuBoy]);
-          if(ekono) sag.push(['Tip', 'Ekonomik']);
           const ozelHTML = `<div class="ozel-grid">
             <div>${sol.map(([l,v])=>`<div class="ozel-satir"><span class="ozel-l">${l}</span><span class="ozel-v">${v}</span></div>`).join('')}</div>
             <div>${sag.map(([l,v])=>`<div class="ozel-satir"><span class="ozel-l">${l}</span><span class="ozel-v">${v}</span></div>`).join('')}</div>
           </div>`;
           return `<tr class="urun-satir${i%2===1?' alt':''}">
-            <td class="td-model">${k.urun||'—'}${ekono?'<span class="eko-badge">EKO</span>':''}</td>
+            <td class="td-model">${ekono?(k.urun||'—')+' Ekonomik':(k.urun||'—')}</td>
             <td class="td-ozel">${ozelHTML}</td>
             <td class="td-adet">${adet}</td>
             <td class="td-fiyat">${birimFiyat?birimFiyat.toLocaleString('tr-TR')+'₺':'—'}</td>
@@ -3024,7 +3047,7 @@ window._printSiparisFisiCoklu = function(idler) {
           const adet = Number(s.adet||1);
           const tutar = Number(s.tutar||0);
           const sol=[], sag=[];
-          if(s.renk&&s.renk!=='—') sol.push(['Arka MDF',s.renk]);
+          sol.push(['Arka MDF', (s.renk&&s.renk!=='—') ? s.renk : 'Yok']);
           if(s.sacRenk&&s.sacRenk!=='—') sol.push(['Sac',s.sacRenk]);
           if(s.yon&&s.yon!=='—') sag.push(['Yön',s.yon]);
           if(s.olcuKalinlik) sag.push(['Duvar',s.olcuKalinlik+' cm']);
@@ -3878,9 +3901,12 @@ window.renderCariDetay = function(cariId) {
 
   const alan = document.getElementById('cariDetayAlan');
 
-  // Filtre değerleri
-  const bas = document.getElementById('cari_filtreBas')?.value || '';
-  const bit = document.getElementById('cari_filtrebit')?.value || '';
+  // Filtre değerleri - önceki değerleri koru
+  const bugunStr = new Date().toISOString().split('T')[0];
+  const oncekiBas = document.getElementById('cari_filtreBas')?.value || '';
+  const oncekiBit = document.getElementById('cari_filtrebit')?.value || bugunStr;
+  const bas = oncekiBas;
+  const bit = oncekiBit;
 
   // Hareketleri filtrele
   let har = cariHareketler.filter(h => h.cariMusteriId === cariId);
@@ -3937,10 +3963,11 @@ window.renderCariDetay = function(cariId) {
       <!-- Filtre -->
       <div style="padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap">
         <span style="font-size:11px;color:var(--text3);font-weight:600">Dönem Filtresi:</span>
-        <input type="date" id="cari_filtreBas" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px" onchange="renderCariDetay('${cariId}')">
-        <span style="font-size:11px;color:var(--text3)">—</span>
-        <input type="date" id="cari_filtrebit" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px" onchange="renderCariDetay('${cariId}')">
-        <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="document.getElementById('cari_filtreBas').value='';document.getElementById('cari_filtrebit').value='';renderCariDetay('${cariId}')">Temizle</button>
+        <span style="font-size:11px;color:var(--text3)">Başlangıç:</span>
+        <input type="date" id="cari_filtreBas" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px;min-width:130px" onchange="renderCariDetay('${cariId}')">
+        <span style="font-size:11px;color:var(--text3)">Bitiş:</span>
+        <input type="date" id="cari_filtrebit" value="${new Date().toISOString().split('T')[0]}" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px;min-width:130px" onchange="renderCariDetay('${cariId}')">
+        <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px" onclick="document.getElementById('cari_filtreBas').value='';document.getElementById('cari_filtrebit').value=new Date().toISOString().split('T')[0];renderCariDetay('${cariId}')">Temizle</button>
       </div>
 
       <!-- KPI satırı -->
@@ -3976,6 +4003,12 @@ window.renderCariDetay = function(cariId) {
         </table>
       </div>
     </div>`;
+
+  // HTML yeniden render edilince tarih inputlarını koru
+  const basEl = document.getElementById('cari_filtreBas');
+  const bitEl = document.getElementById('cari_filtrebit');
+  if(basEl) basEl.value = oncekiBas;
+  if(bitEl) bitEl.value = oncekiBit;
 };
 
 window.openCariHareketEkle = function(cariId) {
