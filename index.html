@@ -4854,15 +4854,35 @@ window.renderAylikSatislar = function() {
     const tp = s.perakende ? 'P' : (musteri?.satisTip === 'Perakende' ? 'P' : 'T');
     const kalemler = (s.kalemler && s.kalemler.length) ? s.kalemler : null;
     if(kalemler) {
+      // Eğer kalemler birimFiyat içermiyorsa, siparişin toplam tutarını kalemlere bölerek dağıt
+      const toplamKalemAdet = kalemler.reduce((a,k) => a + Number(k.adet||1), 0);
+      const sipToplamTutar = Number(s.tutar||0);
+      const sipBirimFiyat = Number(s.birimFiyat||0);
       kalemler.forEach(k => {
         const no = parseInt((k.urun||'').replace('AYBAT-',''));
         const seriKey = isNaN(no) ? '?' : String(Math.floor(no/100));
-        const tutar = k.birimFiyat && k.adet ? Number(k.birimFiyat)*Number(k.adet) : Number(k.tutar||0);
+        const kAdet = Number(k.adet||1);
+        const kBirimFiyat = Number(k.birimFiyat||0);
+        const kTutar = Number(k.tutar||0);
+        let tutar = 0;
+        if(kBirimFiyat > 0 && kAdet > 0) {
+          // 1. Öncelik: kalemin kendi birimFiyat * adet
+          tutar = kBirimFiyat * kAdet;
+        } else if(kTutar > 1 && kTutar !== 8) {
+          // 2. Kalemin tutar alanı makul görünüyorsa onu kullan (1 veya 8 TL değilse)
+          tutar = kTutar;
+        } else if(sipBirimFiyat > 0) {
+          // 3. Siparişin birimFiyatını kullan
+          tutar = sipBirimFiyat * kAdet;
+        } else if(sipToplamTutar > 1 && toplamKalemAdet > 0) {
+          // 4. Siparişin toplam tutarını kalemlere adet oranında dağıt
+          tutar = (sipToplamTutar / toplamKalemAdet) * kAdet;
+        }
         satirlar.push({
           tarih: s.sipTarihi||'', firma: s.musteriAd||'—', tp,
           seri: SERİ_AD[seriKey]||('Seri '+seriKey),
-          model: k.urun||'', adet: Number(k.adet||1),
-          birimFiyat: Number(k.birimFiyat||0), tutar, sipId: s.id
+          model: k.urun||'', adet: kAdet,
+          birimFiyat: kBirimFiyat || (tutar / kAdet) || sipBirimFiyat, tutar, sipId: s.id
         });
       });
     } else {
@@ -5097,13 +5117,28 @@ window.renderAnaliz = function() {
     const satisTip = s.perakende ? 'Perakende' : (musteri?.satisTip || 'Toptan');
     const kalemler = (s.kalemler && s.kalemler.length) ? s.kalemler : null;
     if(kalemler) {
+      const toplamKalemAdet2 = kalemler.reduce((a,k) => a + Number(k.adet||1), 0);
+      const sipToplamTutar2 = Number(s.tutar||0);
+      const sipBirimFiyat2 = Number(s.birimFiyat||0);
       kalemler.forEach(k => {
-        const tutar = k.birimFiyat && k.adet ? Number(k.birimFiyat)*Number(k.adet) : Number(k.tutar||0);
+        const kAdet2 = Number(k.adet||1);
+        const kBirimFiyat2 = Number(k.birimFiyat||0);
+        const kTutar2 = Number(k.tutar||0);
+        let tutar = 0;
+        if(kBirimFiyat2 > 0 && kAdet2 > 0) {
+          tutar = kBirimFiyat2 * kAdet2;
+        } else if(kTutar2 > 1 && kTutar2 !== 8) {
+          tutar = kTutar2;
+        } else if(sipBirimFiyat2 > 0) {
+          tutar = sipBirimFiyat2 * kAdet2;
+        } else if(sipToplamTutar2 > 1 && toplamKalemAdet2 > 0) {
+          tutar = (sipToplamTutar2 / toplamKalemAdet2) * kAdet2;
+        }
         const seriNo = parseInt((k.urun||'').replace('AYBAT-',''));
         allSatislar.push({
           tarih: s.sipTarihi||'',
           fiyat: tutar,
-          adet: Number(k.adet||1),
+          adet: kAdet2,
           seri: isNaN(seriNo)?'Diğer': (Math.floor(seriNo/100)*100)+'lı',
           urun: k.urun||'',
           musteriId: s.musteriId||'',
