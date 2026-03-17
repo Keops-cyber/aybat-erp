@@ -2197,8 +2197,6 @@ function kalemSatiriHTML(k, idx) {
         <label style="font-size:11px" id="k_renkLabel_${idx}">Arka MDF Renk</label>
         <select class="k_renk" id="k_renk_${idx}" onchange="kalemGuncelle(${idx})">
           <option value="">—</option>
-          <option value="Yok (Panjur)" ${k.renk==='Yok (Panjur)'?'selected':''}>Yok (Panjur)</option>
-          <option value="Yok (Yangın Çıkış)" ${k.renk==='Yok (Yangın Çıkış)'?'selected':''}>Yok (Yangın Çıkış)</option>
           ${MDF_RENKLER.map(r=>`<option ${k.renk===r?'selected':''}>${r}</option>`).join('')}
         </select>
       </div>
@@ -2223,12 +2221,12 @@ function kalemSatiriHTML(k, idx) {
         <label style="font-size:11px">Duvar Kalınlığı (cm)</label>
         <input type="number" class="k_kalinlik" id="k_kalinlik_${idx}" placeholder="18" value="${k.olcuKalinlik||''}" oninput="kalemGuncelle(${idx})">
       </div>
-      <div class="form-group" id="k_olcuAlan_${idx}" style="display:${k.olcuEn?'block':'none'}">
+      <div class="form-group full" id="k_olcuAlan_${idx}" style="display:${k.olcuEn?'block':'none'}">
         <label style="font-size:11px">En × Boy (cm)</label>
-        <div style="display:flex;gap:6px;align-items:center">
-          <input type="number" class="k_en" id="k_en_${idx}" placeholder="En" value="${k.olcuEn||''}" style="width:70px;text-align:center" oninput="kalemGuncelle(${idx})">
-          <span style="color:var(--text3)">×</span>
-          <input type="number" class="k_boy" id="k_boy_${idx}" placeholder="Boy" value="${k.olcuBoy||''}" style="width:70px;text-align:center" oninput="kalemGuncelle(${idx})">
+        <div style="display:flex;gap:10px;align-items:center">
+          <input type="number" class="k_en" id="k_en_${idx}" placeholder="En" value="${k.olcuEn||''}" style="flex:1;text-align:center;font-size:14px;font-weight:600;font-family:var(--mono)" oninput="kalemGuncelle(${idx})">
+          <span style="color:var(--text3);font-size:16px;font-weight:300">×</span>
+          <input type="number" class="k_boy" id="k_boy_${idx}" placeholder="Boy" value="${k.olcuBoy||''}" style="flex:1;text-align:center;font-size:14px;font-weight:600;font-family:var(--mono)" oninput="kalemGuncelle(${idx})">
         </div>
       </div>
       <div class="form-group">
@@ -2312,7 +2310,7 @@ function siparisForm(data={}) {
     </div>
     <div class="form-group">
       <label>Ödeme Durumu</label>
-      <select id="f_odeme">
+      <select id="f_odeme" onchange="odemeDurumuDegisti()">
         ${['Bekliyor','Kısmi','Tamamlandı'].map(o=>`<option ${(data.odeme||'Bekliyor')===o?'selected':''}>${o}</option>`).join('')}
       </select>
     </div>
@@ -2338,6 +2336,18 @@ function siparisForm(data={}) {
 }
 
 window.toggleOlcuFields = function() {}; // artık kalem bazlı
+
+window.odemeDurumuDegisti = function() {
+  const durum = document.getElementById('f_odeme')?.value;
+  const miktar = document.getElementById('f_odemeMiktar');
+  const tutar  = document.getElementById('f_tutar');
+  if(!miktar || !tutar) return;
+  if(durum === 'Tamamlandı') {
+    miktar.value = tutar.value || '';
+  } else if(durum === 'Bekliyor') {
+    miktar.value = '';
+  }
+};
 
 window.kalemOlcuToggle = function(idx) {
   const tip = document.getElementById('k_olcuTip_'+idx)?.value;
@@ -2390,9 +2400,16 @@ window.filterModelDropdownK = function(idx) {
   const filtered = window.KATALOG.filter(m =>
     m.no.toLowerCase().includes(q) || (m.seri||'').toLowerCase().includes(q)
   ).slice(0,30);
-  if(!filtered.length) { drop.style.display='none'; return; }
+  const katalogDisiGoster = !q || 'katalog dışı'.includes(q) || 'disi'.includes(q);
+  if(!filtered.length && !katalogDisiGoster) { drop.style.display='none'; return; }
   drop.style.display='block';
-  drop.innerHTML = filtered.map(m =>
+  const katalogDisiHTML = katalogDisiGoster ? `<div style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:2px solid var(--border);background:rgba(156,108,224,0.08)"
+      onmousedown="secilenModelK(${idx},'Katalog Dışı')"
+      onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='rgba(156,108,224,0.08)'">
+      <span style="font-family:var(--mono);color:var(--purple)">Katalog Dışı</span>
+      <span style="color:var(--text3);font-size:11px;margin-left:8px">Özel model / manuel giriş</span>
+    </div>` : '';
+  drop.innerHTML = katalogDisiHTML + filtered.map(m =>
     `<div style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
       onmousedown="secilenModelK(${idx},'${m.no}')"
       onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">
@@ -2406,9 +2423,32 @@ window.secilenModelK = function(idx, modelNo) {
   const searchInput = document.querySelector(`[data-idx="${idx}"].k_urunSearch`);
   const hidInput    = document.getElementById('k_urun_'+idx);
   const drop        = document.getElementById('k_modelDrop_'+idx);
-  if(searchInput) searchInput.value = modelNo;
+  if(drop) drop.style.display='none';
+  if(modelNo === 'Katalog Dışı') {
+    // Serbest yazım modu - inputu temizle, kullanıcı yazsın
+    if(searchInput) { searchInput.value = ''; searchInput.placeholder = 'Model adı yazın...'; searchInput.style.borderColor='var(--purple)'; }
+    if(hidInput) hidInput.value = '';
+    // Renk/yon alanlarını normal bırak, laminoks gizle
+    const laminoksTipAlan = document.getElementById('k_laminoksTipAlan_'+idx);
+    if(laminoksTipAlan) laminoksTipAlan.style.display = 'none';
+    const renkSel = document.getElementById('k_renk_'+idx);
+    const renkYokEl = document.getElementById('k_renkYok_'+idx);
+    const renkLabel = document.getElementById('k_renkLabel_'+idx);
+    if(renkSel) { renkSel.style.display=''; renkSel.disabled=false; }
+    if(renkYokEl) renkYokEl.style.display='none';
+    if(renkLabel) renkLabel.textContent='Arka MDF Renk';
+    const yonLabel = document.getElementById('k_yonLabel_'+idx);
+    if(yonLabel) yonLabel.textContent='Kapı Yönü';
+    // input değişince hidden'ı güncelle
+    if(searchInput) searchInput.oninput = function() {
+      if(hidInput) hidInput.value = this.value;
+      filterModelDropdownK(idx);
+    };
+    kalemGuncelle(idx);
+    return;
+  }
+  if(searchInput) { searchInput.value = modelNo; searchInput.style.borderColor=''; searchInput.placeholder='Ara... (örn: 201, Lüks)'; }
   if(hidInput)    hidInput.value    = modelNo;
-  if(drop)        drop.style.display='none';
   // Seri bazlı MDF otomatik
   const no = parseInt(modelNo.replace('AYBAT-',''));
   const isPanjurK = (no>=601&&no<=699);
@@ -2416,15 +2456,27 @@ window.secilenModelK = function(idx, modelNo) {
   const renkSel = document.getElementById('k_renk_'+idx);
   const renkLabel = document.getElementById('k_renkLabel_'+idx);
   const yonLabel  = document.getElementById('k_yonLabel_'+idx);
+  // Panjur/yangın: select'i gizle, yerine sabit metin göster
+  const renkGrup = renkSel ? renkSel.closest('.form-group') : null;
+  let renkYokEl = document.getElementById('k_renkYok_'+idx);
+  if(!renkYokEl && renkGrup) {
+    renkYokEl = document.createElement('div');
+    renkYokEl.id = 'k_renkYok_'+idx;
+    renkYokEl.style.cssText = 'padding:9px 12px;font-size:13px;color:var(--text3);background:var(--surface2);border:1px solid var(--border);border-radius:3px;display:none';
+    renkGrup.appendChild(renkYokEl);
+  }
   if(renkSel) {
     if(isPanjurK) {
-      renkSel.value='Yok (Panjur)'; renkSel.disabled=true;
+      renkSel.value='Yok (Panjur)'; renkSel.style.display='none';
+      if(renkYokEl) { renkYokEl.textContent='Yok (Panjur)'; renkYokEl.style.display=''; }
       if(renkLabel) renkLabel.textContent='Arka MDF';
     } else if(isYanginK) {
-      renkSel.value='Yok (Yangın Çıkış)'; renkSel.disabled=true;
+      renkSel.value='Yok (Yangın Çıkış)'; renkSel.style.display='none';
+      if(renkYokEl) { renkYokEl.textContent='Yok (Yangın Çıkış)'; renkYokEl.style.display=''; }
       if(renkLabel) renkLabel.textContent='Arka MDF';
     } else {
-      renkSel.disabled=false;
+      renkSel.style.display=''; renkSel.disabled=false;
+      if(renkYokEl) renkYokEl.style.display='none';
       if(renkLabel) renkLabel.textContent='Arka MDF Renk';
     }
   }
