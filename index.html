@@ -16,6 +16,9 @@
     --green:#4caf7d; --red:#e05c5c; --blue:#5c9ee0; --purple:#9c6ce0;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  input[type=number]{-moz-appearance:textfield;}
   body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;display:flex;height:100vh;overflow:hidden;}
 
   /* SIDEBAR */
@@ -266,6 +269,16 @@
     <div class="nav-item" onclick="showPage('mdfstok',this)">
       <span class="icon">🪵</span> MDF Stok
     </div>
+    <div class="nav-section" style="margin-top:8px">Maliyet & Kâr</div>
+    <div class="nav-item" onclick="showPage('urunmaliyet',this)">
+      <span class="icon">🏷️</span> Ürün Maliyetleri
+    </div>
+    <div class="nav-item" onclick="showPage('maliyet',this)">
+      <span class="icon">🧮</span> Reçeteler
+    </div>
+    <div class="nav-item" onclick="showPage('karlilik',this)">
+      <span class="icon">💹</span> Karlılık
+    </div>
     <div class="nav-section" style="margin-top:8px">Finans</div>
     <div class="nav-item" onclick="showPage('kasa',this)">
       <span class="icon">💰</span> Kasa
@@ -501,6 +514,188 @@
       </div>
     </div>
 
+        <!-- ÜRÜN MALİYETLERİ SAYFASI -->
+        <div class="page" id="page-urunmaliyet">
+          <div class="filters">
+            <input id="umSearch" placeholder="⌕ Ürün ara..." oninput="renderUrunMaliyet()"
+              style="background:var(--surface2);border:1px solid var(--border);padding:7px 12px;font-size:12px;border-radius:3px;color:var(--text);min-width:200px">
+            <select id="umKatFilter" onchange="renderUrunMaliyet()" class="filter-select">
+              <option value="">Tüm Kategoriler</option>
+              <option value="Hammadde">Hammadde</option>
+              <option value="Boya">Boya</option>
+              <option value="Aksesuar">Aksesuar</option>
+              <option value="Genel Gider">Genel Gider</option>
+            </select>
+
+          </div>
+          <!-- KPI Kartları -->
+          <div class="stats-grid" style="margin-bottom:18px">
+            <div class="stat-card orange">
+              <div class="stat-label">Toplam Ürün</div>
+              <div class="stat-value" id="um-toplam">—</div>
+              <div class="stat-sub">kayıtlı ürün</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-label">Kategori</div>
+              <div class="stat-value" id="um-kat-sayi">—</div>
+              <div class="stat-sub">farklı kategori</div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-label">Son Güncelleme</div>
+              <div class="stat-value" id="um-son-guncelleme" style="font-size:14px">—</div>
+              <div class="stat-sub"></div>
+            </div>
+            <div class="stat-card red">
+              <div class="stat-label">Fiyatsız Ürün</div>
+              <div class="stat-value" id="um-fiyatsiz">—</div>
+              <div class="stat-sub">birim fiyat girilmemiş</div>
+            </div>
+          </div>
+          <!-- Ürün Grid -->
+          <div id="umGrid"></div>
+        </div>
+
+        <!-- MALİYET TABLOSU SAYFASI -->
+        <div class="page" id="page-maliyet">
+
+          <!-- FİYAT LİSTESİ SEKMESİ (Gizli - Ürün Maliyetleri modülüne taşındı) -->
+          <div id="mal-tab-fiyat" style="display:none">
+
+            <!-- SAÇ -->
+            <div class="card" style="margin-bottom:12px">
+              <div class="card-header">
+                <span class="card-title">🔩 Sac Fiyatı</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <input type="number" id="fl_sac" placeholder="₺" oninput="flKaydet('sac',this.value)"
+                    style="width:120px;text-align:right;font-family:var(--mono);font-size:14px;font-weight:700;padding:5px 10px;color:var(--accent)">
+                  <span id="fl_sac_saved" style="font-size:10px;color:var(--green);display:none">✓ Kaydedildi</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BOYA FİYATLARI -->
+            <div class="card" style="margin-bottom:12px">
+              <div class="card-header"><span class="card-title">🎨 Boya Fiyatları</span></div>
+              <div style="padding:12px 16px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="fl_boya_container">
+                ${['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika'].map(renk=>`
+                <div style="border:1px solid var(--border);border-radius:3px;padding:8px 10px">
+                  <div style="font-size:11px;font-weight:600;margin-bottom:5px">${renk}</div>
+                  <input type="number" id="fl_boya_${renk}" placeholder="₺" oninput="flKaydet('boya_${renk}',this.value)"
+                    style="width:100%;text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;padding:4px 8px;color:var(--accent)">
+                </div>`).join('')}
+              </div>
+            </div>
+
+            <!-- AKSESUARlar FİYAT LİSTESİ -->
+            <div class="card" style="margin-bottom:12px">
+              <div class="card-header">
+                <span class="card-title">⚙️ Aksesuar Fiyatları</span>
+                <button class="btn btn-ghost" style="font-size:11px;padding:4px 12px" onclick="flAksEkle()">+ Ekle</button>
+              </div>
+              <div id="fl_aks_container" style="padding:10px 16px;display:flex;flex-direction:column;gap:6px"></div>
+            </div>
+
+            <!-- GENEL GİDER FİYATLARI -->
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">📦 Genel Gider Fiyatları</span>
+                <button class="btn btn-ghost" style="font-size:11px;padding:4px 12px" onclick="flGgEkle()">+ Ekle</button>
+              </div>
+              <div id="fl_gg_container" style="padding:10px 16px;display:flex;flex-direction:column;gap:6px"></div>
+            </div>
+
+          </div>
+
+          <!-- REÇETELER SEKMESİ -->
+          <div id="mal-tab-recete" style="display:none">
+            <div class="filters">
+              <input id="receteSearch" placeholder="⌕ Model ara..." oninput="renderReceteListesi()"
+                style="background:var(--surface2);border:1px solid var(--border);padding:7px 12px;font-size:12px;border-radius:3px;color:var(--text);min-width:200px">
+              <select id="rSeriFilter" onchange="renderReceteListesi()" class="filter-select">
+                <option value="">Tüm Seriler</option>
+                <option value="1">Lüks Kabartma (1xx)</option>
+                <option value="2">Lüks (2xx)</option>
+                <option value="3">Ultralam (3xx)</option>
+                <option value="4">Laminoks (4xx)</option>
+                <option value="5">Sac Panel (5xx)</option>
+                <option value="6">Panjur (6xx)</option>
+                <option value="7">Villa/Bina (7xx)</option>
+                <option value="8">Yangın (8xx)</option>
+              </select>
+              <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                <span id="recete-kpi-sayi" style="font-size:11px;color:var(--text3)">— reçete</span>
+              </div>
+            </div>
+            <div class="card">
+              <div style="overflow-x:auto">
+                <table class="table">
+                  <thead><tr>
+                    <th>Model</th>
+                    <th style="text-align:right">Sac</th>
+                    <th style="text-align:right">Ön MDF</th>
+                    <th style="text-align:right">Arka MDF</th>
+                    <th style="text-align:right">Boya</th>
+                    <th style="text-align:right">Aksesuarlar</th>
+                    <th style="text-align:right">Genel Gider</th>
+                    <th style="text-align:right;color:var(--accent)">Toplam</th>
+                    <th style="width:60px"></th>
+                  </tr></thead>
+                  <tbody id="receteTbody">
+                    <tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3)">Yükleniyor...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- KARLILIK SAYFASI -->
+        <div class="page" id="page-karlilik">
+          <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+            <div class="stat-card green"><div class="stat-label">Toplam Kâr (Bu Ay)</div><div class="stat-value mono" id="krl-kar-ay">—</div><div class="stat-sub" id="krl-kar-ay-sub"></div></div>
+            <div class="stat-card orange"><div class="stat-label">Ortalama Kâr Marjı</div><div class="stat-value mono" id="krl-marj">—</div><div class="stat-sub">sipariş başına</div></div>
+            <div class="stat-card blue"><div class="stat-label">En Karlı Model</div><div class="stat-value" id="krl-best-model" style="font-size:16px">—</div><div class="stat-sub" id="krl-best-model-sub"></div></div>
+            <div class="stat-card red"><div class="stat-label">Maliyet Kayıtlı Model</div><div class="stat-value mono" id="krl-recete-sayi">—</div><div class="stat-sub">model tanımlı</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px">
+            <div class="card">
+              <div class="card-header"><span class="card-title">Aylık Kâr Trendi</span>
+                <select id="krl-yil-sec" onchange="renderKarlilik()" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px">
+                  <option value="2026">2026</option><option value="2025">2025</option>
+                </select>
+              </div>
+              <div style="padding:14px" id="krl-trend-chart"><div class="loading"><span class="spinner"></span></div></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><span class="card-title">Model Bazlı Kârlılık</span></div>
+              <div style="padding:14px;max-height:280px;overflow-y:auto" id="krl-model-list"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Sipariş Bazlı Kâr / Zarar</span>
+              <select id="krl-donem" onchange="renderKarlilik()" style="font-size:11px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:3px">
+                <option value="bu_ay">Bu Ay</option>
+                <option value="gecen_ay">Geçen Ay</option>
+                <option value="bu_yil">Bu Yıl</option>
+                <option value="tumu">Tümü</option>
+              </select>
+            </div>
+            <div style="overflow-x:auto">
+              <table class="table">
+                <thead><tr>
+                  <th>Sipariş No</th><th>Tarih</th><th>Müşteri</th><th>Model</th>
+                  <th style="text-align:right">Satış</th><th style="text-align:right">Maliyet</th>
+                  <th style="text-align:right">Kâr</th><th style="text-align:right">Marj %</th>
+                </tr></thead>
+                <tbody id="krl-sip-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Yükleniyor...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+
         <div class="page" id="page-kasa">
       <!-- Özet Kartlar -->
       <div class="kasa-summary">
@@ -554,19 +749,19 @@
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
         <div class="kasa-card" style="border-top:2px solid #f59e0b">
           <div class="kasa-label">Ön Yüz Modeller</div>
-          <div class="kasa-amount" style="color:#f59e0b">127 model</div>
+          <div class="kasa-amount" id="mdf-on-toplam" style="color:#f59e0b">—</div>
         </div>
         <div class="kasa-card" style="border-top:2px solid #4ade80">
           <div class="kasa-label">Ön Yüz Kalan</div>
-          <div class="kasa-amount" style="color:#4ade80">377 adet</div>
+          <div class="kasa-amount" id="mdf-on-kalan" style="color:#4ade80">—</div>
         </div>
         <div class="kasa-card" style="border-top:2px solid #60a5fa">
           <div class="kasa-label">Arka Yüz Renkler</div>
-          <div class="kasa-amount" style="color:#60a5fa">9 renk</div>
+          <div class="kasa-amount" id="mdf-arka-toplam" style="color:#60a5fa">—</div>
         </div>
         <div class="kasa-card" style="border-top:2px solid #9c6ce0">
           <div class="kasa-label">Arka Yüz Kalan</div>
-          <div class="kasa-amount" style="color:#9c6ce0">198 adet</div>
+          <div class="kasa-amount" id="mdf-arka-kalan" style="color:#9c6ce0">—</div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:16px">
@@ -574,654 +769,11 @@
         <div class="card">
           <div class="card-header">
             <span class="card-title">MDF Ön Yüz — Kapı Modelleri</span>
-            <input id="mdfSearchInp" placeholder="Kod ara..." style="background:#1e1e1e;border:1px solid #2a2a2a;border-radius:4px;padding:4px 10px;font-size:11px;color:#e0e0e0;width:110px">
+            <input id="mdfOnSearch" placeholder="Kod ara..." oninput="renderMdfOn()" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:11px;color:var(--text);width:110px">
           </div>
-          <div style="overflow-y:auto;max-height:480px">
-  <table style="width:100%;border-collapse:collapse">
-    <thead><tr style="background:#1a1a1a;position:sticky;top:0">
-      <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Kapı Kodu</th>
-      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Sipariş</th>
-      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Satış</th>
-      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Kalan</th>
-    </tr></thead>
-    <tbody id="mdfOnBody"><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">101 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">101 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">102 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">102 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">103</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">201</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">202</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">203</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">204 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">204 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">205</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">206</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">207</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">208</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">209 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">209 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">210 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">210 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">211</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">212</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">213</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">214</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">11</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">11</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">215 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">215 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">216 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">216 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">217 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">217 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">218</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">219</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">220</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">221</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">222</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">223</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">224</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">225</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">226</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">7</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">227</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">228</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">229</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">230</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">231</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">232</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">233</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">234</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">235</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">236</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">237</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">238 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">238 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">239 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">239 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">240</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">241</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">242</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">301</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">15</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">12</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">302</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">303</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">304 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">304 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">305</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">306</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">307</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">308</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">8</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">8</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">309</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">310</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">311</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">10</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">10</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">312</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">313</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">314</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">315</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">316</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">317</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">318</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">319</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">320</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">321</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">401 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">401 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">402 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">402 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">403</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">404</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">405</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">406</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">407</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">408</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">409</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">410</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">411</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">412 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">412 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">413</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">10</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">10</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">414 sağ</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">414 sol</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">415</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">416</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">23</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">20</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">417</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">20</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">18</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">418</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">7</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">419</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">8</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">420</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">421</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">28</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">28</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">422</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">12</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">11</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">423</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">10</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">9</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">424</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">425</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">5</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">5</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">426</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">427</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">7</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">7</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">428</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">1</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">429</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">19</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">18</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">430</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">17</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">17</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">431</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">432</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">433</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">434</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">435</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">436</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">3</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">437</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">3</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">438</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">439</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">4</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">440</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">441</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">6</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">4</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">442</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">8</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#4ade80">6</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">443</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">2</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">501</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">502</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">503</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr></tbody>
-  </table>
-</div>
+          <div style="overflow-y:auto;max-height:680px" id="mdfOnTableWrap">
+    <div id="mdfOnTable"></div>
+  </div>
         </div>
         <!-- Arka Yüz -->
         <div class="card">
@@ -1229,143 +781,10 @@
             <span class="card-title">MDF Arka Yüz — Renk Stoku</span>
           </div>
           <div style="overflow-y:auto;max-height:480px">
-  <table style="width:100%;border-collapse:collapse">
-    <thead><tr style="background:#1a1a1a">
-      <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Renk</th>
-      <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Sipariş Oranı</th>
-      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Satış</th>
-      <th style="text-align:center;padding:6px 8px;font-size:11px;color:#888;font-weight:500;border-bottom:1px solid #2a2a2a">Kalan</th>
-    </tr></thead>
-    <tbody><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Antrasit</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:100%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">77 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">76</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Saruhan</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:65%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">50 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">49</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Beyaz</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:29%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">22 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">21</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Siyah</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:13%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">10 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">10</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Kapuçino</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:13%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">10 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">10</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Vizon</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:0%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">0 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#e05c5c">0</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Kahverengi</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:3%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">2 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#f59e0b">2</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Tanganika</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:16%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">12 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">1</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">11</span></td>
-        </tr><tr>
-          <td style="font-size:13px;font-weight:600;padding:5px 10px">Sarı</td>
-          <td style="padding:5px 10px;min-width:140px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="flex:1;background:#2a2a2a;border-radius:2px;height:6px">
-                <div style="height:100%;background:#60a5fa;width:25%;border-radius:2px"></div>
-              </div>
-              <span style="font-family:monospace;font-size:11px;color:#888;white-space:nowrap">19 sip</span>
-            </div>
-          </td>
-          <td style="text-align:center;font-size:11px;padding:5px 8px;color:#888">0</td>
-          <td style="text-align:center;padding:5px 8px"><span style="font-family:monospace;font-size:14px;font-weight:700;color:#4ade80">19</span></td>
-        </tr></tbody>
-  </table>
-</div>
+    <div id="mdfArkaTable"></div>
+  </div>
         </div>
       </div>
-      <script>
-(function() {
-  var data = [{"kod": "101 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "101 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "102 sağ", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "102 sol", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "103", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "201", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "202", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "203", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "204 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "204 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "205", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "206", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "207", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "208", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "211", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "212", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "213", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "214", "siparis": 11, "satis": 11, "kalan": 0}, {"kod": "215 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "215 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "216 sağ", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "216 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "217 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "217 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "218", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "219", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "220", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "221", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "222", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "223", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "224", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "225", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "226", "siparis": 7, "satis": 2, "kalan": 5}, {"kod": "227", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "228", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "229", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "230", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "231", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "232", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "233", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "234", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "235", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "236", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "237", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "240", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "241", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "242", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "301", "siparis": 15, "satis": 3, "kalan": 12}, {"kod": "302", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "303", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "304 sağ", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "304 sol", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "305", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "306", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "307", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "308", "siparis": 8, "satis": 0, "kalan": 8}, {"kod": "309", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "310", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "311", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "312", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "313", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "314", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "315", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "316", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "317", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "318", "siparis": 5, "satis": 2, "kalan": 3}, {"kod": "319", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "320", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "321", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "401 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "401 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "403", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "404", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "405", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "406", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "407", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "408", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "409", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "410", "siparis": 5, "satis": 1, "kalan": 4}, {"kod": "411", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "412 sağ", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "412 sol", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "413", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "414 sağ", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "414 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "415", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "416", "siparis": 23, "satis": 3, "kalan": 20}, {"kod": "417", "siparis": 20, "satis": 2, "kalan": 18}, {"kod": "418", "siparis": 7, "satis": 1, "kalan": 6}, {"kod": "419", "siparis": 8, "satis": 5, "kalan": 3}, {"kod": "420", "siparis": 6, "satis": 5, "kalan": 1}, {"kod": "421", "siparis": 28, "satis": 0, "kalan": 28}, {"kod": "422", "siparis": 12, "satis": 1, "kalan": 11}, {"kod": "423", "siparis": 10, "satis": 1, "kalan": 9}, {"kod": "424", "siparis": 4, "satis": 3, "kalan": 1}, {"kod": "425", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "426", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "427", "siparis": 7, "satis": 0, "kalan": 7}, {"kod": "428", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "429", "siparis": 19, "satis": 1, "kalan": 18}, {"kod": "430", "siparis": 17, "satis": 0, "kalan": 17}, {"kod": "431", "siparis": 4, "satis": 4, "kalan": 0}, {"kod": "432", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "433", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "434", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "435", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "436", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "437", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "438", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "439", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "440", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "441", "siparis": 6, "satis": 2, "kalan": 4}, {"kod": "442", "siparis": 8, "satis": 2, "kalan": 6}, {"kod": "443", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "501", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "502", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "503", "siparis": 0, "satis": 0, "kalan": 0}];
-  var inp = document.getElementById('mdfSearchInp');
-  if(inp) inp.addEventListener('input', function() {
-    var q = this.value.toLowerCase();
-    var tbody = document.getElementById('mdfOnBody');
-    tbody.innerHTML = data.filter(function(m){ return !q || m.kod.toLowerCase().indexOf(q)>=0; }).map(function(m){
-      var c = m.kalan > 2 ? '#4ade80' : m.kalan > 0 ? '#f59e0b' : '#e05c5c';
-      return '<tr><td style="font-family:monospace;font-size:12px;font-weight:600;padding:4px 10px">'+m.kod+'</td>'
-        +'<td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">'+m.siparis+'</td>'
-        +'<td style="text-align:center;font-size:11px;padding:4px 8px;color:#888">'+m.satis+'</td>'
-        +'<td style="text-align:center;padding:4px 8px"><span style="font-family:monospace;font-size:13px;font-weight:700;color:'+c+'">'+m.kalan+'</span></td></tr>';
-    }).join('');
-  });
-})();
-</script>
     </div>
 
 
@@ -2252,6 +1671,11 @@ function kalemSatiriHTML(k, idx) {
         <input type="number" class="k_tutar" id="k_tutar_${idx}" readonly value="${k.tutar||''}"
           style="background:var(--surface2);color:var(--accent);font-weight:600;font-family:var(--mono)">
       </div>
+      <div class="form-group full">
+        <label style="font-size:11px">Kalem Notu (opsiyonel)</label>
+        <textarea class="k_not" id="k_not_${idx}" rows="2" placeholder="Bu kapıya özel üretim notu..."
+          style="font-size:12px;resize:vertical;min-height:50px" oninput="kalemGuncelle(${idx})">${k.not||''}</textarea>
+      </div>
     </div>
   </div>`;
 }
@@ -2368,6 +1792,7 @@ window.kalemGuncelle = function(idx) {
   _kalemler[idx].olcuKalinlik= document.getElementById('k_kalinlik_'+idx)?.value||'';
   _kalemler[idx].sacRenk     = document.getElementById('k_sacRenk_'+idx)?.value||'';
   _kalemler[idx].laminoksTip = document.getElementById('k_laminoksTip_'+idx)?.value||'Standart';
+  _kalemler[idx].not         = document.getElementById('k_not_'+idx)?.value||'';
   _kalemler[idx].birimFiyat  = Number(document.getElementById('k_birimFiyat_'+idx)?.value||0);
   // Kalem tutarı = adet × birim fiyat
   const kalemTutar = _kalemler[idx].adet * _kalemler[idx].birimFiyat;
@@ -3085,7 +2510,7 @@ window._printSiparisFisiCoklu = function(idler) {
           const ozelHTML = `<div class="ozel-grid">
             <div>${sol.map(([l,v])=>`<div class="ozel-satir"><span class="ozel-l">${l}</span><span class="ozel-v">${v}</span></div>`).join('')}</div>
             <div>${sag.map(([l,v])=>`<div class="ozel-satir"><span class="ozel-l">${l}</span><span class="ozel-v">${v}</span></div>`).join('')}</div>
-          </div>`;
+          </div>${k.not?`<div style="margin-top:4px;font-size:9.5px;color:#e8781a;background:#fff8f0;border-left:2px solid #e8a020;padding:3px 7px;border-radius:0 2px 2px 0;font-style:italic">📝 ${k.not}</div>`:''}`;
           return `<tr class="urun-satir${i%2===1?' alt':''}">
             <td class="td-model">${ekono?(k.urun||'—')+' Ekonomik':(k.urun||'—')}</td>
             <td class="td-ozel">${ozelHTML}</td>
@@ -3406,7 +2831,35 @@ window.deleteRecord = async function(type, id) {
 // ─── NAVİGASYON ──────────────────────────────────────────────────────────────
 // ─── MDF STOK (STATİK VERİ - EXCEL'DEN) ────────────────────────────────────
 const MDF_ON = [{"kod": "101 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "101 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "102 sağ", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "102 sol", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "103", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "201", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "202", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "203", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "204 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "204 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "205", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "206", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "207", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "208", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "211", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "212", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "213", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "214", "siparis": 11, "satis": 11, "kalan": 0}, {"kod": "215 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "215 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "216 sağ", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "216 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "217 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "217 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "218", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "219", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "220", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "221", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "222", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "223", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "224", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "225", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "226", "siparis": 7, "satis": 2, "kalan": 5}, {"kod": "227", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "228", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "229", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "230", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "231", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "232", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "233", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "234", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "235", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "236", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "237", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "240", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "241", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "242", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "301", "siparis": 15, "satis": 3, "kalan": 12}, {"kod": "302", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "303", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "304 sağ", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "304 sol", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "305", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "306", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "307", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "308", "siparis": 8, "satis": 0, "kalan": 8}, {"kod": "309", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "310", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "311", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "312", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "313", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "314", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "315", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "316", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "317", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "318", "siparis": 5, "satis": 2, "kalan": 3}, {"kod": "319", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "320", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "321", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "401 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "401 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "403", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "404", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "405", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "406", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "407", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "408", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "409", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "410", "siparis": 5, "satis": 1, "kalan": 4}, {"kod": "411", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "412 sağ", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "412 sol", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "413", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "414 sağ", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "414 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "415", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "416", "siparis": 23, "satis": 3, "kalan": 20}, {"kod": "417", "siparis": 20, "satis": 2, "kalan": 18}, {"kod": "418", "siparis": 7, "satis": 1, "kalan": 6}, {"kod": "419", "siparis": 8, "satis": 5, "kalan": 3}, {"kod": "420", "siparis": 6, "satis": 5, "kalan": 1}, {"kod": "421", "siparis": 28, "satis": 0, "kalan": 28}, {"kod": "422", "siparis": 12, "satis": 1, "kalan": 11}, {"kod": "423", "siparis": 10, "satis": 1, "kalan": 9}, {"kod": "424", "siparis": 4, "satis": 3, "kalan": 1}, {"kod": "425", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "426", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "427", "siparis": 7, "satis": 0, "kalan": 7}, {"kod": "428", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "429", "siparis": 19, "satis": 1, "kalan": 18}, {"kod": "430", "siparis": 17, "satis": 0, "kalan": 17}, {"kod": "431", "siparis": 4, "satis": 4, "kalan": 0}, {"kod": "432", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "433", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "434", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "435", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "436", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "437", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "438", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "439", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "440", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "441", "siparis": 6, "satis": 2, "kalan": 4}, {"kod": "442", "siparis": 8, "satis": 2, "kalan": 6}, {"kod": "443", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "501", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "502", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "503", "siparis": 0, "satis": 0, "kalan": 0}];
-const MDF_ARKA = [{"renk": "Antrasit", "siparis": 77, "satis": 1, "kalan": 76}, {"renk": "Saruhan", "siparis": 50, "satis": 1, "kalan": 49}, {"renk": "Beyaz", "siparis": 22, "satis": 1, "kalan": 21}, {"renk": "Siyah", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Kapuçino", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Vizon", "siparis": 0, "satis": 0, "kalan": 0}, {"renk": "Kahverengi", "siparis": 2, "satis": 0, "kalan": 2}, {"renk": "Tanganika", "siparis": 12, "satis": 1, "kalan": 11}, {"renk": "Sarı", "siparis": 19, "satis": 0, "kalan": 19}, {"renk": "1219", "siparis": 3, "satis": 0, "kalan": 0}, {"renk": "1217", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1216", "siparis": 3, "satis": 0, "kalan": 0}, {"renk": "1210", "siparis": 9, "satis": 0, "kalan": 0}, {"renk": "1211", "siparis": 4, "satis": 0, "kalan": 0}, {"renk": "1212", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1231", "siparis": 3, "satis": 0, "kalan": 0}, {"renk": "1501", "siparis": 5, "satis": 0, "kalan": 0}, {"renk": "1239", "siparis": 1, "satis": 0, "kalan": 0}, {"renk": "1237", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1503", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1504", "siparis": 2, "satis": 0, "kalan": 0}, {"renk": "1505", "siparis": 1, "satis": 0, "kalan": 0}, {"renk": "1511", "siparis": 4, "satis": 0, "kalan": 0}, {"renk": "1224", "siparis": 5, "satis": 0, "kalan": 0}, {"renk": "1103", "siparis": 1, "satis": 0, "kalan": 0}];
+const MDF_ARKA = [{"renk": "Antrasit", "siparis": 77, "satis": 1, "kalan": 76}, {"renk": "Saruhan", "siparis": 50, "satis": 1, "kalan": 49}, {"renk": "Beyaz", "siparis": 22, "satis": 1, "kalan": 21}, {"renk": "Siyah", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Kapuçino", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Vizon", "siparis": 0, "satis": 0, "kalan": 0}, {"renk": "Kahverengi", "siparis": 2, "satis": 0, "kalan": 2}, {"renk": "Tanganika", "siparis": 12, "satis": 1, "kalan": 11}, {"renk": "Sarı", "siparis": 19, "satis": 0, "kalan": 19}];
+
+// MDF fiyatlarını localStorage'dan yükle
+(function() {
+  try {
+    const onFiyatlar = JSON.parse(localStorage.getItem('mdf_on_fiyatlar') || '{}');
+    MDF_ON.forEach(m => { if(onFiyatlar[m.kod]) m.onMdfFiyat = onFiyatlar[m.kod]; });
+    const arkaFiyatlar = JSON.parse(localStorage.getItem('mdf_arka_fiyatlar') || '{}');
+    MDF_ARKA.forEach(m => { if(arkaFiyatlar[m.renk]) m.arkaMdfFiyat = arkaFiyatlar[m.renk]; });
+  } catch(e) {}
+})();
+
+function mdfOnFiyatKaydet(kod, fiyat) {
+  MDF_ON.find(x => x.kod === kod).onMdfFiyat = Number(fiyat);
+  try {
+    const mevcut = JSON.parse(localStorage.getItem('mdf_on_fiyatlar') || '{}');
+    mevcut[kod] = Number(fiyat);
+    localStorage.setItem('mdf_on_fiyatlar', JSON.stringify(mevcut));
+  } catch(e) {}
+}
+
+function mdfArkaFiyatKaydet(renk, fiyat) {
+  MDF_ARKA.find(x => x.renk === renk).arkaMdfFiyat = Number(fiyat);
+  try {
+    const mevcut = JSON.parse(localStorage.getItem('mdf_arka_fiyatlar') || '{}');
+    mevcut[renk] = Number(fiyat);
+    localStorage.setItem('mdf_arka_fiyatlar', JSON.stringify(mevcut));
+  } catch(e) {}
+}
 
 window.renderMdfOn = function() {
   const q = (document.getElementById('mdfOnSearch')?.value||'').toLowerCase();
@@ -3414,21 +2867,40 @@ window.renderMdfOn = function() {
   const el = document.getElementById('mdfOnTable');
   if(!el) return;
   const topKalan = MDF_ON.reduce((a,m)=>a+m.kalan,0);
-  document.getElementById('mdf-on-toplam').textContent = MDF_ON.length + ' model';
-  document.getElementById('mdf-on-kalan').textContent = topKalan + ' adet';
-  if(!list.length) { el.innerHTML = '<div class="empty-state" style="padding:30px"><div class="empty-title">Bulunamadı</div></div>'; return; }
+  const toplamEl = document.getElementById('mdf-on-toplam');
+  const kalanEl  = document.getElementById('mdf-on-kalan');
+  if(toplamEl) toplamEl.textContent = MDF_ON.length + ' model';
+  if(kalanEl)  kalanEl.textContent  = topKalan + ' adet';
+  if(!list.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Bulunamadı</div>'; return; }
   const rows = list.map(m => {
     const renk = m.kalan > 2 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
-    return '<tr>'
-      +'<td style="font-size:12px;font-family:var(--mono);font-weight:600">'+m.kod+'</td>'
-      +'<td class="mono" style="font-size:11px;text-align:center">'+m.siparis+'</td>'
-      +'<td class="mono" style="font-size:11px;text-align:center">'+m.satis+'</td>'
-      +'<td style="text-align:center"><span class="mono" style="font-size:13px;font-weight:700;color:'+renk+'">'+m.kalan+'</span></td>'
-      +'</tr>';
+    const fiyatStr = m.onMdfFiyat ? m.onMdfFiyat.toLocaleString('tr-TR') : '';
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 14px;font-size:13px;font-weight:600;color:var(--text)">${m.kod}</td>
+      <td style="padding:7px 10px;text-align:center;font-size:13px;color:var(--text2)">${m.siparis}</td>
+      <td style="padding:7px 10px;text-align:center;font-size:13px;color:var(--text2)">${m.satis}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <span style="font-size:15px;font-weight:700;color:${renk}">${m.kalan}</span>
+      </td>
+      <td style="padding:7px 14px;text-align:right">
+        <input type="number" value="${fiyatStr}" placeholder="₺"
+          onchange="mdfOnFiyatKaydet('${m.kod}',this.value)"
+          style="width:90px;text-align:right;font-size:13px;font-weight:600;padding:4px 8px;
+            background:var(--surface);border:1px solid var(--border);border-radius:3px;
+            color:var(--accent);outline:none;font-family:inherit">
+      </td>
+    </tr>`;
   }).join('');
-  el.innerHTML = '<table class="table" style="font-size:12px"><thead><tr>'
-    +'<th>Kapı Kodu</th><th style="text-align:center">Sipariş</th><th style="text-align:center">Satış</th><th style="text-align:center">Kalan</th>'
-    +'</tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
+      <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Kapı Kodu</th>
+      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Toplam Sipariş</th>
+      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Toplam Satış</th>
+      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Kalan</th>
+      <th style="padding:8px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em">Ön MDF Fiyatı</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 };
 
 window.renderMdfArka = function() {
@@ -3437,24 +2909,44 @@ window.renderMdfArka = function() {
   const topKalan = MDF_ARKA.reduce((a,m)=>a+m.kalan,0);
   document.getElementById('mdf-arka-toplam').textContent = MDF_ARKA.length + ' renk';
   document.getElementById('mdf-arka-kalan').textContent = topKalan + ' adet';
+  const max = Math.max(...MDF_ARKA.map(x=>x.siparis), 1);
   const rows = MDF_ARKA.map(m => {
     const renk = m.kalan > 5 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
-    const max = Math.max(...MDF_ARKA.map(x=>x.siparis), 1);
     const pct = Math.round((m.siparis/max)*100);
-    return '<tr>'
-      +'<td style="font-size:13px;font-weight:600">'+m.renk+'</td>'
-      +'<td style="min-width:120px">'
-        +'<div style="display:flex;align-items:center;gap:8px">'
-        +'<div style="flex:1;background:var(--surface2);border-radius:2px;height:6px;overflow:hidden">'
-        +'<div style="height:100%;background:var(--blue);width:'+pct+'%"></div></div>'
-        +'<span class="mono" style="font-size:11px;color:var(--text2);white-space:nowrap">'+m.siparis+' sip</span></div></td>'
-      +'<td class="mono" style="font-size:11px;text-align:center">'+m.satis+'</td>'
-      +'<td style="text-align:center"><span class="mono" style="font-size:14px;font-weight:700;color:'+renk+'">'+m.kalan+'</span></td>'
-      +'</tr>';
+    const fiyatStr = m.arkaMdfFiyat || '';
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 14px;font-size:13px;font-weight:600;color:var(--text)">${m.renk}</td>
+      <td style="padding:7px 10px;min-width:110px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;background:var(--surface2);border-radius:2px;height:5px;overflow:hidden">
+            <div style="height:100%;background:var(--blue);width:${pct}%"></div>
+          </div>
+          <span style="font-size:11px;color:var(--text2);white-space:nowrap">${m.siparis}</span>
+        </div>
+      </td>
+      <td style="padding:7px 10px;text-align:center;font-size:13px;color:var(--text2)">${m.satis}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <span style="font-size:15px;font-weight:700;color:${renk}">${m.kalan}</span>
+      </td>
+      <td style="padding:7px 14px;text-align:right">
+        <input type="number" value="${fiyatStr}" placeholder="₺"
+          onchange="mdfArkaFiyatKaydet('${m.renk}',this.value)"
+          style="width:90px;text-align:right;font-size:13px;font-weight:600;padding:4px 8px;
+            background:var(--surface);border:1px solid var(--border);border-radius:3px;
+            color:var(--purple);outline:none;font-family:inherit">
+      </td>
+    </tr>`;
   }).join('');
-  el.innerHTML = '<table class="table"><thead><tr>'
-    +'<th>Renk</th><th>Sipariş Oranı</th><th style="text-align:center">Satış</th><th style="text-align:center">Kalan</th>'
-    +'</tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
+      <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Renk</th>
+      <th style="padding:8px 10px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Sipariş Oranı</th>
+      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Satış</th>
+      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Kalan</th>
+      <th style="padding:8px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em">Arka MDF Fiyatı</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 };
 
 window.showPage = function(id, el) {
@@ -3473,6 +2965,9 @@ window.showPage = function(id, el) {
     mdfstok:['MDF Stok','MDF Ön Yüz & Arka Yüz stok takibi'],
     kasa:['Kasa','Gelir-Gider takibi'],
     cari:['Cari Ekstre','Müşteri cari hesap takibi'],
+    urunmaliyet:['Ürün Maliyetleri','Aksesuar ve hammadde birim fiyatları'],
+    maliyet:['Reçeteler','Kapı modeli maliyet reçeteleri'],
+    karlilik:['Karlılık Analizi','Satış kâr/zarar analizi'],
     araclar:['Araçlar','Yedekleme & sistem araçları'],
   };
   const [title, sub] = titles[id] || [id,''];
@@ -3485,7 +2980,7 @@ window.showPage = function(id, el) {
     });
   }
   document.getElementById('searchInput').value = '';
-  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',cari:'',araclar:''};
+  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',cari:'',urunmaliyet:'+ Yeni Ürün',maliyet:'+ Yeni Reçete',karlilik:'',araclar:''};
   document.getElementById('addBtn').textContent = addLabels[id] || '+ Yeni';
 
   if(id==='siparisler') {
@@ -3502,6 +2997,9 @@ window.showPage = function(id, el) {
   if(id==='analiz') { renderAylikSatislar(); }
   if(id==='crm') renderCRM();
   if(id==='cari') renderCari();
+  if(id==='urunmaliyet') renderUrunMaliyet();
+  if(id==='maliyet') renderMaliyetListesi();
+  if(id==='karlilik') renderKarlilik();
 };
 
 window.handleSearch = function() {
@@ -4484,6 +3982,10 @@ window.openAddModal = function() {
     document.getElementById('addModal').classList.add('open');
   } else if(currentPage === 'kasa') {
     openKasaIslem();
+  } else if(currentPage === 'urunmaliyet') {
+    openUrunMaliyetModal();
+  } else if(currentPage === 'maliyet') {
+    openReceteFormModal();
   } else {
     _origOpenAddModal();
   }
@@ -4495,6 +3997,7 @@ try {
   startStokListeners();
   startKasaListeners();
   startCariListeners();
+  startMaliyetListeners();
 } catch(e) {
   setSyncStatus(false);
   console.error(e);
@@ -5370,6 +4873,919 @@ window.renderAnaliz = function() {
       `<div class="empty-state" style="padding:20px"><div class="empty-icon" style="font-size:24px">📊</div><div class="empty-title" style="font-size:12px">Bu ay veri yok</div></div>`;
   }
 };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// KARLILIK ANALİZİ — REÇETe & KÂR/ZARAR
+// ═══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// ÜRÜN MALİYETLERİ MODÜLÜ
+// Aksesuar, hammadde, boya, genel gider birim fiyat yönetimi
+// ══════════════════════════════════════════════════════════════════════════
+
+const UM_KATEGORILER = [
+  { id: 'Hammadde',    ikon: '🔩', renk: 'var(--accent)'  },
+  { id: 'Boya',        ikon: '🎨', renk: 'var(--orange, #e8a020)' },
+  { id: 'Aksesuar',    ikon: '⚙️', renk: 'var(--blue)'    },
+  { id: 'Genel Gider', ikon: '📦', renk: 'var(--red)'     },
+];
+
+const UM_ALT_KATEGORILER = {
+  Aksesuar: ['Kilit Sistemi','Çekme Kol','Açma Kol','Dürbün','Mandal','Rozet','Tas','Diğer'],
+  Hammadde: ['Sac','MDF','Diğer'],
+  Boya:     ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Diğer'],
+  'Genel Gider': ['Menteşe','Fitil','Karton','Pim','Vida','Diğer'],
+};
+
+window.renderUrunMaliyet = function() {
+  const q   = (document.getElementById('umSearch')?.value||'').toLowerCase();
+  const kat = document.getElementById('umKatFilter')?.value||'';
+  const grid = document.getElementById('umGrid');
+  if(!grid) return;
+
+  let liste = urunMaliyetleri;
+  if(q)   liste = liste.filter(m => (m.ad||'').toLowerCase().includes(q));
+  if(kat) liste = liste.filter(m => m.kategori === kat);
+
+  // KPI
+  const fiyatsiz = urunMaliyetleri.filter(m => !Number(m.birimFiyat||0)).length;
+  const katSayisi = new Set(urunMaliyetleri.map(m=>m.kategori)).size;
+  const sonGun = urunMaliyetleri.reduce((en,m) => {
+    const t = m.updatedAt?.toDate?.()?.toLocaleDateString('tr-TR')||'';
+    return t > en ? t : en;
+  }, '');
+  const toplam_el = document.getElementById('um-toplam');
+  const kat_el    = document.getElementById('um-kat-sayi');
+  const gun_el    = document.getElementById('um-son-guncelleme');
+  const fiy_el    = document.getElementById('um-fiyatsiz');
+  if(toplam_el) toplam_el.textContent = urunMaliyetleri.length;
+  if(kat_el)    kat_el.textContent    = katSayisi;
+  if(gun_el)    gun_el.textContent    = sonGun||'—';
+  if(fiy_el)    fiy_el.textContent    = fiyatsiz;
+
+  if(!liste.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🏷️</div>
+      <div class="empty-title">${urunMaliyetleri.length===0?'Henüz ürün yok — + Yeni Ürün ile başlayın':'Sonuç bulunamadı'}</div></div>`;
+    return;
+  }
+
+  // Kategoriye göre grupla
+  const grups = {};
+  liste.forEach(m => {
+    const k = m.kategori||'Diğer';
+    if(!grups[k]) grups[k] = {items:[], altGrups:{}};
+    const ak = m.altKategori||'Diğer';
+    if(!grups[k].altGrups[ak]) grups[k].altGrups[ak] = [];
+    grups[k].altGrups[ak].push(m);
+    grups[k].items.push(m);
+  });
+
+  function urunRow(m) {
+    const f = Number(m.birimFiyat||0);
+    return `<tr onclick="openUrunMaliyetModal('${m.id}')" style="cursor:pointer;border-bottom:1px solid var(--border)">
+      <td style="padding:7px 14px;font-size:13px;font-weight:600">${m.ad}${m.not?'<span style="font-size:10px;color:var(--text3);margin-left:6px">'+m.not+'</span>':''}</td>
+      <td style="padding:7px 10px;text-align:center;font-size:11px;color:var(--text3)">${m.birim||'adet'}</td>
+      <td style="padding:7px 14px;text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;color:${f>0?'var(--green)':'var(--red)'}">
+        ${f>0?fmtMoney(f):'—'}
+      </td>
+      <td style="padding:7px 8px;text-align:center;width:36px">
+        <button class="btn btn-danger" style="padding:1px 6px;font-size:10px"
+          onclick="event.stopPropagation();deleteUrunMaliyet('${m.id}')">✕</button>
+      </td>
+    </tr>`;
+  }
+
+  const TH = `<thead><tr style="background:var(--surface)">
+    <th style="padding:6px 14px;text-align:left;font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Ürün</th>
+    <th style="padding:6px 10px;text-align:center;font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Birim</th>
+    <th style="padding:6px 14px;text-align:right;font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.08em">Fiyat</th>
+    <th style="width:36px"></th>
+  </tr></thead>`;
+
+  function katBlock(katId, items, altGrups, fullWidth) {
+    const meta = UM_KATEGORILER.find(k=>k.id===katId)||{ikon:'📦',renk:'var(--text)'};
+    const altKatListesi = UM_ALT_KATEGORILER[katId]||[];
+    const doluAltKatlar = altKatListesi.filter(ak => (altGrups[ak]||[]).length > 0);
+    const hasAltKat = fullWidth && doluAltKatlar.length > 1;
+
+    let icerik = '';
+    if(hasAltKat) {
+      // Yan yana sütunlar halinde alt kategoriler
+      const colCount = Math.min(doluAltKatlar.length, 4);
+      icerik = `<div style="display:grid;grid-template-columns:repeat(${colCount},1fr);border-top:1px solid var(--border)">`;
+      doluAltKatlar.forEach((ak, i) => {
+        const akItems = altGrups[ak]||[];
+        const borderR = i < doluAltKatlar.length-1 ? 'border-right:1px solid var(--border);' : '';
+        icerik += `<div style="${borderR}min-width:0">
+          <div style="padding:5px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)">${ak}</div>
+          <table style="width:100%;border-collapse:collapse"><tbody>${akItems.map(urunRow).join('')}</tbody></table>
+        </div>`;
+      });
+      // Diğer varsa ekle
+      const digerItems = altGrups['Diğer']||[];
+      if(digerItems.length && !doluAltKatlar.includes('Diğer')) {
+        icerik += `<div style="min-width:0">
+          <div style="padding:5px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);background:rgba(255,255,255,.04);border-bottom:1px solid var(--border)">Diğer</div>
+          <table style="width:100%;border-collapse:collapse"><tbody>${digerItems.map(urunRow).join('')}</tbody></table>
+        </div>`;
+      }
+      icerik += '</div>';
+    } else {
+      icerik = `<table style="width:100%;border-collapse:collapse">${TH}<tbody>${items.map(urunRow).join('')}</tbody></table>`;
+    }
+
+    return `<div class="card" style="padding:0;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface2)">
+        <span style="font-size:15px">${meta.ikon}</span>
+        <span style="font-size:13px;font-weight:700;color:${meta.renk}">${katId}</span>
+        <span style="font-size:10px;color:var(--text3)">${items.length} ürün</span>
+        <button class="btn btn-ghost" style="margin-left:auto;font-size:10px;padding:2px 10px"
+          onclick="openUrunMaliyetModal('','${katId}')">+ Ekle</button>
+      </div>
+      ${icerik}
+    </div>`;
+  }
+
+  // Layout: Hammadde + Boya yan yana | Genel Gider + Aksesuar tam genişlik
+  let html = '';
+
+  // Hammadde + Boya yan yana
+  const yanYana = ['Hammadde','Boya'].filter(k => grups[k]);
+  if(yanYana.length) {
+    html += `<div style="display:grid;grid-template-columns:repeat(${yanYana.length},1fr);gap:12px;margin-bottom:12px">`;
+    yanYana.forEach(k => { html += katBlock(k, grups[k].items, grups[k].altGrups, false); });
+    html += '</div>';
+  }
+
+  // Genel Gider - tam genişlik, düz liste
+  if(grups['Genel Gider']) {
+    html += `<div style="margin-bottom:12px">${katBlock('Genel Gider', grups['Genel Gider'].items, grups['Genel Gider'].altGrups, true)}</div>`;
+  }
+
+  // Aksesuar - tam genişlik, alt kategorili sütunlar
+  if(grups['Aksesuar']) {
+    html += `<div style="margin-bottom:12px">${katBlock('Aksesuar', grups['Aksesuar'].items, grups['Aksesuar'].altGrups, true)}</div>`;
+  }
+
+  // Diğer kategoriler
+  const bilinen = ['Hammadde','Boya','Genel Gider','Aksesuar'];
+  const digerKatlar = Object.keys(grups).filter(k => !bilinen.includes(k));
+  if(digerKatlar.length) {
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+    digerKatlar.forEach(k => { html += katBlock(k, grups[k].items, grups[k].altGrups, false); });
+    html += '</div>';
+  }
+
+  grid.innerHTML = html;
+};
+
+// ── Ürün Modal ─────────────────────────────────────────────────────────────
+window.openUrunMaliyetModal = function(id='', varsayilanKat='') {
+  const mev = id ? urunMaliyetleri.find(m=>m.id===id)||{} : {};
+  document.getElementById('addModalTitle').textContent = id ? 'Ürün Düzenle' : 'Yeni Ürün';
+  document.querySelector('.modal').style.maxWidth = '480px';
+
+  const katOpts = UM_KATEGORILER.map(k =>
+    `<option value="${k.id}" ${(mev.kategori||varsayilanKat)===k.id?'selected':''}>${k.ikon} ${k.id}</option>`
+  ).join('');
+
+  document.getElementById('addModalBody').innerHTML = `
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Ürün Adı *</label>
+        <input id="um_ad" value="${mev.ad||''}" placeholder="Örn: Kale Kilit, Menteşe 18mm">
+      </div>
+      <div class="form-group">
+        <label>Kategori *</label>
+        <select id="um_kat" onchange="umKatDegisti()">
+          <option value="">— Seç —</option>
+          ${katOpts}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Alt Kategori</label>
+        <select id="um_altkat">
+          <option value="">— Seç —</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Birim Fiyat (₺) *</label>
+        <input id="um_fiyat" type="number" value="${mev.birimFiyat||''}" placeholder="0.00" step="0.01"
+          style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--green)">
+      </div>
+      <div class="form-group">
+        <label>Birim</label>
+        <input id="um_birim" value="${mev.birim||'adet'}" placeholder="adet, metre, kg...">
+      </div>
+      <div class="form-group">
+        <label>Not (opsiyonel)</label>
+        <input id="um_not" value="${mev.not||''}" placeholder="Tedarikçi, özellik...">
+      </div>
+    </div>`;
+
+  // Alt kategori listesini seçili kata göre doldur
+  umKatDegisti(mev.altKategori);
+  document.getElementById('saveBtn').onclick = () => saveUrunMaliyet(id);
+  document.getElementById('saveBtn').textContent = 'Kaydet';
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.umKatDegisti = function(seciliAltKat='') {
+  const kat = document.getElementById('um_kat')?.value;
+  const altSel = document.getElementById('um_altkat');
+  if(!altSel) return;
+  const altlar = UM_ALT_KATEGORILER[kat]||[];
+  altSel.innerHTML = '<option value="">— Seç —</option>' +
+    altlar.map(a=>`<option value="${a}" ${a===seciliAltKat?'selected':''}>${a}</option>`).join('');
+};
+
+window.saveUrunMaliyet = async function(editId='') {
+  const ad     = document.getElementById('um_ad')?.value?.trim();
+  const kat    = document.getElementById('um_kat')?.value;
+  const altkat = document.getElementById('um_altkat')?.value||'';
+  const fiyat  = Number(document.getElementById('um_fiyat')?.value||0);
+  const birim  = document.getElementById('um_birim')?.value||'adet';
+  const not    = document.getElementById('um_not')?.value||'';
+
+  if(!ad)    { showToast('Ürün adı zorunlu','error'); return; }
+  if(!kat)   { showToast('Kategori zorunlu','error'); return; }
+  if(!fiyat) { showToast('Birim fiyat zorunlu','error'); return; }
+
+  const data = { ad, kategori:kat, altKategori:altkat, birimFiyat:fiyat, birim, not,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  try {
+    const btn = document.getElementById('saveBtn');
+    btn.disabled=true; btn.textContent='Kaydediliyor...';
+    if(editId) {
+      await db.collection('urunMaliyetleri').doc(editId).update(data);
+      showToast('Güncellendi ✓');
+    } else {
+      await db.collection('urunMaliyetleri').add(data);
+      showToast('Eklendi ✓');
+    }
+    closeModal('addModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  const btn = document.getElementById('saveBtn');
+  if(btn) { btn.disabled=false; btn.textContent='Kaydet'; }
+};
+
+window.deleteUrunMaliyet = async function(id) {
+  const m = urunMaliyetleri.find(x=>x.id===id);
+  if(!confirm((m?.ad||'Bu ürün')+' silinsin mi?')) return;
+  await db.collection('urunMaliyetleri').doc(id).delete();
+  showToast('Silindi ✓');
+};
+
+
+
+// ══════════════════════════════════════════════════════════════════════════
+// MALİYET TABLOSU & KARLILIK MODÜLLERİ
+// Her model için: sac, önMdf, arkaMdf(renk+fiyat), boya(renk+fiyat),
+//   aksesuarlar([{ad,fiyat}]), genelGiderler([{ad,adet,birimFiyat}])
+// ══════════════════════════════════════════════════════════════════════════
+
+let maliyetler = {}; // { 'AYBAT-201': {sac, onMdf, ...} }
+
+let urunMaliyetleri = []; // Aksesuar, hammadde vb. birim fiyatları
+
+function startMaliyetListeners() {
+  // Ürün maliyetleri (aksesuar, hammadde, boya vb.)
+  db.collection('urunMaliyetleri').orderBy('ad','asc').onSnapshot(snap => {
+    urunMaliyetleri = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if(currentPage === 'urunmaliyet') renderUrunMaliyet();
+  }, err => console.error(err));
+
+  // Reçeteler (model bazlı maliyet yapısı)
+  db.collection('maliyetler').onSnapshot(snap => {
+    maliyetler = {};
+    snap.docs.forEach(d => { maliyetler[d.id] = { id: d.id, ...d.data() }; });
+    if(currentPage === 'maliyet')  renderReceteListesi();
+    if(currentPage === 'karlilik') renderKarlilik();
+  }, err => console.error(err));
+
+  // Fiyat listesi artık urunMaliyetleri'nden geliyor — eski fiyatListesi listener kaldırıldı
+  window._fiyatListesi = window._fiyatListesi || {};
+}
+
+// Bir modelin toplam maliyetini hesapla
+function modelMaliyeti(modelNo) {
+  const m = maliyetler[modelNo];
+  if(!m) return null;
+  let toplam = Number(m.sac||0) + Number(m.onMdf||0) + Number(m.arkaMdf||0) + Number(m.boya||0);
+  (m.aksesuarlar||[]).forEach(a => { toplam += Number(a.fiyat||0); });
+  (m.genelGiderler||[]).forEach(g => { toplam += Number(g.adet||0) * Number(g.birimFiyat||0); });
+  return toplam;
+}
+
+// ── Maliyet Listesi ────────────────────────────────────────────────────────
+// ── Sekme Yönetimi ────────────────────────────────────────────────────────
+window._malAktifTab = 'fiyat';
+
+window.malTabSec = function(tab) {
+  window._malAktifTab = tab;
+  document.getElementById('mal-tab-fiyat').style.display = tab==='fiyat' ? '' : 'none';
+  document.getElementById('mal-tab-recete').style.display = tab==='recete' ? '' : 'none';
+  const fBtn = document.getElementById('mal-tab-fiyat-btn');
+  const rBtn = document.getElementById('mal-tab-recete-btn');
+  if(fBtn) { fBtn.style.borderBottomColor = tab==='fiyat'?'var(--accent)':'transparent'; fBtn.style.color = tab==='fiyat'?'var(--accent)':'var(--text2)'; }
+  if(rBtn) { rBtn.style.borderBottomColor = tab==='recete'?'var(--accent)':'transparent'; rBtn.style.color = tab==='recete'?'var(--accent)':'var(--text2)'; }
+  const addBtn = document.getElementById('addBtn');
+  if(addBtn) addBtn.style.display = tab==='recete' ? '' : 'none';
+  if(tab==='recete') renderReceteListesi();
+  if(tab==='fiyat')  renderFiyatListesi();
+};
+
+window.renderMaliyetListesi = function() { 
+  // Fiyat listesi artık Ürün Maliyetleri modülünde
+  // Direkt reçete listesini göster
+  malTabSec('recete');
+};
+
+// ── FİYAT LİSTESİ ─────────────────────────────────────────────────────────
+window.renderFiyatListesi = function() {
+  const fl = window._fiyatListesi || {};
+  // Sac
+  const sacEl = document.getElementById('fl_sac');
+  if(sacEl && !sacEl.value && fl.sac) sacEl.value = fl.sac;
+  // Boya renkleri
+  ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika'].forEach(r => {
+    const el = document.getElementById('fl_boya_'+r);
+    if(el && !el.value && fl['boya_'+r]) el.value = fl['boya_'+r];
+  });
+  // Aksesuarlar
+  renderFlAks(fl.aksesuarlar||[]);
+  // Genel Giderler
+  renderFlGg(fl.genelGiderler||[]);
+};
+
+function renderFlAks(liste) {
+  const cont = document.getElementById('fl_aks_container');
+  if(!cont) return;
+  const items = liste.length ? liste : [{ad:'',fiyat:''}];
+  cont.innerHTML = items.map((a,i) => flAksRowHTML(a,i)).join('');
+}
+
+function renderFlGg(liste) {
+  const cont = document.getElementById('fl_gg_container');
+  if(!cont) return;
+  const items = liste.length ? liste : [{ad:'',birimFiyat:''}];
+  cont.innerHTML = items.map((g,i) => flGgRowHTML(g,i)).join('');
+}
+
+function flAksRowHTML(a, i) {
+  return `<div style="display:flex;gap:8px;align-items:center" id="fl_aks_${i}">
+    <input type="text" id="fl_aks_ad_${i}" value="${a.ad||''}" placeholder="Aksesuar adı (örn: Kale Kilit)"
+      style="flex:2;font-size:12px;padding:6px 10px" onchange="flListeKaydet()">
+    <input type="number" id="fl_aks_fiyat_${i}" value="${a.fiyat||''}" placeholder="₺"
+      style="width:110px;text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;padding:6px 10px;color:var(--green)" onchange="flListeKaydet()">
+    <button type="button" onclick="document.getElementById('fl_aks_${i}').remove();flListeKaydet()"
+      style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0">✕</button>
+  </div>`;
+}
+
+function flGgRowHTML(g, i) {
+  return `<div style="display:flex;gap:8px;align-items:center" id="fl_gg_${i}">
+    <input type="text" id="fl_gg_ad_${i}" value="${g.ad||''}" placeholder="Gider adı (örn: Menteşe)"
+      style="flex:2;font-size:12px;padding:6px 10px" onchange="flListeKaydet()">
+    <input type="number" id="fl_gg_fiyat_${i}" value="${g.birimFiyat||''}" placeholder="Birim ₺"
+      style="width:110px;text-align:right;font-family:var(--mono);font-size:13px;font-weight:700;padding:6px 10px;color:var(--red)" onchange="flListeKaydet()">
+    <button type="button" onclick="document.getElementById('fl_gg_${i}').remove();flListeKaydet()"
+      style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0">✕</button>
+  </div>`;
+}
+
+window.flAksEkle = function() {
+  const cont = document.getElementById('fl_aks_container');
+  const idx = Date.now();
+  const d = document.createElement('div');
+  d.innerHTML = flAksRowHTML({}, idx);
+  cont.appendChild(d.firstChild);
+};
+
+window.flGgEkle = function() {
+  const cont = document.getElementById('fl_gg_container');
+  const idx = Date.now();
+  const d = document.createElement('div');
+  d.innerHTML = flGgRowHTML({}, idx);
+  cont.appendChild(d.firstChild);
+};
+
+window.flKaydet = function(key, val) {
+  if(!window._fiyatListesi) window._fiyatListesi = {};
+  window._fiyatListesi[key] = Number(val)||val;
+  flDebounceKaydet();
+};
+
+let _flTimer = null;
+window.flDebounceKaydet = function() {
+  clearTimeout(_flTimer);
+  _flTimer = setTimeout(flListeKaydet, 800);
+};
+
+window.flListeKaydet = async function() {
+  const fl = window._fiyatListesi || {};
+  // Sac
+  fl.sac = Number(document.getElementById('fl_sac')?.value||0);
+  // Boya
+  ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika'].forEach(r => {
+    fl['boya_'+r] = Number(document.getElementById('fl_boya_'+r)?.value||0);
+  });
+  // Aksesuarlar
+  fl.aksesuarlar = [];
+  document.querySelectorAll('#fl_aks_container > div[id^="fl_aks_"]').forEach(row => {
+    const i = row.id.replace('fl_aks_','');
+    const ad = document.getElementById('fl_aks_ad_'+i)?.value?.trim();
+    const f  = Number(document.getElementById('fl_aks_fiyat_'+i)?.value||0);
+    if(ad) fl.aksesuarlar.push({ad, fiyat:f});
+  });
+  // Genel giderler
+  fl.genelGiderler = [];
+  document.querySelectorAll('#fl_gg_container > div[id^="fl_gg_"]').forEach(row => {
+    const i = row.id.replace('fl_gg_','');
+    const ad = document.getElementById('fl_gg_ad_'+i)?.value?.trim();
+    const f  = Number(document.getElementById('fl_gg_fiyat_'+i)?.value||0);
+    if(ad) fl.genelGiderler.push({ad, birimFiyat:f});
+  });
+  window._fiyatListesi = fl;
+  try {
+    await db.collection('fiyatListesi').doc('global').set({...fl, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    showToast('Fiyat listesi kaydedildi ✓');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+// ── REÇETE LİSTESİ ────────────────────────────────────────────────────────
+window.renderReceteListesi = function() {
+  const q    = (document.getElementById('receteSearch')?.value||'').toLowerCase();
+  const seri = document.getElementById('rSeriFilter')?.value||'';
+  const tbody = document.getElementById('receteTbody');
+  if(!tbody) return;
+
+  let liste = Object.values(maliyetler);
+  if(q) liste = liste.filter(m => m.id.toLowerCase().includes(q));
+  if(seri) liste = liste.filter(m => {
+    const no = parseInt(m.id.replace('AYBAT-',''));
+    return String(Math.floor(no/100)) === seri;
+  });
+  liste.sort((a,b) => a.id.localeCompare(b.id, undefined, {numeric:true}));
+
+  const sayi = document.getElementById('recete-kpi-sayi');
+  if(sayi) sayi.textContent = liste.length+' reçete';
+
+  if(!liste.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3)">
+      ${Object.keys(maliyetler).length===0 ? '+ Yeni Reçete butonuyla ilk modeli ekleyin':'Sonuç yok'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = liste.map(m => {
+    const aksToplam = (m.aksesuarlar||[]).reduce((s,a)=>s+Number(a.fiyat||0),0);
+    const ggToplam  = (m.genelGiderler||[]).reduce((s,g)=>s+Number(g.adet||0)*Number(g.birimFiyat||0),0);
+    const toplam    = modelMaliyeti(m.id)||0;
+    return `<tr onclick="openReceteFormModal('${m.id}')" style="cursor:pointer;border-bottom:1px solid var(--border)">
+      <td style="padding:8px 14px;font-family:var(--mono);font-weight:700;color:var(--accent)">${m.id}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px">${m.sac?fmtMoney(m.sac):'—'}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px">${m.onMdf?fmtMoney(m.onMdf):'—'}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px">${m.arkaMdf?fmtMoney(m.arkaMdf):'—'}${m.arkaMdfRenk?'<span style="font-size:9px;color:var(--text3);margin-left:3px">'+m.arkaMdfRenk+'</span>':''}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px">${m.boya?fmtMoney(m.boya):'—'}${m.boyaRenk?'<span style="font-size:9px;color:var(--text3);margin-left:3px">'+m.boyaRenk+'</span>':''}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px">${aksToplam?fmtMoney(aksToplam):'—'}</td>
+      <td style="padding:8px 10px;text-align:right;font-size:12px">${ggToplam?fmtMoney(ggToplam):'—'}</td>
+      <td style="padding:8px 14px;text-align:right;font-size:13px;font-weight:700;color:var(--accent)">${fmtMoney(toplam)}</td>
+      <td style="padding:8px 8px;text-align:center">
+        <button class="btn btn-danger" style="padding:2px 7px;font-size:10px" onclick="event.stopPropagation();deleteMaliyet('${m.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+// ── REÇETE FORMU (fiyat listesinden seçimli) ──────────────────────────────
+window.openReceteFormModal = function(modelNo = '') {
+  const mev = modelNo ? (maliyetler[modelNo]||{}) : {};
+  const fl  = window._fiyatListesi || {};
+  document.getElementById('addModalTitle').textContent = modelNo ? 'Reçete — '+modelNo : 'Yeni Reçete';
+
+  // Model listesi
+  const modelSet = new Set();
+  siparisler.forEach(s => {
+    if(s.kalemler?.length) s.kalemler.forEach(k => { if(k.urun&&k.urun!=='Katalog Dışı') modelSet.add(k.urun); });
+    else if(s.urun&&s.urun!=='Katalog Dışı') modelSet.add(s.urun);
+  });
+  window.KATALOG?.forEach(k => { if(k.no!=='Katalog Dışı') modelSet.add(k.no); });
+  modelSet.delete('AYBAT-1512'); modelSet.delete('1512');
+  const modeller = [...modelSet].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+
+  // Boya dropdown options
+  const boyaOpts = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika'].map(r => {
+    const boyaUrunu = urunMaliyetleri.find(m => m.kategori==='Boya' && (m.altKategori===r || m.ad.includes(r)));
+    const f = boyaUrunu?.birimFiyat || fl['boya_'+r];
+    return `<option value="${r}" ${mev.boyaRenk===r?'selected':''}>${r}${f?' — '+fmtMoney(f):''}`;
+  }).join('');
+
+  // Arka MDF dropdown options
+  const arkaOpts = ['Antrasit','Beyaz','Siyah','Sarı','Kapuçino','Vizon','Tanganika','Saruhan','Kahverengi'].map(r => {
+    const entry = MDF_ARKA.find(m=>m.renk===r);
+    const f = entry?.arkaMdfFiyat;
+    return `<option value="${r}" ${mev.arkaMdfRenk===r?'selected':''}>${r}${f?' — '+fmtMoney(f):''}`;
+  }).join('');
+
+  // Aksesuar checkbox listesi
+  // Aksesuar ve genel giderleri urunMaliyetleri'nden çek
+  const aksListesi = urunMaliyetleri.filter(m => m.kategori==='Aksesuar').map(m => ({ad:m.ad, fiyat:Number(m.birimFiyat||0), id:m.id}));
+  const mevAks = mev.aksesuarlar||[];
+  const aksHTML = aksListesi.length ? aksListesi.map((a,i) => {
+    const secili = mevAks.find(x=>x.ad===a.ad);
+    return `<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;border-bottom:1px solid var(--border)">
+      <input type="checkbox" id="rf_aks_${i}" ${secili?'checked':''} onchange="rfHesapla()"
+        style="width:14px;height:14px;accent-color:var(--accent)">
+      <span style="flex:1;font-size:12px">${a.ad}</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--green);font-weight:600">${fmtMoney(a.fiyat)}</span>
+      <input type="hidden" id="rf_aks_fiyat_${i}" value="${a.fiyat||0}">
+      <input type="hidden" id="rf_aks_ad_${i}" value="${a.ad||''}">
+    </label>`;
+  }).join('') : '<div style="font-size:11px;color:var(--text3);padding:8px">Fiyat Listesi sekmesinden aksesuar ekleyin.</div>';
+
+  // Genel gider checkbox listesi + adet girişi
+  const ggListesi = urunMaliyetleri.filter(m => m.kategori==='Genel Gider').map(m => ({ad:m.ad, birimFiyat:Number(m.birimFiyat||0), birim:m.birim||'adet', id:m.id}));
+  const mevGg = mev.genelGiderler||[];
+  const ggHTML = ggListesi.length ? ggListesi.map((g,i) => {
+    const secili = mevGg.find(x=>x.ad===g.ad);
+    const adet = secili?.adet||1;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" id="rf_gg_${i}" ${secili?'checked':''} onchange="rfHesapla()"
+        style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer">
+      <span style="flex:1;font-size:12px">${g.ad}</span>
+      <input type="number" id="rf_gg_adet_${i}" value="${adet}" min="0.01" step="0.01" placeholder="Adet"
+        style="width:65px;text-align:center;font-family:var(--mono);font-size:12px;padding:3px 6px" oninput="rfHesapla()">
+      <span style="font-size:10px;color:var(--text3)">×</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--red);min-width:55px;text-align:right">${fmtMoney(g.birimFiyat)}</span>
+      <span id="rf_gg_top_${i}" style="font-family:var(--mono);font-size:12px;color:var(--accent);min-width:60px;text-align:right"></span>
+      <input type="hidden" id="rf_gg_birim_${i}" value="${g.birimFiyat||0}">
+      <input type="hidden" id="rf_gg_ad_${i}" value="${g.ad||''}">
+    </div>`;
+  }).join('') : '<div style="font-size:11px;color:var(--text3);padding:8px">Fiyat Listesi sekmesinden genel gider ekleyin.</div>';
+
+  document.querySelector('.modal').style.maxWidth = '680px';
+  document.getElementById('addModalBody').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0">
+
+      <!-- MODEL -->
+      <div style="margin-bottom:14px">
+        <label style="font-size:10px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono)">Kapı Modeli *</label>
+        <select id="rf_model" onchange="rfModelSecildi(this.value)"
+          style="width:100%;margin-top:6px;font-family:var(--mono);font-size:14px;font-weight:700;padding:8px 12px;border-color:var(--accent)">
+          <option value="">— Model seçin —</option>
+          ${modeller.map(m=>`<option value="${m}" ${m===modelNo?'selected':''}>${m}</option>`).join('')}
+        </select>
+      </div>
+
+      <!-- SAÇ (Fiyat listesinden otomatik) -->
+      <div style="border:1px solid var(--border);border-left:3px solid var(--text3);border-radius:4px;margin-bottom:8px">
+        <div style="padding:7px 12px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)">🔩 Sac</span>
+          <span id="rf_sac_goster" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${fl.sac?fmtMoney(fl.sac):'Fiyat listesinde tanımlı değil'}</span>
+        </div>
+      </div>
+
+      <!-- ÖN MDF (MDF Stok'tan otomatik) -->
+      <div style="border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:4px;margin-bottom:8px">
+        <div style="padding:7px 12px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--blue)">🪵 Ön MDF</span>
+          <span id="rf_onmdf_goster" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue)">${mev.onMdf?fmtMoney(mev.onMdf):'Model seçince otomatik gelir'}</span>
+          <input type="hidden" id="rf_onmdf" value="${mev.onMdf||0}">
+        </div>
+      </div>
+
+      <!-- ARKA MDF -->
+      <div style="border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:4px;margin-bottom:8px;overflow:hidden">
+        <div style="padding:7px 12px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--purple)">🪵 Arka MDF</div>
+        <div style="padding:10px 12px;display:flex;gap:10px;align-items:center">
+          <select id="rf_arkamdf_renk" onchange="rfArkaRenkSecildi()" style="flex:1;padding:7px 10px;font-size:12px">
+            <option value="">— Renk seç —</option>${arkaOpts}
+          </select>
+          <span id="rf_arkamdf_goster" style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--purple);min-width:80px;text-align:right">${mev.arkaMdf?fmtMoney(mev.arkaMdf):'—'}</span>
+          <input type="hidden" id="rf_arkamdf" value="${mev.arkaMdf||0}">
+        </div>
+      </div>
+
+      <!-- BOYA -->
+      <div style="border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:4px;margin-bottom:8px;overflow:hidden">
+        <div style="padding:7px 12px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent)">🎨 Boya</div>
+        <div style="padding:10px 12px;display:flex;gap:10px;align-items:center">
+          <select id="rf_boya_renk" onchange="rfBoyaRenkSecildi()" style="flex:1;padding:7px 10px;font-size:12px">
+            <option value="">— Renk seç —</option>${boyaOpts}
+          </select>
+          <span id="rf_boya_goster" style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);min-width:80px;text-align:right">${mev.boya?fmtMoney(mev.boya):'—'}</span>
+          <input type="hidden" id="rf_boya" value="${mev.boya||0}">
+        </div>
+      </div>
+
+      <!-- AKSESUARlar (checkbox) -->
+      <div style="border:1px solid var(--border);border-left:3px solid var(--green);border-radius:4px;margin-bottom:8px;overflow:hidden">
+        <div style="padding:7px 12px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green)">⚙️ Aksesuarlar</div>
+        <div style="padding:8px 14px">${aksHTML}</div>
+      </div>
+
+      <!-- GENEL GİDERLER (checkbox + adet) -->
+      <div style="border:1px solid var(--border);border-left:3px solid var(--red);border-radius:4px;margin-bottom:8px;overflow:hidden">
+        <div style="padding:7px 12px;background:var(--surface2);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--red)">📦 Genel Giderler</div>
+        <div style="padding:8px 14px">${ggHTML}</div>
+      </div>
+
+      <!-- TOPLAM -->
+      <div style="background:linear-gradient(135deg,rgba(232,160,32,.1),rgba(76,175,125,.08));border:2px solid var(--accent);padding:14px 16px;border-radius:4px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Toplam Maliyet</div>
+          <div id="rf_toplam" style="font-size:24px;font-weight:700;font-family:var(--mono);color:var(--accent)">0₺</div>
+        </div>
+        <div id="rf_detay" style="font-size:10px;color:var(--text3);text-align:right;line-height:2;max-width:260px"></div>
+      </div>
+    </div>`;
+
+  document.getElementById('saveBtn').onclick = saveReceteForm;
+  document.getElementById('saveBtn').textContent = 'Kaydet';
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(rfHesapla, 50);
+};
+
+window.rfModelSecildi = function(modelNo) {
+  if(!modelNo) return;
+  const numStr = modelNo.replace('AYBAT-','').trim();
+  const mdfEntry = MDF_ON.find(m => m.kod===numStr || m.kod.startsWith(numStr+' '));
+  if(mdfEntry?.onMdfFiyat) {
+    const el = document.getElementById('rf_onmdf');
+    const goster = document.getElementById('rf_onmdf_goster');
+    if(el) el.value = mdfEntry.onMdfFiyat;
+    if(goster) goster.textContent = fmtMoney(mdfEntry.onMdfFiyat);
+  }
+  rfHesapla();
+};
+
+window.rfArkaRenkSecildi = function() {
+  const renk = document.getElementById('rf_arkamdf_renk')?.value;
+  if(!renk) return;
+  const entry = MDF_ARKA.find(m=>m.renk===renk);
+  if(entry?.arkaMdfFiyat) {
+    const el = document.getElementById('rf_arkamdf');
+    const goster = document.getElementById('rf_arkamdf_goster');
+    if(el) el.value = entry.arkaMdfFiyat;
+    if(goster) goster.textContent = fmtMoney(entry.arkaMdfFiyat);
+  }
+  rfHesapla();
+};
+
+window.rfBoyaRenkSecildi = function() {
+  const renk = document.getElementById('rf_boya_renk')?.value;
+  if(!renk) return;
+  const fl = window._fiyatListesi||{};
+  const boyaUrunu = urunMaliyetleri.find(m => m.kategori==='Boya' && (m.altKategori===renk || m.ad.includes(renk)));
+  const f = boyaUrunu?.birimFiyat || fl['boya_'+renk];
+  if(f) {
+    const el = document.getElementById('rf_boya');
+    const goster = document.getElementById('rf_boya_goster');
+    if(el) el.value = f;
+    if(goster) goster.textContent = fmtMoney(f);
+  }
+  rfHesapla();
+};
+
+window.rfHesapla = function() {
+  const fl   = window._fiyatListesi||{};
+  const sacUrunu = urunMaliyetleri.find(m => m.kategori==='Hammadde' && m.altKategori==='Sac');
+  const sac  = sacUrunu?.birimFiyat || Number(fl.sac||0);
+  const onMdf= Number(document.getElementById('rf_onmdf')?.value||0);
+  const arka = Number(document.getElementById('rf_arkamdf')?.value||0);
+  const boya = Number(document.getElementById('rf_boya')?.value||0);
+
+  let aksToplam=0; const aksDetay=[];
+  document.querySelectorAll('[id^="rf_aks_"]:not([type="hidden"])').forEach(el => {
+    if(el.type!=='checkbox') return;
+    if(!el.checked) return;
+    const i = el.id.replace('rf_aks_','');
+    const ad = document.getElementById('rf_aks_ad_'+i)?.value;
+    const f  = Number(document.getElementById('rf_aks_fiyat_'+i)?.value||0);
+    aksToplam+=f;
+    if(ad) aksDetay.push(ad+': '+fmtMoney(f));
+  });
+
+  let ggToplam=0; const ggDetay=[];
+  document.querySelectorAll('[id^="rf_gg_"]:not([type="hidden"])').forEach(el => {
+    if(el.type!=='checkbox') return;
+    if(!el.checked) return;
+    const i = el.id.replace('rf_gg_','');
+    const ad    = document.getElementById('rf_gg_ad_'+i)?.value;
+    const adet  = Number(document.getElementById('rf_gg_adet_'+i)?.value||0);
+    const birim = Number(document.getElementById('rf_gg_birim_'+i)?.value||0);
+    const top   = adet*birim;
+    const topEl = document.getElementById('rf_gg_top_'+i);
+    if(topEl) topEl.textContent = (adet&&birim)?'= '+fmtMoney(top):'';
+    ggToplam+=top;
+    if(ad) ggDetay.push(ad+': '+fmtMoney(top));
+  });
+
+  const toplam = sac+onMdf+arka+boya+aksToplam+ggToplam;
+  const el = document.getElementById('rf_toplam');
+  if(el) el.textContent = fmtMoney(toplam);
+
+  const detay = document.getElementById('rf_detay');
+  if(detay) {
+    const p=[
+      sac>0?'Sac: '+fmtMoney(sac):null,
+      onMdf>0?'Ön MDF: '+fmtMoney(onMdf):null,
+      arka>0?'Arka MDF: '+fmtMoney(arka):null,
+      boya>0?'Boya: '+fmtMoney(boya):null,
+      ...aksDetay,...ggDetay
+    ].filter(Boolean);
+    detay.innerHTML = p.join('<br>');
+  }
+};
+
+window.saveReceteForm = async function() {
+  const modelNo = document.getElementById('rf_model')?.value;
+  if(!modelNo) { showToast('Model seçilmeli','error'); return; }
+  const fl    = window._fiyatListesi||{};
+  const sacUrunu = urunMaliyetleri.find(m => m.kategori==='Hammadde' && m.altKategori==='Sac');
+  const sac   = sacUrunu?.birimFiyat || Number(fl.sac||0);
+  const onMdf = Number(document.getElementById('rf_onmdf')?.value||0);
+  const arkaMdf = Number(document.getElementById('rf_arkamdf')?.value||0);
+  const boya    = Number(document.getElementById('rf_boya')?.value||0);
+  const boyaRenk    = document.getElementById('rf_boya_renk')?.value||'';
+  const arkaMdfRenk = document.getElementById('rf_arkamdf_renk')?.value||'';
+
+  const aksesuarlar=[];
+  document.querySelectorAll('[id^="rf_aks_"]:not([type="hidden"])').forEach(el => {
+    if(el.type!=='checkbox'||!el.checked) return;
+    const i = el.id.replace('rf_aks_','');
+    const ad = document.getElementById('rf_aks_ad_'+i)?.value;
+    const f  = Number(document.getElementById('rf_aks_fiyat_'+i)?.value||0);
+    if(ad) aksesuarlar.push({ad,fiyat:f});
+  });
+
+  const genelGiderler=[];
+  document.querySelectorAll('[id^="rf_gg_"]:not([type="hidden"])').forEach(el => {
+    if(el.type!=='checkbox'||!el.checked) return;
+    const i = el.id.replace('rf_gg_','');
+    const ad    = document.getElementById('rf_gg_ad_'+i)?.value;
+    const adet  = Number(document.getElementById('rf_gg_adet_'+i)?.value||0);
+    const birim = Number(document.getElementById('rf_gg_birim_'+i)?.value||0);
+    if(ad) genelGiderler.push({ad,adet,birimFiyat:birim});
+  });
+
+  const aksToplam = aksesuarlar.reduce((s,a)=>s+a.fiyat,0);
+  const ggToplam  = genelGiderler.reduce((s,g)=>s+g.adet*g.birimFiyat,0);
+  const toplamMaliyet = sac+onMdf+arkaMdf+boya+aksToplam+ggToplam;
+
+  const data = {modelNo,sac,onMdf,arkaMdf,boya,boyaRenk,arkaMdfRenk,aksesuarlar,genelGiderler,toplamMaliyet,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+  try {
+    const btn = document.getElementById('saveBtn');
+    btn.disabled=true; btn.textContent='Kaydediliyor...';
+    await db.collection('maliyetler').doc(modelNo).set(data);
+    showToast('Reçete kaydedildi ✓');
+    closeModal('addModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+// ── Karlılık Analizi ───────────────────────────────────────────────────────
+window.renderKarlilik = function() {
+  const bugun = new Date();
+  const buYil = bugun.getFullYear();
+  const buAy  = bugun.getMonth();
+  const yil   = document.getElementById('krl-yil-sec')?.value || '2026';
+  const donem = document.getElementById('krl-donem')?.value || 'bu_ay';
+
+  document.getElementById('krl-recete-sayi').textContent = Object.keys(maliyetler).length;
+
+  // Sipariş filtresi
+  const filtreli = siparisler.filter(s => {
+    if(s.durum==='İptal') return false;
+    const d = new Date(s.sipTarihi||'');
+    if(donem==='bu_ay')    return d.getFullYear()===buYil && d.getMonth()===buAy;
+    if(donem==='gecen_ay') { const pm=buAy===0?11:buAy-1,py=buAy===0?buYil-1:buYil; return d.getFullYear()===py&&d.getMonth()===pm; }
+    if(donem==='bu_yil')   return d.getFullYear()===buYil;
+    return true;
+  });
+
+  let topKar=0, topSatis=0, karliSay=0;
+  const modelKarMap = {};
+
+  const satirlar = filtreli.map(s => {
+    const satis = Number(s.tutar||0);
+    // Maliyet: kalemli sipariş için her kalem ayrı, tekli için direkt
+    let maliyet = null;
+    const kalemler = (s.kalemler?.length) ? s.kalemler : null;
+    if(kalemler) {
+      let m = 0; let eksik = false;
+      kalemler.forEach(k => {
+        const km = modelMaliyeti(k.urun);
+        if(km===null) eksik=true;
+        else m += km * Number(k.adet||1);
+      });
+      if(!eksik) maliyet = m;
+    } else {
+      maliyet = modelMaliyeti(s.urun);
+      if(maliyet!==null) maliyet *= Number(s.adet||1);
+    }
+    const kar  = maliyet!==null ? satis - maliyet : null;
+    const marj = kar!==null && satis>0 ? Math.round(kar/satis*100) : null;
+
+    if(kar!==null) { topKar+=kar; topSatis+=satis; karliSay++; }
+
+    // Model kâr haritası
+    const _kalemler = kalemler || [{urun:s.urun, adet:s.adet||1}];
+    _kalemler.forEach(k => {
+      const km = modelMaliyeti(k.urun);
+      if(km===null) return;
+      const ks = kalemler ? Number(k.birimFiyat||0)*Number(k.adet||1) : satis;
+      const kMal = km * Number(k.adet||1);
+      if(!modelKarMap[k.urun]) modelKarMap[k.urun]={satis:0,maliyet:0};
+      modelKarMap[k.urun].satis   += ks;
+      modelKarMap[k.urun].maliyet += kMal;
+    });
+
+    const karRenk = kar===null?'var(--text3)':kar>=0?'var(--green)':'var(--red)';
+    const tarih = s.sipTarihi?s.sipTarihi.split('-').reverse().join('.'):'—';
+    const model = kalemler?.length>1 ? kalemler.length+' kalem' : (s.urun||'—');
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--accent)">${s.sipNo||'—'}</td>
+      <td style="padding:7px 10px;font-size:11px;color:var(--text3)">${tarih}</td>
+      <td style="padding:7px 10px;font-size:12px;font-weight:600">${s.musteriAd||'—'}</td>
+      <td style="padding:7px 10px;font-size:11px;font-family:var(--mono)">${model}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:11px">${fmtMoney(satis)}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text2)">${maliyet!==null?fmtMoney(maliyet):'<span style="font-size:10px;color:var(--text3)">Kayıt yok</span>'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:12px;font-weight:700;color:${karRenk}">${kar!==null?fmtMoney(kar):'—'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:var(--mono);font-size:12px;font-weight:700;color:${karRenk}">${marj!==null?'%'+marj:'—'}</td>
+    </tr>`;
+  });
+
+  document.getElementById('krl-sip-tbody').innerHTML = satirlar.length
+    ? satirlar.join('')
+    : '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Bu dönemde sipariş yok</td></tr>';
+
+  // KPI
+  const ortMarj = topSatis>0 ? Math.round(topKar/topSatis*100) : 0;
+  document.getElementById('krl-kar-ay').textContent = fmtMoney(topKar);
+  document.getElementById('krl-kar-ay-sub').textContent = karliSay+' sipariş';
+  document.getElementById('krl-marj').textContent = '%'+ortMarj;
+
+  const modelSirali = Object.entries(modelKarMap)
+    .map(([no,v]) => ({no, kar:v.satis-v.maliyet, marj:v.satis>0?Math.round((v.satis-v.maliyet)/v.satis*100):0}))
+    .sort((a,b)=>b.kar-a.kar);
+  if(modelSirali.length) {
+    document.getElementById('krl-best-model').textContent = modelSirali[0].no;
+    document.getElementById('krl-best-model-sub').textContent = fmtMoney(modelSirali[0].kar)+' · %'+modelSirali[0].marj;
+  }
+
+  // Model bazlı karlılık listesi
+  const maxKar = Math.max(...modelSirali.map(m=>m.kar),1);
+  document.getElementById('krl-model-list').innerHTML = modelSirali.length
+    ? modelSirali.map(m=>`
+      <div style="margin-bottom:9px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+          <span style="font-family:var(--mono);font-weight:600;color:var(--accent)">${m.no}</span>
+          <span style="font-family:var(--mono);color:${m.kar>=0?'var(--green)':'var(--red)'}">%${m.marj} · ${fmtMoney(m.kar)}</span>
+        </div>
+        <div style="height:4px;background:var(--surface2);border-radius:2px">
+          <div style="height:100%;width:${Math.max(3,Math.round(m.kar/maxKar*100))}%;background:${m.marj>=30?'var(--green)':m.marj>=15?'var(--accent)':'var(--red)'};border-radius:2px"></div>
+        </div>
+      </div>`).join('')
+    : '<div style="font-size:11px;color:var(--text3);padding:8px">Maliyet kayıtlı model ve sipariş eşleşmesi yok.</div>';
+
+  // Aylık kâr trendi
+  const AYLAR=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const ayKar = new Array(12).fill(0);
+  siparisler.filter(s=>s.durum!=='İptal'&&(s.sipTarihi||'').startsWith(yil)).forEach(s=>{
+    const ai = parseInt((s.sipTarihi||'').slice(5,7))-1;
+    if(ai<0||ai>11) return;
+    const satis = Number(s.tutar||0);
+    const mal   = siparisMaliyetiFromMaliyetler(s);
+    if(mal!==null) ayKar[ai] += satis-mal;
+  });
+  const maxVal = Math.max(...ayKar.map(Math.abs),1);
+  const cH=110, bW=18, gap=6, padL=8, totalW=padL+(bW+gap)*12+20;
+  let svg='';
+  AYLAR.forEach((ay,i)=>{
+    const x=padL+i*(bW+gap), k=ayKar[i];
+    const h=Math.round((Math.abs(k)/maxVal)*cH*.9);
+    const pos=k>=0;
+    const y=pos?(cH-h+6):cH+6;
+    if(h>0) svg+=`<rect x="${x}" y="${y}" width="${bW}" height="${h}" fill="${pos?'var(--green)':'var(--red)'}" opacity=".85" rx="2"/>`;
+    if(k!==0) svg+=`<text x="${x+bW/2}" y="${pos?y-3:y+h+10}" text-anchor="middle" font-size="8" fill="${pos?'var(--green)':'var(--red)'}">${Math.abs(k)>=1000?(k/1000).toFixed(0)+'k':''}</text>`;
+    svg+=`<text x="${x+bW/2}" y="${cH+22}" text-anchor="middle" font-size="9" fill="var(--text3)">${ay}</text>`;
+  });
+  svg+=`<line x1="0" y1="${cH+6}" x2="${totalW}" y2="${cH+6}" stroke="var(--border)" stroke-width="1"/>`;
+  document.getElementById('krl-trend-chart').innerHTML=
+    `<svg width="100%" viewBox="0 0 ${totalW} ${cH+28}" xmlns="http://www.w3.org/2000/svg">${svg}</svg>`;
+};
+
+function siparisMaliyetiFromMaliyetler(s) {
+  const kalemler = (s.kalemler?.length) ? s.kalemler : null;
+  if(kalemler) {
+    let m=0; let eksik=false;
+    kalemler.forEach(k=>{const km=modelMaliyeti(k.urun); if(km===null)eksik=true; else m+=km*Number(k.adet||1);});
+    return eksik?null:m;
+  }
+  const km = modelMaliyeti(s.urun);
+  return km===null?null:km*Number(s.adet||1);
+}
+
 
 </script>
 </body>
