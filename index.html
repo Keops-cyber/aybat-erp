@@ -206,7 +206,7 @@
   .chip{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);padding:3px 10px;border-radius:12px;font-size:11px;color:var(--text2);}
 
   /* MUSTERI CARD */
-  .musteri-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .musteri-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
   .durum-toggle{padding:4px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);border-radius:3px;background:var(--surface2);color:var(--text2);cursor:pointer;transition:all 0.15s;}
   .durum-toggle.active{background:var(--accent);color:#000;border-color:var(--accent);}
   .musteri-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:16px;cursor:pointer;transition:border-color 0.15s;}
@@ -805,6 +805,7 @@
               <table style="width:100%;border-collapse:collapse;font-size:12px" id="ay-satis-tablo">
                 <thead>
                   <tr style="background:var(--surface2)">
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600;white-space:nowrap">SİP NO</th>
                     <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600;white-space:nowrap">TARİH</th>
                     <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600">FİRMA</th>
                     <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);font-weight:600">T/P</th>
@@ -1269,11 +1270,19 @@ window.renderMusteriler = function() {
       .reduce((a,s) => a + (Number(s.tutar||0) - Number(s.odemeMiktar||0)), 0);
     const gecmisSayisi = Number(m.satisSayisi||0);
     const gecmisCiro   = Number(m.toplamCiro||0);
+    // Son satışı ERP sipariş tarihleri + eski kayıtlar arasında en büyük olanı bul
+    const erpTarihler = erpSiparisler
+      .map(s => s.sipTarihi||'')
+      .filter(Boolean)
+      .sort();
+    const erpSonSatis = erpTarihler.length ? erpTarihler[erpTarihler.length-1] : '';
+    const eskiSonSatis = m.sonSatis || m.ilkSatis || '';
+    const sonSatis = erpSonSatis > eskiSonSatis ? erpSonSatis : eskiSonSatis;
     stats[m.id] = {
       satisSayisi: gecmisSayisi + erpAdet,
       toplamCiro:  gecmisCiro  + erpCiro,
       alacak:      erpAlacak,
-      sonSatis:    m.sonSatis || m.ilkSatis || '',
+      sonSatis,
     };
   });
 
@@ -4361,7 +4370,7 @@ window.renderAylikSatislar = function() {
           tutar = (sipToplamTutar / toplamKalemAdet) * kAdet;
         }
         satirlar.push({
-          tarih: s.sipTarihi||'', firma: s.musteriAd||'—', tp,
+          tarih: s.sipTarihi||'', sipNo: Number(s.sipNo||0), firma: s.musteriAd||'—', tp,
           seri: SERİ_AD[seriKey]||('Seri '+seriKey),
           model: k.urun||'', adet: kAdet,
           birimFiyat: kBirimFiyat || (tutar / kAdet) || sipBirimFiyat, tutar, sipId: s.id
@@ -4389,7 +4398,7 @@ window.renderAylikSatislar = function() {
       const no = parseInt((s.urun||'').replace('AYBAT-',''));
       const seriKey = isNaN(no) ? '?' : String(Math.floor(no/100));
       satirlar.push({
-        tarih: s.sipTarihi||'', firma: s.musteriAd||'—', tp,
+        tarih: s.sipTarihi||'', sipNo: Number(s.sipNo||0), firma: s.musteriAd||'—', tp,
         seri: SERİ_AD[seriKey]||('Seri '+seriKey),
         model: s.urun||'', adet: Number(s.adet||1),
         birimFiyat: Number(s.birimFiyat||0), tutar: Number(s.tutar||0), sipId: s.id
@@ -4397,8 +4406,8 @@ window.renderAylikSatislar = function() {
     }
   });
 
-  // Tarihe göre sırala
-  satirlar.sort((a,b) => a.tarih.localeCompare(b.tarih));
+  // Sipariş no'ya göre büyükten küçüğe sırala
+  satirlar.sort((a,b) => b.sipNo - a.sipNo);
 
   // KPI hesapla
   const toplamCiro = satirlar.reduce((a,r) => a+r.tutar, 0);
@@ -4414,7 +4423,7 @@ window.renderAylikSatislar = function() {
   // Tablo body
   const tbody = document.getElementById('ay-satis-tbody');
   if(!satirlar.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">${AYLAR_TR[ay]} ${yil} için sipariş bulunamadı</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">${AYLAR_TR[ay]} ${yil} için sipariş bulunamadı</td></tr>`;
     document.getElementById('ay-satis-tfoot').innerHTML = '';
   } else {
     tbody.innerHTML = satirlar.map((r,i) => {
@@ -4423,6 +4432,7 @@ window.renderAylikSatislar = function() {
         ? '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:2px;background:var(--blue);color:#fff">T</span>'
         : '<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:2px;background:var(--accent);color:#000">P</span>';
       return `<tr style="${bg};cursor:pointer;border-bottom:1px solid var(--border)" onclick="openDetail('siparis','${r.sipId}')">
+        <td style="padding:6px 10px;font-size:11px;font-family:var(--mono);font-weight:700;color:var(--accent);white-space:nowrap">${String(r.sipNo||'').padStart(3,'0')}</td>
         <td style="padding:6px 10px;font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap">${r.tarih.split('-').reverse().join('.')}</td>
         <td style="padding:6px 10px;font-weight:600;font-size:12px">${r.firma}</td>
         <td style="padding:6px 6px;text-align:center">${tpBadge}</td>
@@ -5117,7 +5127,7 @@ window.renderKarlilik = function() {
 
     const karRenk=kar===null?'var(--text3)':kar>=0?'var(--green)':'var(--red)';
     const tarih=s.sipTarihi?s.sipTarihi.split('-').reverse().join('.'):'—';
-    const model=kalemler?.length>1?kalemler.length+' kalem':(s.urun||'—');
+    const model=kalemler?.length>1?kalemler.map(k=>k.urun||'—').join(', '):(s.urun||'—');
     return `<tr onclick="openKarlDetay('${s.id}')" style="border-bottom:1px solid var(--border);cursor:pointer"
       onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
       <td style="padding:7px 10px;font-family:var(--mono);font-size:11px;color:var(--accent)">${s.sipNo||'—'}</td>
