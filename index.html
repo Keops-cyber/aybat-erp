@@ -254,11 +254,7 @@
     <div class="nav-item" onclick="showPage('uretim',this)">
       <span class="icon">🔧</span> Üretim
     </div>
-    <div class="nav-section">CRM</div>
-    <div class="nav-item" onclick="showPage('crm',this)">
-      <span class="icon">📊</span> Aktiviteler
-      <span class="nav-badge gray" id="crmBadge" style="display:none"></span>
-    </div>
+
     <div class="nav-item" onclick="showPage('analiz',this)">
       <span class="icon">📈</span> Performans
     </div>
@@ -545,7 +541,7 @@
           <!-- Dönem seçici -->
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
             <select id="krl-yil-sec" onchange="renderKarlilik()" style="padding:6px 10px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px">
-              <option value="2026">2026</option><option value="2025">2025</option>
+              <option value="2026">2026</option>
             </select>
             <div id="krl-ay-btnlar" style="display:flex;gap:4px;flex-wrap:wrap"></div>
             <select id="krl-donem" onchange="krlDonemDegisti(this.value)" style="padding:6px 10px;font-size:12px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;margin-left:auto">
@@ -587,7 +583,7 @@
                   <th style="text-align:right">Satış</th><th style="text-align:right">Maliyet</th>
                   <th style="text-align:right">Kâr</th><th style="text-align:right">Marj %</th>
                 </tr></thead>
-                <tbody id="krl-sip-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text3)">Yükleniyor...</td></tr></tbody>
+                <tbody id="krl-sip-tbody"><tr><td colspan="9" style="text-align:center;padding:24px;color:var(--text3)">Yükleniyor...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -687,51 +683,32 @@
 
 
     <!-- CRM AKTİVİTELER -->
-    <div class="page" id="page-crm">
-      <!-- Üst bar -->
-      <div class="filters" style="flex-wrap:wrap;gap:8px">
-        <select class="filter-select" id="crmTipFilter" onchange="renderCRM()">
-          <option value="">Tüm Tipler</option>
-          <option value="Arama">📞 Arama</option>
-          <option value="Ziyaret">🤝 Ziyaret</option>
-          <option value="Teklif">📄 Teklif</option>
-          <option value="Not">📝 Not</option>
-          <option value="Şikayet">⚠️ Şikayet</option>
-        </select>
-        <select class="filter-select" id="crmMusteriFilter" onchange="renderCRM()">
-          <option value="">Tüm Müşteriler</option>
-        </select>
-        <select class="filter-select" id="crmDonemFilter" onchange="renderCRM()">
-          <option value="30">Son 30 Gün</option>
-          <option value="90">Son 90 Gün</option>
-          <option value="0">Tümü</option>
-        </select>
-        <div style="margin-left:auto">
-          <button class="btn btn-primary" onclick="openAktiviteModal()">+ Yeni Aktivite</button>
-        </div>
-      </div>
-
-      <!-- Özet kartları -->
-      <div id="crmOzetRow" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px"></div>
-
-      <!-- Bugün/Yakında aksiyon uyarısı -->
-      <div id="aksiyonUyari" style="display:none;background:rgba(232,160,32,0.08);border:1px solid rgba(232,160,32,0.3);border-radius:4px;padding:12px 16px;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:7px">🔔 Bekleyen Aksiyonlar</div>
-        <div id="aksiyonListesi" style="font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px"></div>
-      </div>
-
-      <!-- Kayıp Müşteri Uyarısı -->
-      <div id="kayipUyari" style="display:none;background:rgba(224,92,92,0.08);border:1px solid rgba(224,92,92,0.3);border-radius:4px;padding:12px 16px;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:7px">⚠️ Sessiz Toptan Müşteriler (60+ gün)</div>
-        <div id="kayipListesi" style="font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px"></div>
-      </div>
-
-      <div id="crmListesi"><div class="loading"><span class="spinner"></span>Yükleniyor...</div></div>
-    </div>
-
     <!-- ARAÇLAR -->
     <div class="page" id="page-araclar">
       <div style="max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:8px">
+
+        <!-- Cari Geçmiş Aktar -->
+        <div class="card" style="padding:24px">
+          <div style="display:flex;align-items:flex-start;gap:16px">
+            <div style="font-size:32px;line-height:1">📒</div>
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Cari Hesaba Geçmiş Siparişleri Aktar</div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+                Bir cari müşterinin ERP'deki <strong>tüm mevcut siparişlerini</strong> cari hesabına borç olarak işler.<br>
+                Daha önce işlenmemiş geçmiş siparişler için kullanın.
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+                <select id="cariAktarSec" class="filter-select" style="min-width:200px">
+                  <option value="">— Cari müşteri seçin —</option>
+                </select>
+                <button class="btn btn-primary" onclick="cariGecmisAktar()" id="cariAktarBtn">
+                  ▶ Siparişleri Aktar
+                </button>
+              </div>
+              <div id="cariAktarDurum" style="font-size:11px;color:var(--text3)"></div>
+            </div>
+          </div>
+        </div>
 
         <!-- Yedekleme -->
         <div class="card" style="padding:24px">
@@ -770,7 +747,6 @@
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
           <select id="anYilSec" class="filter-select" onchange="renderAylikSatislar()" style="width:90px">
             <option value="2026">2026</option>
-            <option value="2025">2025</option>
           </select>
           <div style="display:flex;gap:4px;flex-wrap:wrap" id="anAyBtnlar"></div>
         </div>
@@ -809,6 +785,7 @@
                     <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600;white-space:nowrap">TARİH</th>
                     <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600">FİRMA</th>
                     <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);font-weight:600">T/P</th>
+                    <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600">MODEL</th>
                     <th style="padding:8px 10px;text-align:left;font-size:10px;color:var(--text3);font-weight:600">KAPI SERİSİ</th>
                     <th style="padding:8px 6px;text-align:center;font-size:10px;color:var(--text3);font-weight:600">ADET</th>
                     <th style="padding:8px 10px;text-align:right;font-size:10px;color:var(--text3);font-weight:600">SATIŞ FİYATI</th>
@@ -848,7 +825,6 @@
               <span style="font-size:12px;font-weight:700;color:var(--accent)">Aylık Özet</span>
               <select id="raporYilSol" class="filter-select" style="width:80px;padding:2px 6px;font-size:11px" onchange="renderRapor()">
                 <option value="2026">2026</option>
-                <option value="2025">2025</option>
               </select>
             </div>
             <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -1173,7 +1149,15 @@ function startListeners() {
   // Siparişler
   db.collection('siparisler').orderBy('createdAt','desc').onSnapshot(snap => {
     siparisler = snap.docs.map(d => ({id:d.id, ...d.data()}));
-    siparisler.sort((a,b) => Number(b.sipNo||0) - Number(a.sipNo||0));
+    siparisler.sort((a,b) => {
+    // Sıralama: sayısal (092, 091...) önce, tarihli (2025-01-016...) sonra
+    const isNum = s => /^\d+$/.test(s||'');
+    const aNum = isNum(a.sipNo), bNum = isNum(b.sipNo);
+    if(aNum && bNum) return Number(b.sipNo||0) - Number(a.sipNo||0); // sayısal: büyük üste
+    if(aNum && !bNum) return -1; // sayısal her zaman üste
+    if(!aNum && bNum) return 1;
+    return (b.sipNo||'').localeCompare(a.sipNo||''); // tarihli: alfabetik azalan (2025-01-016 > 2025-01-015)
+  });
     setSyncStatus(true);
     updateBadge();
     if(currentPage==='siparisler') renderSiparisler();
@@ -1197,8 +1181,7 @@ function startListeners() {
     // badge
     const bugun = new Date().toISOString().split('T')[0];
     const yeni = aktiviteler.filter(a => a.tarih >= bugun.slice(0,7)).length;
-    const b = document.getElementById('crmBadge');
-    if(b) { b.textContent = aktiviteler.length; b.style.display = aktiviteler.length ? '' : 'none'; }
+
   }, err => console.error(err));
 }
 
@@ -1376,7 +1359,15 @@ window.renderSiparisler = function() {
   if(_seciliDurumlar.size > 0) list = list.filter(s => _seciliDurumlar.has(s.durum));
   if(odemeF) list = list.filter(s => s.odeme === odemeF);
   // Her zaman sipTarihi'ye göre yeniden eskiye sırala
-  list.sort((a,b) => Number(b.sipNo||0) - Number(a.sipNo||0));
+  list.sort((a,b) => {
+    // Sıralama: sayısal (092, 091...) önce, tarihli (2025-01-016...) sonra
+    const isNum = s => /^\d+$/.test(s||'');
+    const aNum = isNum(a.sipNo), bNum = isNum(b.sipNo);
+    if(aNum && bNum) return Number(b.sipNo||0) - Number(a.sipNo||0); // sayısal: büyük üste
+    if(aNum && !bNum) return -1; // sayısal her zaman üste
+    if(!aNum && bNum) return 1;
+    return (b.sipNo||'').localeCompare(a.sipNo||''); // tarihli: alfabetik azalan (2025-01-016 > 2025-01-015)
+  });
   if(search && currentPage==='siparisler') list = list.filter(s =>
     (s.musteriAd||'').toLowerCase().includes(search) ||
     (s.sipNo||'').toLowerCase().includes(search) ||
@@ -1431,7 +1422,7 @@ window.renderSiparisler = function() {
 window.renderUretim = function() {
   const cols = ['Sipariş Alındı','Üretimde','Teslim Hazır','Teslim Edildi'];
   const colColors = ['var(--text3)','var(--accent)','var(--blue)','var(--green)'];
-  const aktif = siparisler.filter(s => s.durum !== 'İptal');
+  const aktif = siparisler.filter(s => s.durum !== 'İptal' && (s.sipTarihi||'').startsWith('2026'));
   document.getElementById('kanbanBoard').innerHTML = cols.map((col,i) => {
     const cards = aktif.filter(s => s.durum === col)
       .sort((a,b) => col==='Teslim Edildi' ? (b.sipTarihi||'').localeCompare(a.sipTarihi||'') : (a.sipTarihi||'').localeCompare(b.sipTarihi||''));
@@ -2152,8 +2143,33 @@ window.saveRecord = async function() {
         await db.collection('siparisler').doc(editingId).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
         showToast('Sipariş güncellendi ✓');
       } else {
-        await db.collection('siparisler').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+        const sipRef = await db.collection('siparisler').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
         showToast('Sipariş eklendi ✓');
+        // Cari müşteri varsa otomatik borç işlemi ekle
+        try {
+          const cariSnap = await db.collection('cariMusteriler')
+            .where('ad', '==', data.musteriAd).limit(1).get();
+          if(!cariSnap.empty) {
+            const cariDoc = cariSnap.docs[0];
+            const kalemler = (data.kalemler && data.kalemler.length) ? data.kalemler : null;
+            const aciklama = kalemler
+              ? 'Sipariş No: '+data.sipNo+' ('+kalemler.map(k=>k.urun).join(', ')+')'
+              : 'Sipariş No: '+data.sipNo+(data.urun?' — '+data.urun:'');
+            await db.collection('cariHareketler').add({
+              cariMusteriId: cariDoc.id,
+              tip: 'borc',
+              tarih: data.sipTarihi || new Date().toISOString().split('T')[0],
+              aciklama,
+              tutar: Number(data.tutar||0),
+              odemeYontemi: '',
+              sipId: sipRef.id,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            showToast('Cari hesaba otomatik işlendi ✓', 'info');
+          }
+        } catch(cariErr) {
+          console.warn('Cari otomatik işleme hatası:', cariErr);
+        }
       }
     } else {
       const ad = document.getElementById('f_ad')?.value?.trim();
@@ -2319,6 +2335,7 @@ window.openDetail = function(type, id) {
   }
   document.getElementById('detailOverlay').classList.add('open');
 };
+
 
 window.printSiparisFisi = function(id) {
   // Hangi sipariş seçildiyse onun müşterisinin teslim hazır/üretimde siparişlerini bul
@@ -2779,24 +2796,42 @@ function mdfArkaFiyatKaydet(renk, fiyat) {
   } catch(e) {}
 }
 
+// MDF Ön Yüz sipariş sayısını ERP siparişlerinden hesapla
 window.renderMdfOn = function() {
   const q = (document.getElementById('mdfOnSearch')?.value||'').toLowerCase();
-  const list = q ? MDF_ON.filter(m => m.kod.toLowerCase().includes(q)) : MDF_ON;
   const el = document.getElementById('mdfOnTable');
   if(!el) return;
+  // Firebase'den kayıtlı değerleri al
+  const kayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
+  // Kayıtları MDF_ON'a uygula
+  MDF_ON.forEach(m => {
+    if(kayitlar[m.kod]) {
+      m.siparis = kayitlar[m.kod].siparis ?? m.siparis;
+      m.satis   = kayitlar[m.kod].satis   ?? m.satis;
+    }
+    m.kalan = Math.max(0, m.siparis - m.satis);
+  });
+  const list = q ? MDF_ON.filter(m => m.kod.toLowerCase().includes(q)) : MDF_ON;
   const topKalan = MDF_ON.reduce((a,m)=>a+m.kalan,0);
-  const toplamEl = document.getElementById('mdf-on-toplam');
-  const kalanEl  = document.getElementById('mdf-on-kalan');
-  if(toplamEl) toplamEl.textContent = MDF_ON.length + ' model';
-  if(kalanEl)  kalanEl.textContent  = topKalan + ' adet';
+  document.getElementById('mdf-on-toplam').textContent = MDF_ON.length + ' model';
+  document.getElementById('mdf-on-kalan').textContent = topKalan + ' adet';
   if(!list.length) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">Bulunamadı</div>'; return; }
   const rows = list.map(m => {
     const renk = m.kalan > 2 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
-    const fiyatStr = m.onMdfFiyat ? m.onMdfFiyat.toLocaleString('tr-TR') : '';
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:7px 14px;font-size:13px;font-weight:600;color:var(--text)">${m.kod}</td>
-      <td style="padding:7px 10px;text-align:center;font-size:13px;color:var(--text2)">${m.siparis}</td>
-      <td style="padding:7px 10px;text-align:center;font-size:13px;color:var(--text2)">${m.satis}</td>
+      <td style="padding:5px 10px;text-align:center">
+        <input type="number" min="0" value="${m.siparis}"
+          style="width:60px;text-align:center;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px"
+          onchange="mdfOnKaydet('${m.kod}','siparis',this.value)"
+          onclick="this.select()">
+      </td>
+      <td style="padding:5px 10px;text-align:center">
+        <input type="number" min="0" value="${m.satis}"
+          style="width:60px;text-align:center;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px"
+          onchange="mdfOnKaydet('${m.kod}','satis',this.value)"
+          onclick="this.select()">
+      </td>
       <td style="padding:7px 10px;text-align:center">
         <span style="font-size:15px;font-weight:700;color:${renk}">${m.kalan}</span>
       </td>
@@ -2813,42 +2848,107 @@ window.renderMdfOn = function() {
   </table>`;
 };
 
+window.mdfOnKaydet = function(kod, alan, deger) {
+  const kayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
+  if(!kayitlar[kod]) kayitlar[kod] = {};
+  kayitlar[kod][alan] = parseInt(deger)||0;
+  localStorage.setItem('mdf_on_kayitlar', JSON.stringify(kayitlar));
+  // Kalan'ı güncelle
+  const m = MDF_ON.find(x=>x.kod===kod);
+  if(m) {
+    m[alan] = parseInt(deger)||0;
+    m.kalan = Math.max(0, m.siparis - m.satis);
+    // Sadece kalan cell'ini güncelle — tabloyu yeniden çizme
+    const rows = document.querySelectorAll('#mdfOnTable tbody tr');
+    rows.forEach(row => {
+      const kodCell = row.querySelector('td:first-child');
+      if(kodCell && kodCell.textContent.trim() === kod) {
+        const kalanCell = row.querySelector('td:last-child span');
+        if(kalanCell) {
+          kalanCell.textContent = m.kalan;
+          kalanCell.style.color = m.kalan > 2 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
+        }
+      }
+    });
+    // Toplam kalan güncelle
+    const topKalan = MDF_ON.reduce((a,x)=>a+x.kalan,0);
+    const kalanEl = document.getElementById('mdf-on-kalan');
+    if(kalanEl) kalanEl.textContent = topKalan + ' adet';
+  }
+};
+
 window.renderMdfArka = function() {
   const el = document.getElementById('mdfArkaTable');
   if(!el) return;
+  const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
+  MDF_ARKA.forEach(m => {
+    if(kayitlar[m.renk]) {
+      m.siparis = kayitlar[m.renk].siparis ?? m.siparis;
+      m.satis   = kayitlar[m.renk].satis   ?? m.satis;
+    }
+    m.kalan = Math.max(0, m.siparis - m.satis);
+  });
   const topKalan = MDF_ARKA.reduce((a,m)=>a+m.kalan,0);
   document.getElementById('mdf-arka-toplam').textContent = MDF_ARKA.length + ' renk';
   document.getElementById('mdf-arka-kalan').textContent = topKalan + ' adet';
   const max = Math.max(...MDF_ARKA.map(x=>x.siparis), 1);
   const rows = MDF_ARKA.map(m => {
-    const renk = m.kalan > 5 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
+    const renkRengi = m.kalan > 5 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
     const pct = Math.round((m.siparis/max)*100);
-    const fiyatStr = m.arkaMdfFiyat || '';
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:7px 14px;font-size:13px;font-weight:600;color:var(--text)">${m.renk}</td>
-      <td style="padding:7px 10px;min-width:110px">
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="flex:1;background:var(--surface2);border-radius:2px;height:5px;overflow:hidden">
-            <div style="height:100%;background:var(--blue);width:${pct}%"></div>
-          </div>
-          <span style="font-size:11px;color:var(--text2);white-space:nowrap">${m.siparis}</span>
-        </div>
+      <td style="padding:5px 10px;text-align:center">
+        <input type="number" min="0" value="${m.siparis}"
+          style="width:60px;text-align:center;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px"
+          onchange="mdfArkaKaydet('${m.renk}','siparis',this.value)"
+          onclick="this.select()">
       </td>
-      <td style="padding:7px 10px;text-align:center;font-size:13px;color:var(--text2)">${m.satis}</td>
+      <td style="padding:5px 10px;text-align:center">
+        <input type="number" min="0" value="${m.satis}"
+          style="width:60px;text-align:center;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px"
+          onchange="mdfArkaKaydet('${m.renk}','satis',this.value)"
+          onclick="this.select()">
+      </td>
       <td style="padding:7px 10px;text-align:center">
-        <span style="font-size:15px;font-weight:700;color:${renk}">${m.kalan}</span>
+        <span style="font-size:15px;font-weight:700;color:${renkRengi}">${m.kalan}</span>
       </td>
     </tr>`;
   }).join('');
   el.innerHTML = `<table style="width:100%;border-collapse:collapse">
     <thead><tr style="background:var(--surface2);border-bottom:2px solid var(--border)">
       <th style="padding:8px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Renk</th>
-      <th style="padding:8px 10px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Sipariş Oranı</th>
-      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Satış</th>
+      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Toplam Sipariş</th>
+      <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Toplam Satış</th>
       <th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Kalan</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+};
+
+window.mdfArkaKaydet = function(renk, alan, deger) {
+  const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
+  if(!kayitlar[renk]) kayitlar[renk] = {};
+  kayitlar[renk][alan] = parseInt(deger)||0;
+  localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(kayitlar));
+  const m = MDF_ARKA.find(x=>x.renk===renk);
+  if(m) {
+    m[alan] = parseInt(deger)||0;
+    m.kalan = Math.max(0, m.siparis - m.satis);
+    const rows = document.querySelectorAll('#mdfArkaTable tbody tr');
+    rows.forEach(row => {
+      const renkCell = row.querySelector('td:first-child');
+      if(renkCell && renkCell.textContent.trim() === renk) {
+        const kalanCell = row.querySelector('td:last-child span');
+        if(kalanCell) {
+          kalanCell.textContent = m.kalan;
+          kalanCell.style.color = m.kalan > 5 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
+        }
+      }
+    });
+    const topKalan = MDF_ARKA.reduce((a,x)=>a+x.kalan,0);
+    const kalanEl = document.getElementById('mdf-arka-kalan');
+    if(kalanEl) kalanEl.textContent = topKalan + ' adet';
+  }
 };
 
 window.showPage = function(id, el) {
@@ -2860,7 +2960,6 @@ window.showPage = function(id, el) {
     dashboard:['Dashboard','Genel bakış'],
     musteriler:['Müşteriler','CRM — Müşteri yönetimi'],
     siparisler:['Siparişler','Sipariş takibi'],
-    crm:['Aktiviteler','Müşteri iletişim & takip'],
     analiz:['Performans','Satış analizi & raporlama'],
     uretim:['Üretim','İmalat süreç takibi — Kanban'],
     stok:['Stok','Malzeme & stok takibi'],
@@ -2896,7 +2995,14 @@ window.showPage = function(id, el) {
   if(id==='kasa') { renderKasa(); }
   if(id==='mdfstok') { renderMdfOn(); renderMdfArka(); }
   if(id==='analiz') { renderAylikSatislar(); }
-  if(id==='crm') renderCRM();
+  if(id==='araclar') {
+    // Cari müşteri dropdown'unu doldur
+    const sel = document.getElementById('cariAktarSec');
+    if(sel && cariMusteriler.length) {
+      sel.innerHTML = '<option value="">— Cari müşteri seçin —</option>'
+        + cariMusteriler.map(m=>`<option value="${m.id}" data-ad="${m.ad}">${m.ad}</option>`).join('');
+    }
+  }
   if(id==='cari') renderCari();
   if(id==='maliyet') renderReceteListesi();
   if(id==='karlilik') renderKarlilik();
@@ -4125,6 +4231,67 @@ window.editAktivite = function(id) {
 // ARAÇLAR — YEDEKLEME
 // ═══════════════════════════════════════════════════════════════════════════
 
+window.cariGecmisAktar = async function() {
+  const sel = document.getElementById('cariAktarSec');
+  const cariId = sel?.value;
+  const cariAd = sel?.options[sel.selectedIndex]?.dataset?.ad;
+  if(!cariId) { showToast('Cari müşteri seçin','error'); return; }
+
+  const btn = document.getElementById('cariAktarBtn');
+  const durum = document.getElementById('cariAktarDurum');
+  btn.disabled = true;
+  btn.textContent = '⏳ Aktarılıyor...';
+  durum.textContent = '';
+
+  try {
+    // Bu cari müşterinin adına göre ERP siparişlerini bul
+    const mSip = siparisler.filter(s =>
+      s.musteriAd === cariAd && s.durum !== 'İptal'
+    ).sort((a,b)=>(a.sipTarihi||'').localeCompare(b.sipTarihi||''));
+
+    if(!mSip.length) {
+      durum.textContent = cariAd + ' adına ERP\'de sipariş bulunamadı.';
+      durum.style.color = 'var(--red)';
+      btn.disabled = false; btn.textContent = '▶ Siparişleri Aktar';
+      return;
+    }
+
+    // Zaten işlenmiş siparişleri kontrol et
+    const mevcutSnap = await db.collection('cariHareketler')
+      .where('cariMusteriId','==',cariId).get();
+    const mevcutSipIds = new Set(mevcutSnap.docs.map(d=>d.data().sipId).filter(Boolean));
+
+    let eklenen = 0, atlanan = 0;
+    for(const s of mSip) {
+      if(mevcutSipIds.has(s.id)) { atlanan++; continue; } // Zaten işlenmiş
+      const kalemler = (s.kalemler&&s.kalemler.length) ? s.kalemler : null;
+      const aciklama = kalemler
+        ? 'Sipariş No: '+s.sipNo+' ('+kalemler.map(k=>k.urun).join(', ')+')'
+        : 'Sipariş No: '+s.sipNo+(s.urun?' — '+s.urun:'');
+      await db.collection('cariHareketler').add({
+        cariMusteriId: cariId,
+        tip: 'borc',
+        tarih: s.sipTarihi || '',
+        aciklama,
+        tutar: Number(s.tutar||0),
+        odemeYontemi: '',
+        sipId: s.id,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      eklenen++;
+    }
+
+    durum.style.color = 'var(--green)';
+    durum.textContent = `✓ ${eklenen} sipariş aktarıldı` + (atlanan ? ` · ${atlanan} zaten işliydi` : '');
+    showToast(`${cariAd}: ${eklenen} sipariş cari hesaba aktarıldı ✓`);
+  } catch(e) {
+    durum.textContent = 'Hata: ' + e.message;
+    durum.style.color = 'var(--red)';
+  }
+  btn.disabled = false;
+  btn.textContent = '▶ Siparişleri Aktar';
+};
+
 window.yedekAl = async function() {
   const btn = document.getElementById('yedekBtn');
   const durum = document.getElementById('yedekDurum');
@@ -4370,7 +4537,7 @@ window.renderAylikSatislar = function() {
           tutar = (sipToplamTutar / toplamKalemAdet) * kAdet;
         }
         satirlar.push({
-          tarih: s.sipTarihi||'', sipNo: Number(s.sipNo||0), firma: s.musteriAd||'—', tp,
+          tarih: s.sipTarihi||'', sipNo: s.sipNo||'', firma: s.musteriAd||'—', tp,
           seri: SERİ_AD[seriKey]||('Seri '+seriKey),
           model: k.urun||'', adet: kAdet,
           birimFiyat: kBirimFiyat || (tutar / kAdet) || sipBirimFiyat, tutar, sipId: s.id
@@ -4398,7 +4565,7 @@ window.renderAylikSatislar = function() {
       const no = parseInt((s.urun||'').replace('AYBAT-',''));
       const seriKey = isNaN(no) ? '?' : String(Math.floor(no/100));
       satirlar.push({
-        tarih: s.sipTarihi||'', sipNo: Number(s.sipNo||0), firma: s.musteriAd||'—', tp,
+        tarih: s.sipTarihi||'', sipNo: s.sipNo||'', firma: s.musteriAd||'—', tp,
         seri: SERİ_AD[seriKey]||('Seri '+seriKey),
         model: s.urun||'', adet: Number(s.adet||1),
         birimFiyat: Number(s.birimFiyat||0), tutar: Number(s.tutar||0), sipId: s.id
@@ -4407,7 +4574,14 @@ window.renderAylikSatislar = function() {
   });
 
   // Sipariş no'ya göre büyükten küçüğe sırala
-  satirlar.sort((a,b) => b.sipNo - a.sipNo);
+  satirlar.sort((a,b) => {
+    const isNum = s => /^\d+$/.test(String(s||''));
+    const aNum = isNum(a.sipNo), bNum = isNum(b.sipNo);
+    if(aNum && bNum) return Number(b.sipNo) - Number(a.sipNo);
+    if(aNum && !bNum) return -1;
+    if(!aNum && bNum) return 1;
+    return String(b.sipNo||'').localeCompare(String(a.sipNo||''));
+  });
 
   // KPI hesapla
   const toplamCiro = satirlar.reduce((a,r) => a+r.tutar, 0);
@@ -4436,6 +4610,7 @@ window.renderAylikSatislar = function() {
         <td style="padding:6px 10px;font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap">${r.tarih.split('-').reverse().join('.')}</td>
         <td style="padding:6px 10px;font-weight:600;font-size:12px">${r.firma}</td>
         <td style="padding:6px 6px;text-align:center">${tpBadge}</td>
+        <td style="padding:6px 10px;font-size:11px;font-family:var(--mono);font-weight:600;color:var(--text)">${r.model||'—'}</td>
         <td style="padding:6px 10px;font-size:11px;color:var(--text3)">${r.seri}</td>
         <td style="padding:6px 6px;text-align:center;font-family:var(--mono);font-weight:700">${r.adet}</td>
         <td style="padding:6px 10px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--text3)">${r.birimFiyat ? fmtMoney(r.birimFiyat) : '—'}</td>
@@ -4446,7 +4621,7 @@ window.renderAylikSatislar = function() {
     // Footer — TOTAL satırı
     document.getElementById('ay-satis-tfoot').innerHTML = `
       <tr style="border-top:2px solid var(--border);background:var(--surface2)">
-        <td colspan="4" style="padding:7px 10px;font-size:11px;font-weight:700;color:var(--text3)">TOPLAM</td>
+        <td colspan="5" style="padding:7px 10px;font-size:11px;font-weight:700;color:var(--text3)">TOPLAM</td>
         <td style="padding:7px 6px;text-align:center;font-family:var(--mono);font-weight:700">${toplamAdet}</td>
         <td style="padding:7px 10px"></td>
         <td style="padding:7px 10px;text-align:right;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--green)">${fmtMoney(toplamCiro)}</td>
@@ -4505,42 +4680,37 @@ window.renderRapor = function() {
     '2025': [24,21,37,50,66,34,64,58,73,50,42,71],
   };
 
-  // ── ERP Siparişlerinden 2026 adet hesapla ─────────────────────
-  const erp2026 = new Array(12).fill(0);
-  const erp2026Ciro = new Array(12).fill(0);
-  siparisler.forEach(s => {
-    if(s.durum==='İptal' || !s.sipTarihi) return;
-    const ay = parseInt(s.sipTarihi.slice(5,7))-1;
-    if(!s.sipTarihi.startsWith('2026') || ay<0 || ay>11) return;
-    const kalemler = (s.kalemler&&s.kalemler.length) ? s.kalemler : null;
-    if(kalemler) {
-      kalemler.forEach(k => {
-        erp2026[ay] += Number(k.adet||1);
-        erp2026Ciro[ay] += k.birimFiyat&&k.adet ? Number(k.birimFiyat)*Number(k.adet) : Number(k.tutar||0);
-      });
-    } else {
-      erp2026[ay] += Number(s.adet||1);
-      erp2026Ciro[ay] += Number(s.tutar||0);
-    }
-  });
+  // ── ERP Siparişlerinden yıl bazlı adet/ciro hesapla ──────────
+  function erpYilVerisi(yilStr) {
+    const adet = new Array(12).fill(0);
+    const ciro = new Array(12).fill(0);
+    siparisler.forEach(s => {
+      if(s.durum==='İptal' || !s.sipTarihi) return;
+      if(!s.sipTarihi.startsWith(yilStr)) return;
+      const ay = parseInt(s.sipTarihi.slice(5,7))-1;
+      if(ay<0 || ay>11) return;
+      const kalemler = (s.kalemler&&s.kalemler.length) ? s.kalemler : null;
+      if(kalemler) {
+        kalemler.forEach(k => {
+          adet[ay] += Number(k.adet||1);
+          ciro[ay] += k.birimFiyat&&k.adet ? Number(k.birimFiyat)*Number(k.adet) : Number(k.tutar||0);
+        });
+      } else {
+        adet[ay] += Number(s.adet||1);
+        ciro[ay] += Number(s.tutar||0);
+      }
+    });
+    return {adet, ciro};
+  }
+  const erp2026 = erpYilVerisi('2026').adet;
+  const erp2026Ciro = erpYilVerisi('2026').ciro;
+  const erp2025 = erpYilVerisi('2025').adet;
+  const erp2025Ciro = erpYilVerisi('2025').ciro;
 
   // ── SOL TABLO: Aylık özet (seçili yıl) ────────────────────────
   let ayAdet, ayCiro;
-  if(yilSol === '2026') {
-    ayAdet = erp2026;
-    ayCiro = erp2026Ciro;
-  } else {
-    ayAdet = GECMIS_ADET[yilSol] || new Array(12).fill(0);
-    ayCiro = new Array(12).fill(0); // geçmiş ciro yok
-    // geçmiş satışlardan ciro çekmeye çalış
-    musteriler.forEach(m => {
-      (m.gecmisSatislar||[]).forEach(s => {
-        if(!(s.tarih||'').startsWith(yilSol)) return;
-        const ay = parseInt((s.tarih||'').slice(5,7))-1;
-        if(ay>=0&&ay<12) ayCiro[ay] += Number(s.fiyat||0);
-      });
-    });
-  }
+  ayAdet = erp2026;
+  ayCiro = erp2026Ciro;
   const topAdet = ayAdet.reduce((a,v)=>a+v,0);
   const topCiro = ayCiro.reduce((a,v)=>a+v,0);
 
@@ -4562,7 +4732,7 @@ window.renderRapor = function() {
     </tr>`;
 
   // ── SAĞ TABLO: Yıllık karşılaştırma (adet) ──────────────────
-  const YILLAR = ['2020','2021','2022','2023','2024','2025','2026'];
+  const YILLAR = ['2026'];
   const thead = document.getElementById('rapor-yillik-thead');
   const tbody = document.getElementById('rapor-yillik-tbody');
   if(!thead||!tbody) return;
@@ -4575,7 +4745,6 @@ window.renderRapor = function() {
 
   // Her ay için değerler
   const allData = {
-    ...GECMIS_ADET,
     '2026': erp2026
   };
 
