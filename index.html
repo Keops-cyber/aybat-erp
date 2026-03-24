@@ -14,13 +14,6 @@
     --accent:#e8a020; --accent2:#c45c1a;
     --text:#e8e4df; --text2:#8a8580; --text3:#4a4540;
     --green:#4caf7d; --red:#e05c5c; --blue:#5c9ee0; --purple:#9c6ce0;
-    --mono:'IBM Plex Mono',monospace;
-  }
-  :root.light {
-    --bg:#f5f5f0; --surface:#ffffff; --surface2:#f0ede8; --border:#ddd9d3;
-    --accent:#c47f10; --accent2:#a05c10;
-    --text:#1a1814; --text2:#6b6560; --text3:#a09890;
-    --green:#2e8b57; --red:#c0392b; --blue:#2471a3; --purple:#7d3c98;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   input[type=number]::-webkit-inner-spin-button,
@@ -694,25 +687,43 @@
     <div class="page" id="page-araclar">
       <div style="max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:8px">
 
-        <!-- Tema Seçimi -->
+        <!-- Cari Geçmiş Aktar -->
         <div class="card" style="padding:24px">
           <div style="display:flex;align-items:flex-start;gap:16px">
-            <div style="font-size:32px;line-height:1">🎨</div>
+            <div style="font-size:32px;line-height:1">📒</div>
             <div style="flex:1">
-              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Görünüm Teması</div>
-              <div style="font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.6">
-                Arayüz temasını değiştir. Tercih tarayıcıya kaydedilir.
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Cari Hesaba Geçmiş Siparişleri Aktar</div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+                Bir cari müşterinin ERP'deki <strong>tüm mevcut siparişlerini</strong> cari hesabına borç olarak işler.<br>
+                Daha önce işlenmemiş geçmiş siparişler için kullanın.
               </div>
-              <div style="display:flex;gap:10px">
-                <button id="temaDark" onclick="temaSec('dark')"
-                  style="flex:1;padding:14px;border-radius:6px;border:2px solid var(--border);cursor:pointer;background:#0f0f0f;color:#e8e4df;font-size:13px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
-                  🌙 Karanlık
-                </button>
-                <button id="temaLight" onclick="temaSec('light')"
-                  style="flex:1;padding:14px;border-radius:6px;border:2px solid var(--border);cursor:pointer;background:#f5f5f0;color:#1a1814;font-size:13px;font-weight:600;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">
-                  ☀️ Aydınlık
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+                <select id="cariAktarSec" class="filter-select" style="min-width:200px">
+                  <option value="">— Cari müşteri seçin —</option>
+                </select>
+                <button class="btn btn-primary" onclick="cariGecmisAktar()" id="cariAktarBtn">
+                  ▶ Siparişleri Aktar
                 </button>
               </div>
+              <div id="cariAktarDurum" style="font-size:11px;color:var(--text3)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Yedekleme -->
+        <div class="card" style="padding:24px">
+          <div style="display:flex;align-items:flex-start;gap:16px">
+            <div style="font-size:32px;line-height:1">💾</div>
+            <div style="flex:1">
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Siparişleri Yedekle</div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.6">
+                Tüm siparişleri Excel (.xlsx) dosyası olarak indirir.<br>
+                İndirilen dosyayı Google Drive'a kaydedebilirsin.
+              </div>
+              <button class="btn btn-primary" onclick="yedekAl()" id="yedekBtn">
+                ⬇ Excel Olarak İndir
+              </button>
+              <div id="yedekDurum" style="font-size:11px;color:var(--text3);margin-top:8px"></div>
             </div>
           </div>
         </div>
@@ -1444,13 +1455,15 @@ window.renderUretim = function() {
             <div class="kanban-card-customer" style="margin-bottom:6px">${s.musteriAd||'—'}</div>
             ${kalemler.map(k=>`
               <div style="padding:4px 6px;background:var(--bg);border-radius:3px;margin-bottom:3px;font-size:11px">
-                <div style="display:flex;align-items:center;gap:6px">
-                  <span class="mono" style="color:var(--accent)">${k.urun||'—'}</span>
-                  ${k.renk?`<span style="color:var(--text3)">· ${k.renk}</span>`:''}
-                  ${k.yon&&k.yon!=='—'?`<span style="color:var(--text2)">${k.yon}</span>`:''}
-                  <span class="mono" style="margin-left:auto;color:var(--text2)">${k.adet||1} adet</span>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <span class="mono" style="color:var(--accent);font-weight:700">${k.urun||'—'}</span>
+                  ${k.yon&&k.yon!=='—'?`<span style="color:var(--text2);font-size:10px">${k.yon}</span>`:''}
+                  <span class="mono" style="margin-left:auto;color:var(--text2)">${k.adet||1} ad</span>
                 </div>
-
+                ${(k.sacRenk&&k.sacRenk!=='—')||(k.renk&&k.renk!=='—') ? `
+                <div style="margin-top:3px">
+                  <span style="font-size:10px;font-weight:600;color:var(--text);background:var(--surface2);padding:1px 6px;border-radius:3px">${(k.sacRenk&&k.sacRenk!=='—')?k.sacRenk:k.renk}</span>
+                </div>` : ''}
               </div>`).join('')}
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
               ${uretimSuresi}
@@ -2174,7 +2187,25 @@ window.saveRecord = async function() {
       };
       if(editingId) {
         await db.collection('musteriler').doc(editingId).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
-        showToast('Müşteri güncellendi ✓');
+        // Müşteri adı değiştiyse tüm siparişlerde güncelle
+        if(data.ad) {
+          const eskiMusteri = musteriler.find(m => m.id === editingId);
+          if(eskiMusteri && eskiMusteri.ad !== data.ad) {
+            const sipSnap = await db.collection('siparisler').where('musteriId','==',editingId).get();
+            if(!sipSnap.empty) {
+              const batch = db.batch();
+              sipSnap.docs.forEach(d => batch.update(d.ref, {musteriAd: data.ad}));
+              await batch.commit();
+              showToast(`Müşteri güncellendi, ${sipSnap.size} sipariş de güncellendi ✓`);
+            } else {
+              showToast('Müşteri güncellendi ✓');
+            }
+          } else {
+            showToast('Müşteri güncellendi ✓');
+          }
+        } else {
+          showToast('Müşteri güncellendi ✓');
+        }
       } else {
         await db.collection('musteriler').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
         showToast('Müşteri eklendi ✓');
@@ -2610,12 +2641,12 @@ window.printSiparis = function(id) {
           <th>Adet</th>
           <th>Ölçü</th>
           <th>Duvar (cm)</th>
-          <th>Not</th>
         </tr>
       </thead>
       <tbody>
         ${kalemler.map((k,i) => {
           const no = parseInt((k.urun||'').replace('AYBAT-',''));
+          const tip = (no>=401&&no<=499) ? (k.laminoksTip||'Standart') : '—';
           const olcu = k.olcuEn&&k.olcuBoy ? k.olcuEn+'×'+k.olcuBoy+'cm' : (k.olcuTip||'Standart');
           const ekonomikBadge = (no>=401&&no<=499&&k.laminoksTip==='Ekonomik') ? '<span class="ekonomik-badge">EKONOMİK</span>' : '';
           return `<tr>
@@ -2627,7 +2658,6 @@ window.printSiparis = function(id) {
             <td style="text-align:center"><strong>${k.adet||1}</strong></td>
             <td>${olcu}</td>
             <td style="text-align:center">${k.olcuKalinlik||'—'}</td>
-            <td style="text-align:left;color:#c0392b;font-style:italic;font-size:10px">${k.not||''}</td>
           </tr>`;
         }).join('')}
       </tbody>
@@ -2939,22 +2969,6 @@ window.mdfArkaKaydet = function(renk, alan, deger) {
     const kalanEl = document.getElementById('mdf-arka-kalan');
     if(kalanEl) kalanEl.textContent = topKalan + ' adet';
   }
-};
-
-window.temaSec = function(tema) {
-  const root = document.documentElement;
-  const darkBtn  = document.getElementById('temaDark');
-  const lightBtn = document.getElementById('temaLight');
-  if(tema === 'light') {
-    root.classList.add('light');
-    if(darkBtn)  { darkBtn.style.borderColor  = 'var(--border)'; darkBtn.style.opacity = '0.6'; }
-    if(lightBtn) { lightBtn.style.borderColor = '#c47f10'; lightBtn.style.opacity = '1'; }
-  } else {
-    root.classList.remove('light');
-    if(darkBtn)  { darkBtn.style.borderColor  = '#e8a020'; darkBtn.style.opacity = '1'; }
-    if(lightBtn) { lightBtn.style.borderColor = 'var(--border)'; lightBtn.style.opacity = '0.6'; }
-  }
-  localStorage.setItem('aybat-tema', tema);
 };
 
 window.showPage = function(id, el) {
@@ -4017,14 +4031,6 @@ try {
   setSyncStatus(false);
   console.error(e);
 }
-
-// Kayıtlı temayı uygula
-(function() {
-  const kayitliTema = localStorage.getItem('aybat-tema') || 'dark';
-  if(kayitliTema === 'light') document.documentElement.classList.add('light');
-  // Buton stillerini güncelle (araçlar sayfası açıkken)
-  setTimeout(() => { if(window.temaSec) window.temaSec(kayitliTema); }, 500);
-})();
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CRM — AKTİVİTE TAKİBİ
