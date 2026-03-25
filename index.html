@@ -314,21 +314,31 @@
     <div class="page active" id="page-dashboard">
       <div class="stats-grid">
         <div class="stat-card orange">
-          <div class="stat-label">Aktif Sipariş</div>
-          <div class="stat-value" id="dash-aktif">—</div>
-          <div class="stat-sub">Üretim & bekleyen</div>
+          <div class="stat-label">Üretimdeki Sipariş</div>
+          <div class="stat-value" id="dash-uretimde">—</div>
+          <div class="stat-sub" id="dash-uretimde-adet">— adet kapı</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Teslime Hazır</div>
+          <div class="stat-value" id="dash-teslim-hazir">—</div>
+          <div class="stat-sub" id="dash-teslim-hazir-adet">— adet kapı</div>
         </div>
         <div class="stat-card green">
-          <div class="stat-label">Toplam Ciro</div>
-          <div class="stat-value" id="dash-ciro" style="font-size:18px">—</div>
-          <div class="stat-sub">Tüm zamanlar</div>
+          <div class="stat-label">Bu Ay Satış</div>
+          <div class="stat-value" id="dash-aylik-adet">—</div>
+          <div class="stat-sub" id="dash-aylik-ciro">— TL ciro</div>
+        </div>
+        <div class="stat-card purple" style="background:linear-gradient(135deg,#1a1040,#0d0d1a)">
+          <div class="stat-label">Bu Ay Kârlılık</div>
+          <div class="stat-value" id="dash-karlilik" style="font-size:18px">—</div>
+          <div class="stat-sub" id="dash-karlilik-sub">Tahmini kâr</div>
         </div>
         <div class="stat-card red">
           <div class="stat-label">Açık Alacak</div>
           <div class="stat-value" id="dash-alacak" style="font-size:18px">—</div>
           <div class="stat-sub">Tahsil edilmedi</div>
         </div>
-        <div class="stat-card blue">
+        <div class="stat-card" style="background:linear-gradient(135deg,#0d1a2a,#0a1520)">
           <div class="stat-label">Toplam Müşteri</div>
           <div class="stat-value" id="dash-musteri">—</div>
           <div class="stat-sub">Kayıtlı müşteriler</div>
@@ -1087,6 +1097,7 @@ const db = firebase.firestore();
 // ─── STATE ────────────────────────────────────────────────────────────────────
 let siparisler = [];
 let musteriler = [];
+let maliyetler = {};
 let aktiviteler = [];
 let currentPage = 'dashboard';
 let editingId = null;
@@ -1194,15 +1205,70 @@ function updateBadge() {
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────────
 window.renderDashboard = function() {
-  const aktif = siparisler.filter(s => !['Teslim Edildi','İptal'].includes(s.durum)).length;
-  const toplamCiro = siparisler.reduce((a,s) => a + Number(s.tutar||0), 0);
+  const bugun = new Date();
+  const buAyStr = bugun.toISOString().slice(0,7); // "2026-03"
+
+  // Üretim durumları
+  const uretimdeList = siparisler.filter(s => s.durum === 'Üretimde');
+  const teslimHazirList = siparisler.filter(s => s.durum === 'Teslim Hazır');
+
+  const uretimdeAdet = uretimdeList.reduce((a,s) => {
+    const kalemler = s.kalemler && s.kalemler.length ? s.kalemler : null;
+    return a + (kalemler ? kalemler.reduce((b,k) => b + Number(k.adet||1), 0) : Number(s.adet||1));
+  }, 0);
+
+  const teslimHazirAdet = teslimHazirList.reduce((a,s) => {
+    const kalemler = s.kalemler && s.kalemler.length ? s.kalemler : null;
+    return a + (kalemler ? kalemler.reduce((b,k) => b + Number(k.adet||1), 0) : Number(s.adet||1));
+  }, 0);
+
+  // Bu ay satışlar (teslim edildi + bu ay)
+  const buAySiparisler = siparisler.filter(s =>
+    s.durum !== 'İptal' && (s.sipTarihi||'').startsWith(buAyStr)
+  );
+  const buAyAdet = buAySiparisler.reduce((a,s) => {
+    const kalemler = s.kalemler && s.kalemler.length ? s.kalemler : null;
+    if(kalemler) {
+      return a + kalemler.reduce((b,k) => {
+        let n = Number(k.adet||1);
+        // Panjur varsa +1 (Performans sayfasıyla tutarlı)
+        if(k.panjur?.model && Number(k.panjur.fiyat||0) > 0) n += 1;
+        return b + n;
+      }, 0);
+    }
+    return a + Number(s.adet||1);
+  }, 0);
+  const buAyCiro = buAySiparisler.reduce((a,s) => a + Number(s.tutar||0), 0);
+
+  // Bu ay tahmini karlılık (ciro - maliyet)
+  let buAyMaliyet = 0;
+  buAySiparisler.forEach(s => {
+    const kalemler = s.kalemler && s.kalemler.length ? s.kalemler : [{urun:s.urun,adet:s.adet||1}];
+    kalemler.forEach(k => {
+      const rec = maliyetler && (k.urun||'') ? maliyetler[k.urun] : null;
+      if(rec && rec.toplamMaliyet) {
+        buAyMaliyet += Number(rec.toplamMaliyet) * Number(k.adet||1);
+      }
+    });
+  });
+  const buAyKar = buAyCiro - buAyMaliyet;
+  const karMarji = buAyCiro > 0 ? Math.round((buAyKar / buAyCiro) * 100) : 0;
+
+  // Açık alacak
   const alacak = siparisler.filter(s => s.odeme !== 'Tamamlandı').reduce((a,s) => {
     const odendi = Number(s.odemeMiktar||0);
     return a + (Number(s.tutar||0) - odendi);
   }, 0);
 
-  document.getElementById('dash-aktif').textContent = aktif;
-  document.getElementById('dash-ciro').textContent = fmtMoney(toplamCiro);
+  // Kartları doldur
+  document.getElementById('dash-uretimde').textContent = uretimdeList.length;
+  document.getElementById('dash-uretimde-adet').textContent = uretimdeAdet + ' adet kapı';
+  document.getElementById('dash-teslim-hazir').textContent = teslimHazirList.length;
+  document.getElementById('dash-teslim-hazir-adet').textContent = teslimHazirAdet + ' adet kapı';
+  document.getElementById('dash-aylik-adet').textContent = buAyAdet + ' adet';
+  document.getElementById('dash-aylik-ciro').textContent = fmtMoney(buAyCiro) + ' ciro';
+  document.getElementById('dash-karlilik').textContent = buAyMaliyet > 0 ? fmtMoney(buAyKar) : fmtMoney(buAyCiro);
+  document.getElementById('dash-karlilik-sub').textContent = buAyMaliyet > 0 ? 'Kâr marjı %' + karMarji : 'Ciro (maliyet girmedi)';
   document.getElementById('dash-alacak').textContent = fmtMoney(alacak);
   document.getElementById('dash-musteri').textContent = musteriler.length;
 
@@ -1460,10 +1526,14 @@ window.renderUretim = function() {
                   ${k.yon&&k.yon!=='—'?`<span style="color:var(--text2);font-size:10px">${k.yon}</span>`:''}
                   <span class="mono" style="margin-left:auto;color:var(--text2)">${k.adet||1} ad</span>
                 </div>
-                ${(k.sacRenk&&k.sacRenk!=='—')||(k.renk&&k.renk!=='—') ? `
-                <div style="margin-top:3px">
-                  <span style="font-size:10px;font-weight:600;color:var(--text);background:var(--surface2);padding:1px 6px;border-radius:3px">${(k.sacRenk&&k.sacRenk!=='—')?k.sacRenk:k.renk}</span>
-                </div>` : ''}
+                ${(()=>{
+                  const r = (k.sacRenk&&k.sacRenk!=='—') ? k.sacRenk : ((k.renk&&k.renk!=='—') ? k.renk : '');
+                  if(!r) return '';
+                  const isPanjur = (k.urun||'').includes('601');
+                  return `<div style="margin-top:3px">
+                    <span style="font-size:10px;font-weight:600;color:${isPanjur?'#e8a020':'var(--text)'};background:${isPanjur?'rgba(232,160,32,0.12)':'var(--surface2)'};padding:1px 6px;border-radius:3px">${r}</span>
+                  </div>`;
+                })()}
               </div>`).join('')}
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
               ${uretimSuresi}
@@ -4994,7 +5064,7 @@ window.renderAnaliz = function() {
 //   aksesuarlar([{ad,fiyat}]), genelGiderler([{ad,adet,birimFiyat}])
 // ══════════════════════════════════════════════════════════════════════════
 
-let maliyetler = {}; // { 'AYBAT-201': {sac, onMdf, ...} }
+// maliyetler global olarak tanımlandı
 
 function startMaliyetListeners() {
   // Reçeteler (model bazlı maliyet yapısı)
