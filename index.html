@@ -1223,21 +1223,23 @@ window.renderDashboard = function() {
   }, 0);
 
   // Bu ay satışlar (teslim edildi + bu ay)
+  // Bu ay siparişleri: sipTarihi veya createdAt alanından tarih al
+  function sipTarihAl(s) {
+    if(s.sipTarihi) return s.sipTarihi;
+    if(s.createdAt && s.createdAt.toDate) return s.createdAt.toDate().toISOString().slice(0,10);
+    return '';
+  }
   const buAySiparisler = siparisler.filter(s =>
-    s.durum !== 'İptal' && (s.sipTarihi||'').startsWith(buAyStr)
+    s.durum !== 'İptal' && sipTarihAl(s).startsWith(buAyStr)
   );
+  // Adet: önce kalem toplamı, yoksa s.adet
   const buAyAdet = buAySiparisler.reduce((a,s) => {
-    const kalemler = s.kalemler && s.kalemler.length ? s.kalemler : null;
-    if(kalemler) {
-      return a + kalemler.reduce((b,k) => {
-        let n = Number(k.adet||1);
-        // Panjur varsa +1 (Performans sayfasıyla tutarlı)
-        if(k.panjur?.model && Number(k.panjur.fiyat||0) > 0) n += 1;
-        return b + n;
-      }, 0);
+    if(s.kalemler && s.kalemler.length) {
+      return a + s.kalemler.reduce((b,k) => b + Number(k.adet||1), 0);
     }
     return a + Number(s.adet||1);
   }, 0);
+  // Ciro: s.tutar en güvenilir alan
   const buAyCiro = buAySiparisler.reduce((a,s) => a + Number(s.tutar||0), 0);
 
   // Bu ay tahmini karlılık (ciro - maliyet)
@@ -1498,7 +1500,7 @@ window.renderUretim = function() {
       </div>
       <div class="kanban-col-body scrollbar-thin">
         ${cards.length ? cards.map(s => {
-          const kalemler = (s.kalemler && s.kalemler.length > 1) ? s.kalemler : [{urun:s.urun, renk:s.renk, yon:s.yon, adet:s.adet}];
+          const kalemler = (s.kalemler && s.kalemler.length > 0) ? s.kalemler : [{urun:s.urun, renk:s.renk, sacRenk:s.sacRenk, yon:s.yon, adet:s.adet}];
           // Üretim süresi: sipariş tarihinden bugüne veya teslim tarihine kadar gün sayısı
           let uretimSuresi = '';
           if(s.sipTarihi) {
@@ -1529,9 +1531,8 @@ window.renderUretim = function() {
                 ${(()=>{
                   const r = (k.sacRenk&&k.sacRenk!=='—') ? k.sacRenk : ((k.renk&&k.renk!=='—') ? k.renk : '');
                   if(!r) return '';
-                  const isPanjur = (k.urun||'').includes('601');
                   return `<div style="margin-top:3px">
-                    <span style="font-size:10px;font-weight:600;color:${isPanjur?'#e8a020':'var(--text)'};background:${isPanjur?'rgba(232,160,32,0.12)':'var(--surface2)'};padding:1px 6px;border-radius:3px">${r}</span>
+                    <span style="font-size:10px;font-weight:600;color:var(--text);background:var(--surface2);padding:1px 6px;border-radius:3px">${r}</span>
                   </div>`;
                 })()}
               </div>`).join('')}
@@ -5071,8 +5072,9 @@ function startMaliyetListeners() {
   db.collection('maliyetler').onSnapshot(snap => {
     maliyetler = {};
     snap.docs.forEach(d => { maliyetler[d.id] = { id: d.id, ...d.data() }; });
-    if(currentPage === 'maliyet')  renderReceteListesi();
-    if(currentPage === 'karlilik') renderKarlilik();
+    if(currentPage === 'maliyet')    renderReceteListesi();
+    if(currentPage === 'karlilik')   renderKarlilik();
+    if(currentPage === 'dashboard')  renderDashboard();
   }, err => console.error(err));
 
   // Fiyat listesi artık urunMaliyetleri'nden geliyor — eski fiyatListesi listener kaldırıldı
@@ -5378,7 +5380,22 @@ window.renderKarlilik = function() {
     const _kl = kalemler||[{urun:s.urun,adet:s.adet||1}];
     _kl.forEach(k=>{
       const km=modelMaliyeti(k.urun); if(km===null)return;
-      const ks=kalemler?Number(k.birimFiyat||0)*Number(k.adet||1):satis;
+      // Kalem satış tutarı: birimFiyat*adet, yoksa k.tutar, yoksa sipariş tutarını kalemlere böl
+      let ks;
+      if(kalemler) {
+        const kBirim = Number(k.birimFiyat||0);
+        const kTutar = Number(k.tutar||0);
+        const kAdet  = Number(k.adet||1);
+        if(kBirim > 0)       ks = kBirim * kAdet;
+        else if(kTutar > 0)  ks = kTutar;
+        else {
+          // Siparişin toplam tutarını kalem sayısına böl
+          const topAdet = kalemler.reduce((t,kk)=>t+Number(kk.adet||1),0);
+          ks = topAdet > 0 ? (satis / topAdet) * kAdet : 0;
+        }
+      } else {
+        ks = satis;
+      }
       if(!modelKarMap[k.urun])modelKarMap[k.urun]={satis:0,maliyet:0};
       modelKarMap[k.urun].satis+=ks;
       modelKarMap[k.urun].maliyet+=km*Number(k.adet||1);
