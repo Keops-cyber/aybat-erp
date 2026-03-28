@@ -258,12 +258,28 @@
     <div class="nav-item" onclick="showPage('analiz',this)">
       <span class="icon">📈</span> Performans
     </div>
-    <div class="nav-section">Stok</div>
+    <div class="nav-section" style="margin-top:8px">Tedarik Zinciri</div>
+    <div class="nav-item" onclick="showPage('scm',this)">
+      <span class="icon">🔗</span> SCM Dashboard
+    </div>
+    <div class="nav-item" onclick="showPage('tedarikciler',this)">
+      <span class="icon">🏭</span> Tedarikçiler
+    </div>
+    <div class="nav-item" onclick="showPage('satinalma',this)">
+      <span class="icon">🛒</span> Satın Alma (PO)
+      <span class="nav-badge gray" id="poBadge">—</span>
+    </div>
     <div class="nav-item" onclick="showPage('stok',this)">
       <span class="icon">📦</span> Stok
     </div>
     <div class="nav-item" onclick="showPage('mdfstok',this)">
       <span class="icon">🪵</span> MDF Stok
+    </div>
+    <div class="nav-item" onclick="showPage('stokhareket',this)">
+      <span class="icon">↕</span> Stok Hareketleri
+    </div>
+    <div class="nav-item" onclick="showPage('fire',this)">
+      <span class="icon">🔥</span> Fire & İskarta
     </div>
     <div class="nav-section" style="margin-top:8px">Maliyet & Kâr</div>
     <div class="nav-item" onclick="showPage('maliyet',this)">
@@ -930,6 +946,294 @@
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════════════════
+     SCM DASHBOARD
+══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-scm">
+  <!-- KPI Kartlar -->
+  <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
+    <div class="stat-card red">
+      <div class="stat-label">Kritik Stok</div>
+      <div class="stat-value" id="scm-kritik-stok">—</div>
+      <div class="stat-sub">Min seviye altı</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">Bekleyen PO</div>
+      <div class="stat-value" id="scm-bekleyen-po">—</div>
+      <div class="stat-sub">Sipariş verildi</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Aktif Tedarikçi</div>
+      <div class="stat-value" id="scm-tedarikciler">—</div>
+      <div class="stat-sub">Kayıtlı firma</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Bu Ay Alım</div>
+      <div class="stat-value" id="scm-buay-alim" style="font-size:18px">—</div>
+      <div class="stat-sub">Toplam tutar</div>
+    </div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#1a0f2e,#0d0d1a)">
+      <div class="stat-label">Bu Ay Fire</div>
+      <div class="stat-value" id="scm-buay-fire">—</div>
+      <div class="stat-sub">Kayıt sayısı</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px">
+    <!-- Kritik Stok Uyarıları -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">⚠ Kritik Stok Uyarıları</span>
+        <button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="showPage('stok',null)">Stoğa Git →</button>
+      </div>
+      <div id="scm-kritik-liste" style="max-height:280px;overflow-y:auto">
+        <div class="loading"><span class="spinner"></span></div>
+      </div>
+    </div>
+    <!-- Bekleyen PO'lar -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🛒 Bekleyen Siparişler (PO)</span>
+        <button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="showPage('satinalma',null)">Tümü →</button>
+      </div>
+      <div id="scm-po-liste" style="max-height:280px;overflow-y:auto">
+        <div class="loading"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- Son Tedarikçi Harcamaları -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">🏭 Tedarikçi Bazlı Harcama (Son 3 Ay)</span></div>
+      <div id="scm-tedarikci-harcama" style="padding:12px;max-height:220px;overflow-y:auto"></div>
+    </div>
+    <!-- Son Fire Kayıtları -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🔥 Son Fire & İskarta</span>
+        <button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="showPage('fire',null)">Tümü →</button>
+      </div>
+      <div id="scm-fire-liste" style="padding:0;max-height:220px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TEDARİKÇİLER
+══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-tedarikciler">
+  <div class="filters">
+    <select class="filter-select" id="tedKategoriFilter" onchange="renderTedarikciler()">
+      <option value="">Tüm Kategoriler</option>
+      <option value="Hammadde">Hammadde</option>
+      <option value="Aksesuar">Aksesuar</option>
+      <option value="MDF">MDF</option>
+      <option value="Boya">Boya</option>
+      <option value="Diğer">Diğer</option>
+    </select>
+    <select class="filter-select" id="tedSortFilter" onchange="renderTedarikciler()">
+      <option value="ad">İsim A → Z</option>
+      <option value="skor_desc">Performans Skoru (Yüksek)</option>
+      <option value="harcama_desc">Toplam Harcama (Yüksek)</option>
+    </select>
+    <div style="margin-left:auto">
+      <button class="btn btn-primary" onclick="openTedarikciFrm()">+ Yeni Tedarikçi</button>
+    </div>
+  </div>
+
+  <!-- Özet KPI -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+    <div class="kasa-card" style="border-top:2px solid var(--blue)">
+      <div class="kasa-label">Toplam Tedarikçi</div>
+      <div class="kasa-amount" id="ted-toplam" style="color:var(--blue)">—</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--green)">
+      <div class="kasa-label">Ort. Performans</div>
+      <div class="kasa-amount" id="ted-ort-skor" style="color:var(--green)">—</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--accent)">
+      <div class="kasa-label">Bu Ay Alım</div>
+      <div class="kasa-amount" id="ted-buay-alim" style="color:var(--accent)">—</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--purple)">
+      <div class="kasa-label">Ödeme Vadesi Geçen</div>
+      <div class="kasa-amount" id="ted-vade-gecen" style="color:var(--purple)">—</div>
+    </div>
+  </div>
+
+  <div id="tedarikcilerGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     SATIN ALMA (PO)
+══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-satinalma">
+  <div class="filters">
+    <select class="filter-select" id="poDurumFilter" onchange="renderPO()">
+      <option value="">Tüm Durumlar</option>
+      <option value="Beklemede">Beklemede</option>
+      <option value="Onaylandı">Onaylandı</option>
+      <option value="Teslim Alındı">Teslim Alındı</option>
+      <option value="İptal">İptal</option>
+    </select>
+    <select class="filter-select" id="poTedFilter" onchange="renderPO()">
+      <option value="">Tüm Tedarikçiler</option>
+    </select>
+    <select class="filter-select" id="poDonemFilter" onchange="renderPO()">
+      <option value="bu_ay">Bu Ay</option>
+      <option value="gecen_ay">Geçen Ay</option>
+      <option value="bu_yil">Bu Yıl</option>
+      <option value="tumu">Tüm Zamanlar</option>
+    </select>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="openOtomatikPO()">⚡ Otomatik PO</button>
+      <button class="btn btn-primary" onclick="openPOFrm()">+ Yeni PO</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="stat-card orange"><div class="stat-label">Beklemede</div><div class="stat-value" id="po-bekleyen">—</div><div class="stat-sub">Onay bekliyor</div></div>
+    <div class="stat-card blue"><div class="stat-label">Onaylandı</div><div class="stat-value" id="po-onaylandi">—</div><div class="stat-sub">Yolda / bekleniyor</div></div>
+    <div class="stat-card green"><div class="stat-label">Teslim Alındı</div><div class="stat-value" id="po-teslim">—</div><div class="stat-sub">Bu ay</div></div>
+    <div class="stat-card red"><div class="stat-label">Bu Ay Toplam</div><div class="stat-value" id="po-tutar" style="font-size:18px">—</div><div class="stat-sub">Alım tutarı</div></div>
+  </div>
+
+  <div class="card">
+    <table class="table">
+      <thead><tr>
+        <th>PO No</th><th>Tarih</th><th>Tedarikçi</th><th>Kalemler</th>
+        <th style="text-align:right">Tutar</th><th>Teslim Tarihi</th><th>Durum</th><th></th>
+      </tr></thead>
+      <tbody id="poTableBody">
+        <tr><td colspan="8"><div class="loading"><span class="spinner"></span>Yükleniyor...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     STOK HAREKETLERİ (Detaylı Log + Barkod Sayım)
+══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-stokhareket">
+  <div class="filters">
+    <select class="filter-select" id="shTipFilter" onchange="renderStokHareketSayfasi()">
+      <option value="">Tüm Hareketler</option>
+      <option value="Giris">Giriş</option>
+      <option value="Cikis">Çıkış</option>
+      <option value="Sayim">Sayım</option>
+    </select>
+    <select class="filter-select" id="shDonemFilter" onchange="renderStokHareketSayfasi()">
+      <option value="bu_ay">Bu Ay</option>
+      <option value="gecen_ay">Geçen Ay</option>
+      <option value="bu_yil">Bu Yıl</option>
+      <option value="tumu">Tüm Zamanlar</option>
+    </select>
+    <input id="shMalzemeSearch" placeholder="Malzeme ara..." oninput="renderStokHareketSayfasi()"
+      style="background:var(--surface2);border:1px solid var(--border);padding:7px 12px;font-size:12px;border-radius:3px;color:var(--text);min-width:180px">
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="openBarkodSayim()">📷 Barkod Sayım</button>
+      <button class="btn btn-primary" onclick="openStokHareket()">+ Giriş / Çıkış</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+    <div class="kasa-card" style="border-top:2px solid var(--green)">
+      <div class="kasa-label">Bu Ay Giriş</div>
+      <div class="kasa-amount" id="sh-buay-giris" style="color:var(--green)">—</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--red)">
+      <div class="kasa-label">Bu Ay Çıkış</div>
+      <div class="kasa-amount" id="sh-buay-cikis" style="color:var(--red)">—</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--blue)">
+      <div class="kasa-label">Toplam İşlem</div>
+      <div class="kasa-amount" id="sh-toplam-islem" style="color:var(--blue)">—</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--accent)">
+      <div class="kasa-label">Son Sayım</div>
+      <div class="kasa-amount" id="sh-son-sayim" style="color:var(--accent);font-size:14px">—</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table class="table">
+      <thead><tr>
+        <th>Tarih</th><th>Malzeme</th><th>Kategori</th><th>Hareket</th>
+        <th style="text-align:right">Miktar</th><th style="text-align:right">Birim Fiyat</th>
+        <th style="text-align:right">Tutar</th><th>Açıklama</th><th></th>
+      </tr></thead>
+      <tbody id="shTableBody">
+        <tr><td colspan="9"><div class="loading"><span class="spinner"></span>Yükleniyor...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FİRE & İSKARTA
+══════════════════════════════════════════════════════════════ -->
+<div class="page" id="page-fire">
+  <div class="filters">
+    <select class="filter-select" id="fireTipFilter" onchange="renderFire()">
+      <option value="">Tüm Tipler</option>
+      <option value="Fire">Fire</option>
+      <option value="İskarta">İskarta</option>
+      <option value="Hasar">Hasar</option>
+    </select>
+    <select class="filter-select" id="fireDonemFilter" onchange="renderFire()">
+      <option value="bu_ay">Bu Ay</option>
+      <option value="gecen_ay">Geçen Ay</option>
+      <option value="bu_yil">Bu Yıl</option>
+      <option value="tumu">Tüm Zamanlar</option>
+    </select>
+    <div style="margin-left:auto">
+      <button class="btn btn-primary" onclick="openFireFrm()">+ Fire / İskarta Kaydı</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="stat-card red"><div class="stat-label">Bu Ay Fire</div><div class="stat-value" id="fire-buay">—</div><div class="stat-sub">Kayıt sayısı</div></div>
+    <div class="stat-card orange"><div class="stat-label">Bu Ay Maliyet</div><div class="stat-value" id="fire-buay-maliyet" style="font-size:18px">—</div><div class="stat-sub">Tahmini kayıp</div></div>
+    <div class="stat-card blue"><div class="stat-label">Toplam Kayıt</div><div class="stat-value" id="fire-toplam">—</div><div class="stat-sub">Tüm zamanlar</div></div>
+    <div class="stat-card" style="background:linear-gradient(135deg,#1a0f0f,#0d0d0d)">
+      <div class="stat-label">Toplam Kayıp</div>
+      <div class="stat-value" id="fire-toplam-maliyet" style="font-size:18px;color:var(--red)">—</div>
+      <div class="stat-sub">Tahmini toplam</div>
+    </div>
+  </div>
+
+  <!-- Fire Trend + Liste -->
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Fire & İskarta Kayıtları</span></div>
+      <table class="table">
+        <thead><tr>
+          <th>Tarih</th><th>Tip</th><th>Malzeme</th><th>Miktar</th>
+          <th style="text-align:right">Tahmini Kayıp</th><th>Neden</th><th></th>
+        </tr></thead>
+        <tbody id="fireTableBody">
+          <tr><td colspan="7"><div class="loading"><span class="spinner"></span>Yükleniyor...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Özet kırılım -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Tip Bazlı Dağılım</span></div>
+        <div id="fire-tip-dagilim" style="padding:12px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Neden Bazlı Top 5</span></div>
+        <div id="fire-neden-dagilim" style="padding:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SİPARİŞ / MÜŞTERİ EKLEME MODAL -->
 <div class="modal-overlay" id="addModal">
   <div class="modal">
@@ -1102,6 +1406,11 @@ let aktiviteler = [];
 let currentPage = 'dashboard';
 let editingId = null;
 let editingType = null;
+
+// SCM State
+let tedarikciler = [];
+let satinalmaEmirleri = [];
+let fireKayitlari = [];
 
 // ─── SYNC STATUS ──────────────────────────────────────────────────────────────
 function setSyncStatus(ok) {
@@ -3060,6 +3369,11 @@ window.showPage = function(id, el) {
     maliyet:['Reçeteler','Kapı modeli maliyet reçeteleri'],
     karlilik:['Karlılık Analizi','Satış kâr/zarar analizi'],
     araclar:['Araçlar','Yedekleme & sistem araçları'],
+    scm:['SCM Dashboard','Tedarik zinciri genel görünüm'],
+    tedarikciler:['Tedarikçiler','Tedarikçi yönetimi & performans'],
+    satinalma:['Satın Alma (PO)','Satın alma siparişleri'],
+    stokhareket:['Stok Hareketleri','Giriş / Çıkış log & barkod sayım'],
+    fire:['Fire & İskarta','Fire ve iskarta takibi'],
   };
   const [title, sub] = titles[id] || [id,''];
   document.getElementById('pageTitle').textContent = title;
@@ -3071,7 +3385,7 @@ window.showPage = function(id, el) {
     });
   }
   document.getElementById('searchInput').value = '';
-  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',cari:'',maliyet:'+ Yeni Reçete',karlilik:'',araclar:''};
+  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',cari:'',maliyet:'+ Yeni Reçete',karlilik:'',araclar:'',scm:'',tedarikciler:'+ Yeni Tedarikçi',satinalma:'+ Yeni PO',stokhareket:'+ Giriş / Çıkış',fire:'+ Fire Kaydı'};
   document.getElementById('addBtn').textContent = addLabels[id] || '+ Yeni';
 
   if(id==='siparisler') {
@@ -3097,6 +3411,11 @@ window.showPage = function(id, el) {
   if(id==='cari') renderCari();
   if(id==='maliyet') renderReceteListesi();
   if(id==='karlilik') renderKarlilik();
+  if(id==='scm') renderSCMDashboard();
+  if(id==='tedarikciler') renderTedarikciler();
+  if(id==='satinalma') renderPO();
+  if(id==='stokhareket') renderStokHareketSayfasi();
+  if(id==='fire') renderFire();
 };
 
 window.handleSearch = function() {
@@ -4086,6 +4405,14 @@ window.openAddModal = function() {
     openKasaIslem();
   } else if(currentPage === 'maliyet') {
     openReceteFormModal();
+  } else if(currentPage === 'tedarikciler') {
+    openTedarikciFrm();
+  } else if(currentPage === 'satinalma') {
+    openPOFrm();
+  } else if(currentPage === 'stokhareket') {
+    openStokHareket();
+  } else if(currentPage === 'fire') {
+    openFireFrm();
   } else {
     _origOpenAddModal();
   }
@@ -4098,6 +4425,7 @@ try {
   startKasaListeners();
   startCariListeners();
   startMaliyetListeners();
+  startSCMListeners();
 } catch(e) {
   setSyncStatus(false);
   console.error(e);
@@ -5632,6 +5960,953 @@ window.openKarlDetay = function(sipId) {
   document.getElementById('addModal').classList.add('open');
 };
 
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SCM — TEDARİK ZİNCİRİ YÖNETİMİ
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Firebase Listeners ──────────────────────────────────────────────────────
+function startSCMListeners() {
+  db.collection('tedarikciler').orderBy('ad','asc').onSnapshot(snap => {
+    tedarikciler = snap.docs.map(d => ({id:d.id,...d.data()}));
+    updatePOTedarikciFilter();
+    if(currentPage==='tedarikciler') renderTedarikciler();
+    if(currentPage==='scm') renderSCMDashboard();
+  }, err => console.error(err));
+
+  db.collection('satinalmaEmirleri').orderBy('createdAt','desc').onSnapshot(snap => {
+    satinalmaEmirleri = snap.docs.map(d => ({id:d.id,...d.data()}));
+    updatePOBadge();
+    if(currentPage==='satinalma') renderPO();
+    if(currentPage==='scm') renderSCMDashboard();
+  }, err => console.error(err));
+
+  db.collection('fireKayitlari').orderBy('tarih','desc').onSnapshot(snap => {
+    fireKayitlari = snap.docs.map(d => ({id:d.id,...d.data()}));
+    if(currentPage==='fire') renderFire();
+    if(currentPage==='scm') renderSCMDashboard();
+  }, err => console.error(err));
+}
+
+function updatePOBadge() {
+  const bekleyen = satinalmaEmirleri.filter(p => p.durum === 'Beklemede' || p.durum === 'Onaylandı').length;
+  const badge = document.getElementById('poBadge');
+  if(badge) { badge.textContent = bekleyen || '0'; badge.className = 'nav-badge' + (bekleyen ? '' : ' gray'); }
+}
+
+function updatePOTedarikciFilter() {
+  const sel = document.getElementById('poTedFilter');
+  if(!sel) return;
+  const mevcut = sel.value;
+  sel.innerHTML = '<option value="">Tüm Tedarikçiler</option>'
+    + tedarikciler.map(t => `<option value="${t.id}" ${t.id===mevcut?'selected':''}>${t.ad}</option>`).join('');
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function nextPONo() {
+  const nums = satinalmaEmirleri.map(p => parseInt((p.poNo||'PO-0').replace('PO-',''))).filter(n=>!isNaN(n)&&n>0);
+  return 'PO-' + String(nums.length ? Math.max(...nums)+1 : 1).padStart(3,'0');
+}
+
+function skorRenk(s) {
+  s = Number(s||0);
+  return s >= 80 ? 'var(--green)' : s >= 60 ? 'var(--accent)' : 'var(--red)';
+}
+
+function skorYildiz(s) {
+  s = Number(s||0);
+  const dolu = Math.round(s/20);
+  return '★'.repeat(dolu) + '☆'.repeat(5-dolu);
+}
+
+function donemFilter(liste, tarihField, donemVal) {
+  const now = new Date();
+  const buAy = now.toISOString().slice(0,7);
+  const gecenAy = new Date(now.getFullYear(), now.getMonth()-1, 1).toISOString().slice(0,7);
+  const buYil = now.getFullYear().toString();
+  if(donemVal==='bu_ay') return liste.filter(x => (x[tarihField]||'').startsWith(buAy));
+  if(donemVal==='gecen_ay') return liste.filter(x => (x[tarihField]||'').startsWith(gecenAy));
+  if(donemVal==='bu_yil') return liste.filter(x => (x[tarihField]||'').startsWith(buYil));
+  return liste;
+}
+
+// ── SCM DASHBOARD ────────────────────────────────────────────────────────────
+window.renderSCMDashboard = function() {
+  const buAy = new Date().toISOString().slice(0,7);
+  const kritik = malzemeler.filter(m => Number(m.miktar||0) <= Number(m.minMiktar||0));
+  const bekleyenPO = satinalmaEmirleri.filter(p => p.durum==='Beklemede'||p.durum==='Onaylandı');
+  const buAyPO = satinalmaEmirleri.filter(p => (p.tarih||'').startsWith(buAy));
+  const buAyTutar = buAyPO.reduce((a,p) => a+Number(p.toplamTutar||0), 0);
+  const buAyFire = fireKayitlari.filter(f => (f.tarih||'').startsWith(buAy));
+
+  document.getElementById('scm-kritik-stok').textContent = kritik.length;
+  document.getElementById('scm-bekleyen-po').textContent = bekleyenPO.length;
+  document.getElementById('scm-tedarikciler').textContent = tedarikciler.length;
+  document.getElementById('scm-buay-alim').textContent = fmtMoney(buAyTutar);
+  document.getElementById('scm-buay-fire').textContent = buAyFire.length;
+
+  // Kritik stok listesi
+  const kEl = document.getElementById('scm-kritik-liste');
+  if(!kritik.length) {
+    kEl.innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-icon">✓</div><div class="empty-title">Kritik stok yok</div></div>';
+  } else {
+    kEl.innerHTML = '<table class="table"><thead><tr><th>Malzeme</th><th>Mevcut</th><th>Min</th><th></th></tr></thead><tbody>'
+      + kritik.map(m => `<tr>
+        <td><div style="font-size:12px;font-weight:600">${m.ad}</div><div style="font-size:10px;color:var(--text3)">${m.kategori||''}</div></td>
+        <td class="mono" style="color:var(--red);font-weight:700">${m.miktar||0} <span style="font-size:10px">${m.birim||'adet'}</span></td>
+        <td class="mono" style="color:var(--text3)">min ${m.minMiktar||0}</td>
+        <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="openOtomatikPOForMalzeme('${m.id}')">PO Oluştur</button></td>
+      </tr>`).join('')
+      + '</tbody></table>';
+  }
+
+  // Bekleyen PO'lar
+  const pEl = document.getElementById('scm-po-liste');
+  if(!bekleyenPO.length) {
+    pEl.innerHTML = '<div class="empty-state" style="padding:20px"><div class="empty-icon">🛒</div><div class="empty-title">Bekleyen PO yok</div></div>';
+  } else {
+    pEl.innerHTML = '<table class="table"><thead><tr><th>PO No</th><th>Tedarikçi</th><th>Tutar</th><th>Durum</th></tr></thead><tbody>'
+      + bekleyenPO.slice(0,8).map(p => `<tr onclick="openPODetay('${p.id}')" style="cursor:pointer">
+        <td class="mono" style="color:var(--accent);font-size:11px">${p.poNo||'—'}</td>
+        <td style="font-size:12px">${p.tedarikcAd||'—'}</td>
+        <td class="mono">${fmtMoney(p.toplamTutar)}</td>
+        <td>${p.durum==='Beklemede'?'<span class="badge badge-yellow">Beklemede</span>':'<span class="badge badge-blue">Onaylandı</span>'}</td>
+      </tr>`).join('')
+      + '</tbody></table>';
+  }
+
+  // Tedarikçi harcama
+  const thEl = document.getElementById('scm-tedarikci-harcama');
+  const son3Ay = new Date(Date.now() - 90*24*60*60*1000).toISOString().slice(0,10);
+  const harcamaMap = {};
+  satinalmaEmirleri.filter(p => (p.tarih||'') >= son3Ay).forEach(p => {
+    const key = p.tedarikcAd||'Bilinmiyor';
+    harcamaMap[key] = (harcamaMap[key]||0) + Number(p.toplamTutar||0);
+  });
+  const sirali = Object.entries(harcamaMap).sort((a,b)=>b[1]-a[1]);
+  const maxH = sirali[0]?.[1]||1;
+  thEl.innerHTML = sirali.length ? sirali.map(([ad,tutar]) => `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:12px;font-weight:500">${ad}</span>
+        <span class="mono" style="font-size:12px;color:var(--accent)">${fmtMoney(tutar)}</span>
+      </div>
+      <div style="background:var(--surface2);border-radius:2px;height:4px">
+        <div style="height:100%;background:var(--accent);width:${Math.round(tutar/maxH*100)}%;border-radius:2px"></div>
+      </div>
+    </div>`).join('')
+    : '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Bu dönemde alım yok</div>';
+
+  // Son fire
+  const fEl = document.getElementById('scm-fire-liste');
+  if(!fireKayitlari.length) {
+    fEl.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Fire kaydı yok</div>';
+  } else {
+    fEl.innerHTML = '<table class="table"><thead><tr><th>Tarih</th><th>Tip</th><th>Malzeme</th><th style="text-align:right">Kayıp</th></tr></thead><tbody>'
+      + fireKayitlari.slice(0,6).map(f => `<tr>
+        <td class="mono" style="font-size:11px">${fmtDate(f.tarih)}</td>
+        <td>${f.tip==='Fire'?'<span class="badge badge-red">Fire</span>':f.tip==='İskarta'?'<span class="badge badge-orange" style="background:rgba(232,160,32,.15);color:var(--accent)">İskarta</span>':'<span class="badge badge-gray">Hasar</span>'}</td>
+        <td style="font-size:12px">${f.malzemeAd||'—'}</td>
+        <td class="mono" style="text-align:right;color:var(--red)">${f.tahminiKayip?fmtMoney(f.tahminiKayip):'—'}</td>
+      </tr>`).join('')
+      + '</tbody></table>';
+  }
+};
+
+// ── TEDARİKÇİLER ─────────────────────────────────────────────────────────────
+window.renderTedarikciler = function() {
+  const katF = document.getElementById('tedKategoriFilter')?.value||'';
+  const sortF = document.getElementById('tedSortFilter')?.value||'ad';
+  let liste = [...tedarikciler];
+  if(katF) liste = liste.filter(t => t.kategori===katF);
+
+  // Her tedarikçinin harcamasını hesapla (PO'lardan)
+  const harcamaMap = {};
+  satinalmaEmirleri.forEach(p => {
+    if(p.tedarikcId) harcamaMap[p.tedarikcId] = (harcamaMap[p.tedarikcId]||0) + Number(p.toplamTutar||0);
+  });
+
+  if(sortF==='ad') liste.sort((a,b)=>(a.ad||'').localeCompare(b.ad||'','tr'));
+  else if(sortF==='skor_desc') liste.sort((a,b)=>Number(b.performansSkor||0)-Number(a.performansSkor||0));
+  else if(sortF==='harcama_desc') liste.sort((a,b)=>(harcamaMap[b.id]||0)-(harcamaMap[a.id]||0));
+
+  const buAy = new Date().toISOString().slice(0,7);
+  const buAyHarcama = satinalmaEmirleri.filter(p=>(p.tarih||'').startsWith(buAy)).reduce((a,p)=>a+Number(p.toplamTutar||0),0);
+  const ortSkor = liste.length ? Math.round(liste.reduce((a,t)=>a+Number(t.performansSkor||0),0)/liste.length) : 0;
+  const vadeSayisi = tedarikciler.filter(t => t.odemeVadesi && Number(t.odemeVadesi) < 30).length;
+
+  document.getElementById('ted-toplam').textContent = tedarikciler.length;
+  document.getElementById('ted-ort-skor').textContent = ortSkor + '/100';
+  document.getElementById('ted-buay-alim').textContent = fmtMoney(buAyHarcama);
+  document.getElementById('ted-vade-gecen').textContent = vadeSayisi;
+
+  const grid = document.getElementById('tedarikcilerGrid');
+  if(!liste.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🏭</div><div class="empty-title">Tedarikçi bulunamadı</div><div class="empty-sub">+ Yeni Tedarikçi ile ekleyin</div></div>';
+    return;
+  }
+
+  grid.innerHTML = liste.map(t => {
+    const harcama = harcamaMap[t.id]||0;
+    const poSayisi = satinalmaEmirleri.filter(p=>p.tedarikcId===t.id).length;
+    const skor = Number(t.performansSkor||0);
+    const katRenk = {Hammadde:'var(--accent)',Aksesuar:'var(--blue)',MDF:'var(--purple)',Boya:'var(--green)',Diğer:'var(--text3)'};
+    return `<div class="card" style="padding:16px;cursor:pointer" onclick="openTedarikcDetay('${t.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:3px">${t.ad}</div>
+          <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:2px;background:${katRenk[t.kategori]||'var(--text3)'}22;color:${katRenk[t.kategori]||'var(--text3)'}">${t.kategori||'—'}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;color:${skorRenk(skor)};font-weight:700">${skor}</div>
+          <div style="font-size:11px;color:${skorRenk(skor)}">${skorYildiz(skor)}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div style="background:var(--surface2);padding:8px 10px;border-radius:3px">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">Toplam Alım</div>
+          <div class="mono" style="font-size:13px;font-weight:700;color:var(--accent)">${fmtMoney(harcama)}</div>
+        </div>
+        <div style="background:var(--surface2);padding:8px 10px;border-radius:3px">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">PO Sayısı</div>
+          <div class="mono" style="font-size:13px;font-weight:700">${poSayisi}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);display:flex;flex-direction:column;gap:3px">
+        ${t.telefon?`<div>📞 ${t.telefon}</div>`:''}
+        ${t.odemeVadesi?`<div>🗓 Vade: ${t.odemeVadesi} gün</div>`:''}
+        ${t.adres?`<div style="color:var(--text3)">📍 ${t.adres}</div>`:''}
+      </div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <button class="btn btn-ghost" style="flex:1;padding:4px;font-size:11px" onclick="event.stopPropagation();editTedarikci('${t.id}')">✎ Düzenle</button>
+        <button class="btn btn-primary" style="flex:1;padding:4px;font-size:11px" onclick="event.stopPropagation();openPOFrm('${t.id}')">+ PO</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.openTedarikciFrm = function(editId) {
+  const t = editId ? tedarikciler.find(x=>x.id===editId) : {};
+  document.getElementById('addModalTitle').textContent = editId ? 'Tedarikçi Düzenle' : 'Yeni Tedarikçi';
+  document.getElementById('addModalBody').innerHTML = `<div class="form-grid">
+    <div class="form-group full"><label>Firma Adı *</label><input id="tf_ad" value="${t.ad||''}" placeholder="Tedarikçi adı"></div>
+    <div class="form-group"><label>Kategori</label>
+      <select id="tf_kategori">
+        ${['Hammadde','Aksesuar','MDF','Boya','Diğer'].map(k=>`<option ${(t.kategori||'')==k?'selected':''}>${k}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label>Performans Skoru (0-100)</label><input id="tf_skor" type="number" min="0" max="100" value="${t.performansSkor||50}" placeholder="0-100"></div>
+    <div class="form-group"><label>Telefon</label><input id="tf_tel" value="${t.telefon||''}" placeholder="0532..."></div>
+    <div class="form-group"><label>E-Posta</label><input id="tf_eposta" value="${t.eposta||''}" placeholder="info@..."></div>
+    <div class="form-group"><label>Ödeme Vadesi (Gün)</label><input id="tf_vade" type="number" value="${t.odemeVadesi||30}" placeholder="30"></div>
+    <div class="form-group"><label>Yetkili Kişi</label><input id="tf_yetkili" value="${t.yetkili||''}" placeholder="Ad Soyad"></div>
+    <div class="form-group"><label>Vergi No</label><input id="tf_vergino" value="${t.vergiNo||''}" placeholder="1234567890"></div>
+    <div class="form-group full"><label>Adres</label><textarea id="tf_adres" style="min-height:60px">${t.adres||''}</textarea></div>
+    <div class="form-group full"><label>Not</label><textarea id="tf_not" style="min-height:50px">${t.notlar||''}</textarea></div>
+  </div>`;
+  document.getElementById('saveBtn').onclick = () => saveTedarikci(editId||null);
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.editTedarikci = function(id) { openTedarikciFrm(id); };
+
+window.saveTedarikci = async function(editId) {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Kaydediliyor...';
+  const ad = document.getElementById('tf_ad')?.value?.trim();
+  if(!ad) { showToast('Firma adı zorunlu','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+  const data = {
+    ad,
+    kategori: document.getElementById('tf_kategori')?.value||'',
+    performansSkor: Number(document.getElementById('tf_skor')?.value||50),
+    telefon: document.getElementById('tf_tel')?.value||'',
+    eposta: document.getElementById('tf_eposta')?.value||'',
+    odemeVadesi: Number(document.getElementById('tf_vade')?.value||30),
+    yetkili: document.getElementById('tf_yetkili')?.value||'',
+    vergiNo: document.getElementById('tf_vergino')?.value||'',
+    adres: document.getElementById('tf_adres')?.value||'',
+    notlar: document.getElementById('tf_not')?.value||'',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    if(editId) {
+      await db.collection('tedarikciler').doc(editId).update(data);
+      showToast('Tedarikçi güncellendi ✓');
+    } else {
+      await db.collection('tedarikciler').add({...data, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+      showToast('Tedarikçi eklendi ✓');
+    }
+    closeModal('addModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+
+window.openTedarikcDetay = function(id) {
+  const t = tedarikciler.find(x=>x.id===id);
+  if(!t) return;
+  const pos = satinalmaEmirleri.filter(p=>p.tedarikcId===id);
+  const topHarcama = pos.reduce((a,p)=>a+Number(p.toplamTutar||0),0);
+  document.getElementById('detailTitle').textContent = t.ad||'—';
+  document.getElementById('detailSub').textContent = t.kategori||'';
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Performans</div>
+      <div style="text-align:center;padding:12px 0">
+        <div style="font-size:36px;font-weight:700;color:${skorRenk(t.performansSkor)}">${t.performansSkor||0}</div>
+        <div style="font-size:16px;color:${skorRenk(t.performansSkor)}">${skorYildiz(t.performansSkor)}</div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">İletişim</div>
+      <div class="detail-row"><span class="detail-key">Yetkili</span><span class="detail-val">${t.yetkili||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Telefon</span><span class="detail-val">${t.telefon||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">E-Posta</span><span class="detail-val">${t.eposta||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Adres</span><span class="detail-val" style="font-size:11px">${t.adres||'—'}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Ticari Bilgiler</div>
+      <div class="detail-row"><span class="detail-key">Ödeme Vadesi</span><span class="detail-val mono">${t.odemeVadesi||30} gün</span></div>
+      <div class="detail-row"><span class="detail-key">Vergi No</span><span class="detail-val mono">${t.vergiNo||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Toplam Alım</span><span class="detail-val mono" style="color:var(--accent)">${fmtMoney(topHarcama)}</span></div>
+      <div class="detail-row"><span class="detail-key">PO Sayısı</span><span class="detail-val mono">${pos.length}</span></div>
+    </div>
+    ${t.notlar?`<div class="detail-section"><div class="detail-section-title">Notlar</div><div style="font-size:12px;color:var(--text2);line-height:1.6">${t.notlar}</div></div>`:''}`;
+  document.getElementById('detailFooter').innerHTML =
+    `<button class="btn btn-ghost" onclick="editTedarikci('${id}');closeModal('detailOverlay')">✎ Düzenle</button>
+     <button class="btn btn-primary" onclick="openPOFrm('${id}');closeModal('detailOverlay')">+ PO Oluştur</button>
+     <button class="btn btn-danger" onclick="confirmDeleteTedarikci('${id}')">✕ Sil</button>`;
+  document.getElementById('detailOverlay').classList.add('open');
+};
+
+window.confirmDeleteTedarikci = async function(id) {
+  const t = tedarikciler.find(x=>x.id===id);
+  document.getElementById('confirmText').textContent = `"${t?.ad||'Bu tedarikçi'}" silinecek.`;
+  document.getElementById('confirmOkBtn').onclick = async () => {
+    closeModal('confirmOverlay'); closeModal('detailOverlay');
+    try { await db.collection('tedarikciler').doc(id).delete(); showToast('Tedarikçi silindi ✓'); }
+    catch(e) { showToast('Hata: '+e.message,'error'); }
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
+
+// ── SATIN ALMA (PO) ───────────────────────────────────────────────────────────
+window.renderPO = function() {
+  const durumF = document.getElementById('poDurumFilter')?.value||'';
+  const tedF   = document.getElementById('poTedFilter')?.value||'';
+  const donemF = document.getElementById('poDonemFilter')?.value||'bu_ay';
+  let liste = [...satinalmaEmirleri];
+  if(durumF) liste = liste.filter(p=>p.durum===durumF);
+  if(tedF) liste = liste.filter(p=>p.tedarikcId===tedF);
+  if(donemF !== 'tumu') liste = donemFilter(liste,'tarih',donemF);
+
+  const buAy = new Date().toISOString().slice(0,7);
+  const tmBekleyen = satinalmaEmirleri.filter(p=>p.durum==='Beklemede').length;
+  const tmOnaylandi = satinalmaEmirleri.filter(p=>p.durum==='Onaylandı').length;
+  const buAyTeslim = satinalmaEmirleri.filter(p=>p.durum==='Teslim Alındı'&&(p.tarih||'').startsWith(buAy)).length;
+  const buAyTutar = satinalmaEmirleri.filter(p=>(p.tarih||'').startsWith(buAy)).reduce((a,p)=>a+Number(p.toplamTutar||0),0);
+
+  document.getElementById('po-bekleyen').textContent = tmBekleyen;
+  document.getElementById('po-onaylandi').textContent = tmOnaylandi;
+  document.getElementById('po-teslim').textContent = buAyTeslim;
+  document.getElementById('po-tutar').textContent = fmtMoney(buAyTutar);
+
+  const tbody = document.getElementById('poTableBody');
+  if(!liste.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">🛒</div><div class="empty-title">PO bulunamadı</div></div></td></tr>`;
+    return;
+  }
+
+  const durumBadgePO = d => {
+    const m = {Beklemede:'badge-yellow',Onaylandı:'badge-blue','Teslim Alındı':'badge-green',İptal:'badge-red'};
+    return `<span class="badge ${m[d]||'badge-gray'}">${d||'—'}</span>`;
+  };
+
+  tbody.innerHTML = liste.map(p => {
+    const kalemOzet = (p.kalemler||[]).map(k=>`${k.ad||'?'} ×${k.miktar||1}`).join(', ');
+    return `<tr onclick="openPODetay('${p.id}')" style="cursor:pointer">
+      <td class="mono" style="color:var(--accent);font-size:11px">${p.poNo||'—'}</td>
+      <td class="mono" style="font-size:11px">${fmtDate(p.tarih)}</td>
+      <td style="font-size:12px;font-weight:500">${p.tedarikcAd||'—'}</td>
+      <td style="font-size:11px;color:var(--text2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${kalemOzet||'—'}</td>
+      <td class="mono" style="text-align:right;font-weight:600">${fmtMoney(p.toplamTutar)}</td>
+      <td class="mono" style="font-size:11px">${fmtDate(p.teslimTarihi)}</td>
+      <td>${durumBadgePO(p.durum)}</td>
+      <td><button class="btn btn-ghost" style="padding:2px 8px;font-size:10px" onclick="event.stopPropagation();openPODetay('${p.id}')">→</button></td>
+    </tr>`;
+  }).join('');
+};
+
+window.openPOFrm = function(prefillTedId) {
+  const autoPONo = nextPONo();
+  const bugun = new Date().toISOString().split('T')[0];
+  const tedOpts = tedarikciler.map(t=>`<option value="${t.id}" ${t.id===prefillTedId?'selected':''}>${t.ad}</option>`).join('');
+  const malzOpts = malzemeler.map(m=>`<option value="${m.id}" data-ad="${m.ad}" data-birim="${m.birim||'adet'}">${m.ad} (${m.miktar||0} ${m.birim||'adet'})</option>`).join('');
+
+  document.getElementById('addModalTitle').textContent = 'Yeni Satın Alma Siparişi (PO)';
+  document.getElementById('addModalBody').innerHTML = `<div class="form-grid">
+    <div class="form-group"><label>PO No</label><input id="po_no" value="${autoPONo}" readonly style="font-family:var(--mono)"></div>
+    <div class="form-group"><label>Tarih *</label><input id="po_tarih" type="date" value="${bugun}"></div>
+    <div class="form-group full"><label>Tedarikçi *</label>
+      <select id="po_ted"><option value="">— Tedarikçi seçin —</option>${tedOpts}</select>
+    </div>
+    <div class="form-group"><label>Tahmini Teslim Tarihi</label><input id="po_teslim" type="date"></div>
+    <div class="form-group"><label>Durum</label>
+      <select id="po_durum">
+        <option>Beklemede</option><option>Onaylandı</option><option>Teslim Alındı</option><option>İptal</option>
+      </select>
+    </div>
+    <div class="form-group full">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label style="margin:0">Sipariş Kalemleri *</label>
+        <button type="button" class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="poKalemEkle()">+ Kalem Ekle</button>
+      </div>
+      <div id="poKalemlerContainer">
+        <div class="po-kalem" id="po_kalem_0" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:8px">
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end">
+            <div><label style="font-size:11px">Malzeme</label>
+              <select class="po_malzeme" onchange="poKalemHesapla(0)"><option value="">— Seçin —</option>${malzOpts}</select>
+            </div>
+            <div><label style="font-size:11px">Miktar</label><input type="number" class="po_miktar" min="1" value="1" oninput="poKalemHesapla(0)"></div>
+            <div><label style="font-size:11px">Birim Fiyat (₺)</label><input type="number" class="po_birimFiyat" min="0" placeholder="0" oninput="poKalemHesapla(0)"></div>
+            <div style="padding-bottom:2px"><span class="po_kalem_tutar" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">₺0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group full">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-radius:4px">
+        <span style="font-size:12px;font-weight:600">Toplam Tutar</span>
+        <span id="po_toplam" class="mono" style="font-size:16px;font-weight:700;color:var(--accent)">₺0</span>
+      </div>
+    </div>
+    <div class="form-group full"><label>Not</label><textarea id="po_not" style="min-height:55px" placeholder="Opsiyonel sipariş notu..."></textarea></div>
+  </div>`;
+  document.getElementById('saveBtn').onclick = savePO;
+  document.getElementById('addModal').classList.add('open');
+};
+
+let _poKalemSayisi = 1;
+window.poKalemEkle = function() {
+  const idx = _poKalemSayisi++;
+  const malzOpts = malzemeler.map(m=>`<option value="${m.id}" data-ad="${m.ad}" data-birim="${m.birim||'adet'}">${m.ad} (${m.miktar||0} ${m.birim||'adet'})</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'po-kalem'; div.id = 'po_kalem_'+idx;
+  div.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:8px;position:relative';
+  div.innerHTML = `<button type="button" onclick="this.parentElement.remove();poToplamHesapla()" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+    <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end">
+      <div><label style="font-size:11px">Malzeme</label>
+        <select class="po_malzeme" onchange="poKalemHesapla(${idx})"><option value="">— Seçin —</option>${malzOpts}</select>
+      </div>
+      <div><label style="font-size:11px">Miktar</label><input type="number" class="po_miktar" min="1" value="1" oninput="poKalemHesapla(${idx})"></div>
+      <div><label style="font-size:11px">Birim Fiyat (₺)</label><input type="number" class="po_birimFiyat" min="0" placeholder="0" oninput="poKalemHesapla(${idx})"></div>
+      <div style="padding-bottom:2px"><span class="po_kalem_tutar" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">₺0</span></div>
+    </div>`;
+  document.getElementById('poKalemlerContainer').appendChild(div);
+};
+
+window.poKalemHesapla = function(idx) {
+  const kalem = document.getElementById('po_kalem_'+idx);
+  if(!kalem) return;
+  const miktar = Number(kalem.querySelector('.po_miktar')?.value||0);
+  const birimF = Number(kalem.querySelector('.po_birimFiyat')?.value||0);
+  const tutar = miktar * birimF;
+  kalem.querySelector('.po_kalem_tutar').textContent = fmtMoney(tutar);
+  poToplamHesapla();
+};
+
+window.poToplamHesapla = function() {
+  const kalemler = document.querySelectorAll('.po-kalem');
+  let toplam = 0;
+  kalemler.forEach(k => {
+    const m = Number(k.querySelector('.po_miktar')?.value||0);
+    const b = Number(k.querySelector('.po_birimFiyat')?.value||0);
+    toplam += m*b;
+  });
+  const el = document.getElementById('po_toplam');
+  if(el) el.textContent = fmtMoney(toplam);
+};
+
+window.savePO = async function() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
+  const tedId = document.getElementById('po_ted')?.value;
+  const tarih = document.getElementById('po_tarih')?.value;
+  if(!tedId||!tarih) { showToast('Tedarikçi ve tarih zorunlu','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+
+  const ted = tedarikciler.find(t=>t.id===tedId);
+  const kalemEls = document.querySelectorAll('.po-kalem');
+  const kalemler = [];
+  let toplamTutar = 0;
+  kalemEls.forEach(k => {
+    const sel = k.querySelector('.po_malzeme');
+    const malzId = sel?.value;
+    const malzAd = sel?.options[sel?.selectedIndex]?.dataset?.ad||'';
+    const birim = sel?.options[sel?.selectedIndex]?.dataset?.birim||'adet';
+    const miktar = Number(k.querySelector('.po_miktar')?.value||0);
+    const birimFiyat = Number(k.querySelector('.po_birimFiyat')?.value||0);
+    const tutar = miktar * birimFiyat;
+    if(malzId && miktar > 0) { kalemler.push({malzId,ad:malzAd,birim,miktar,birimFiyat,tutar}); toplamTutar += tutar; }
+  });
+  if(!kalemler.length) { showToast('En az bir kalem ekleyin','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+
+  try {
+    await db.collection('satinalmaEmirleri').add({
+      poNo: document.getElementById('po_no')?.value||nextPONo(),
+      tedarikcId: tedId, tedarikcAd: ted?.ad||'',
+      tarih, teslimTarihi: document.getElementById('po_teslim')?.value||'',
+      durum: document.getElementById('po_durum')?.value||'Beklemede',
+      kalemler, toplamTutar,
+      not: document.getElementById('po_not')?.value||'',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast('PO kaydedildi ✓');
+    closeModal('addModal');
+    _poKalemSayisi = 1;
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+
+window.openPODetay = function(id) {
+  const p = satinalmaEmirleri.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('detailTitle').textContent = p.poNo||'PO';
+  document.getElementById('detailSub').textContent = p.tedarikcAd||'';
+  const durumMap = {Beklemede:'badge-yellow',Onaylandı:'badge-blue','Teslim Alındı':'badge-green',İptal:'badge-red'};
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">PO Bilgileri</div>
+      <div class="detail-row"><span class="detail-key">Tedarikçi</span><span class="detail-val">${p.tedarikcAd||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Tarih</span><span class="detail-val mono">${fmtDate(p.tarih)}</span></div>
+      <div class="detail-row"><span class="detail-key">Teslim Tarihi</span><span class="detail-val mono">${fmtDate(p.teslimTarihi)}</span></div>
+      <div class="detail-row"><span class="detail-key">Durum</span><span class="detail-val"><span class="badge ${durumMap[p.durum]||'badge-gray'}">${p.durum||'—'}</span></span></div>
+      <div class="detail-row"><span class="detail-key">Toplam Tutar</span><span class="detail-val mono" style="color:var(--accent);font-size:16px">${fmtMoney(p.toplamTutar)}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Kalemler</div>
+      ${(p.kalemler||[]).map(k=>`<div class="detail-row">
+        <span class="detail-key">${k.ad||'—'}</span>
+        <span class="detail-val mono">${k.miktar} ${k.birim||'adet'} × ${fmtMoney(k.birimFiyat)} = <strong style="color:var(--accent)">${fmtMoney(k.tutar)}</strong></span>
+      </div>`).join('')}
+    </div>
+    ${p.not?`<div class="detail-section"><div class="detail-section-title">Not</div><div style="font-size:12px;color:var(--text2)">${p.not}</div></div>`:''}
+    <div class="detail-section">
+      <div class="detail-section-title">Durum Güncelle</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${['Beklemede','Onaylandı','Teslim Alındı','İptal'].map(d=>`
+          <button class="btn ${p.durum===d?'btn-primary':'btn-ghost'}" style="font-size:11px;padding:4px 10px"
+            onclick="updatePODurum('${id}','${d}')">${d}</button>`).join('')}
+      </div>
+    </div>`;
+  document.getElementById('detailFooter').innerHTML =
+    `<button class="btn btn-danger" onclick="confirmDeletePO('${id}')">✕ Sil</button>`;
+  document.getElementById('detailOverlay').classList.add('open');
+};
+
+window.updatePODurum = async function(id, durum) {
+  try {
+    await db.collection('satinalmaEmirleri').doc(id).update({durum, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+    showToast('Durum güncellendi ✓');
+    openPODetay(id);
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+window.confirmDeletePO = function(id) {
+  const p = satinalmaEmirleri.find(x=>x.id===id);
+  document.getElementById('confirmText').textContent = `"${p?.poNo||'Bu PO'}" silinecek.`;
+  document.getElementById('confirmOkBtn').onclick = async () => {
+    closeModal('confirmOverlay'); closeModal('detailOverlay');
+    try { await db.collection('satinalmaEmirleri').doc(id).delete(); showToast('PO silindi ✓'); }
+    catch(e) { showToast('Hata: '+e.message,'error'); }
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
+
+window.openOtomatikPO = function() {
+  const kritik = malzemeler.filter(m => Number(m.miktar||0) <= Number(m.minMiktar||0));
+  if(!kritik.length) { showToast('Kritik stok yok, otomatik PO gerekmiyor ✓','info'); return; }
+  const tedOpts = tedarikciler.map(t=>`<option value="${t.id}">${t.ad}</option>`).join('');
+  document.getElementById('addModalTitle').textContent = '⚡ Otomatik PO — Kritik Stoklar';
+  document.getElementById('addModalBody').innerHTML = `<div style="margin-bottom:14px;padding:10px 12px;background:rgba(224,92,92,.08);border:1px solid rgba(224,92,92,.25);border-radius:4px">
+    <div style="font-size:12px;font-weight:600;color:var(--red);margin-bottom:4px">⚠ ${kritik.length} malzeme kritik stok seviyesinin altında</div>
+    <div style="font-size:11px;color:var(--text2)">Aşağıdaki malzemeler için otomatik PO oluşturulacak</div>
+  </div>
+  <div class="form-grid">
+    <div class="form-group full"><label>Tedarikçi *</label><select id="auto_po_ted"><option value="">— Seçin —</option>${tedOpts}</select></div>
+    <div class="form-group"><label>Tarih *</label><input id="auto_po_tarih" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="form-group"><label>Durum</label><select id="auto_po_durum"><option>Beklemede</option><option>Onaylandı</option></select></div>
+  </div>
+  <div style="margin-top:12px">
+    ${kritik.map((m,i) => `<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;padding:8px;background:var(--surface2);border-radius:4px;margin-bottom:6px;align-items:center">
+      <div>
+        <div style="font-size:12px;font-weight:600">${m.ad}</div>
+        <div style="font-size:10px;color:var(--red)">Mevcut: ${m.miktar||0} / Min: ${m.minMiktar||0} ${m.birim||'adet'}</div>
+      </div>
+      <div><label style="font-size:10px;color:var(--text3)">Sipariş Miktarı</label>
+        <input type="number" id="auto_miktar_${m.id}" class="auto_miktar" data-malzid="${m.id}" data-malzad="${m.ad}" data-birim="${m.birim||'adet'}"
+          value="${Math.max(Number(m.minMiktar||0)*2 - Number(m.miktar||0), 1)}" min="1"
+          style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-size:12px;border-radius:3px;width:100%">
+      </div>
+      <div><label style="font-size:10px;color:var(--text3)">Birim Fiyat (₺)</label>
+        <input type="number" id="auto_fiyat_${m.id}" class="auto_fiyat" value="${m.birimFiyat||0}" min="0"
+          style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-size:12px;border-radius:3px;width:100%">
+      </div>
+    </div>`).join('')}
+  </div>`;
+  document.getElementById('saveBtn').onclick = saveOtomatikPO;
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.openOtomatikPOForMalzeme = function(malzId) {
+  openOtomatikPO();
+};
+
+window.saveOtomatikPO = async function() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
+  const tedId = document.getElementById('auto_po_ted')?.value;
+  const tarih = document.getElementById('auto_po_tarih')?.value;
+  if(!tedId||!tarih) { showToast('Tedarikçi ve tarih zorunlu','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+  const ted = tedarikciler.find(t=>t.id===tedId);
+  const kalemler = [];
+  let toplam = 0;
+  document.querySelectorAll('.auto_miktar').forEach(inp => {
+    const malzId = inp.dataset.malzid;
+    const miktar = Number(inp.value||0);
+    const birimFiyat = Number(document.getElementById('auto_fiyat_'+malzId)?.value||0);
+    const tutar = miktar*birimFiyat;
+    if(miktar>0) { kalemler.push({malzId,ad:inp.dataset.malzad,birim:inp.dataset.birim,miktar,birimFiyat,tutar}); toplam+=tutar; }
+  });
+  try {
+    await db.collection('satinalmaEmirleri').add({
+      poNo: nextPONo(), tedarikcId: tedId, tedarikcAd: ted?.ad||'',
+      tarih, durum: document.getElementById('auto_po_durum')?.value||'Beklemede',
+      kalemler, toplamTutar: toplam, not: 'Otomatik oluşturuldu — Kritik stok',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    showToast(`Otomatik PO oluşturuldu ✓ — ${kalemler.length} kalem`);
+    closeModal('addModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+
+// ── STOK HAREKETLERİ SAYFASI ─────────────────────────────────────────────────
+window.renderStokHareketSayfasi = function() {
+  const tipF  = document.getElementById('shTipFilter')?.value||'';
+  const donemF= document.getElementById('shDonemFilter')?.value||'bu_ay';
+  const aramaF= (document.getElementById('shMalzemeSearch')?.value||'').toLowerCase();
+  let liste = [...stokHareketler];
+
+  if(tipF) liste = liste.filter(h=>h.tip===tipF);
+  if(donemF !== 'tumu') liste = donemFilter(liste,'tarih',donemF);
+  if(aramaF) liste = liste.filter(h=>(h.malzemeAd||'').toLowerCase().includes(aramaF));
+
+  const buAy = new Date().toISOString().slice(0,7);
+  const buAyGiris = stokHareketler.filter(h=>h.tip==='Giris'&&(h.tarih||'').startsWith(buAy)).length;
+  const buAyCikis = stokHareketler.filter(h=>h.tip==='Cikis'&&(h.tarih||'').startsWith(buAy)).length;
+  const sonSayim = stokHareketler.find(h=>h.tip==='Sayim');
+
+  document.getElementById('sh-buay-giris').textContent = buAyGiris;
+  document.getElementById('sh-buay-cikis').textContent = buAyCikis;
+  document.getElementById('sh-toplam-islem').textContent = stokHareketler.length;
+  document.getElementById('sh-son-sayim').textContent = sonSayim ? fmtDate(sonSayim.tarih) : '—';
+
+  const tbody = document.getElementById('shTableBody');
+  if(!liste.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><div class="empty-icon">↕</div><div class="empty-title">Hareket bulunamadı</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = liste.map(h => {
+    const m = malzemeler.find(x=>x.id===h.malzemeId);
+    const tipBadge = h.tip==='Giris'?'<span class="badge badge-green">Giriş</span>'
+      :h.tip==='Cikis'?'<span class="badge badge-red">Çıkış</span>'
+      :'<span class="badge badge-blue">Sayım</span>';
+    const sign = h.tip==='Cikis'?'-':'+';
+    const tutar = Number(h.miktar||0)*Number(h.birimFiyat||0);
+    return `<tr>
+      <td class="mono" style="font-size:11px">${fmtDate(h.tarih)}</td>
+      <td style="font-size:12px;font-weight:500">${h.malzemeAd||'—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${m?.kategori||'—'}</td>
+      <td>${tipBadge}</td>
+      <td class="mono" style="text-align:right;color:${h.tip==='Cikis'?'var(--red)':'var(--green)'};font-weight:600">${sign}${h.miktar} <span style="font-size:10px;color:var(--text3)">${m?.birim||'adet'}</span></td>
+      <td class="mono" style="text-align:right">${h.birimFiyat?fmtMoney(h.birimFiyat):'—'}</td>
+      <td class="mono" style="text-align:right;color:var(--accent)">${tutar>0?fmtMoney(tutar):'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${h.aciklama||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:2px 7px;font-size:10px" onclick="confirmDeleteHareket('${h.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+};
+
+window.confirmDeleteHareket = function(id) {
+  document.getElementById('confirmText').textContent = 'Bu stok hareketi silinecek. Stok miktarı geri alınmaz.';
+  document.getElementById('confirmOkBtn').onclick = async () => {
+    closeModal('confirmOverlay');
+    try { await db.collection('stokHareketler').doc(id).delete(); showToast('Hareket silindi ✓'); }
+    catch(e) { showToast('Hata: '+e.message,'error'); }
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
+
+window.openBarkodSayim = function() {
+  document.getElementById('addModalTitle').textContent = '📷 Barkod / QR Sayım';
+  document.getElementById('addModalBody').innerHTML = `
+    <div style="padding:12px;background:rgba(92,158,224,.08);border:1px solid rgba(92,158,224,.25);border-radius:4px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:4px">Barkod Sayım Modu</div>
+      <div style="font-size:11px;color:var(--text2)">Malzeme kodunu veya adını girerek hızlı sayım yapabilirsiniz. Her giriş otomatik kaydedilir.</div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Malzeme Ara / Kod Gir</label>
+        <input id="bk_search" placeholder="Malzeme adı veya kod..." oninput="barkodAra()" autocomplete="off"
+          style="font-size:16px;padding:10px 14px">
+        <div id="bk_results" style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;margin-top:4px;max-height:160px;overflow-y:auto;display:none"></div>
+      </div>
+      <div class="form-group full" id="bk_secili_alan" style="display:none">
+        <div style="padding:10px 14px;background:var(--surface2);border:1px solid var(--accent);border-radius:4px;margin-bottom:8px">
+          <span id="bk_secili_ad" style="font-weight:600;color:var(--accent)"></span>
+          <span id="bk_secili_mevcut" style="font-size:12px;color:var(--text3);margin-left:8px"></span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label>Sayılan Miktar</label><input id="bk_miktar" type="number" min="0" placeholder="0" style="font-size:16px;font-weight:700;text-align:center"></div>
+          <div><label>Birim Fiyat (₺)</label><input id="bk_fiyat" type="number" min="0" placeholder="0"></div>
+        </div>
+        <div style="margin-top:8px"><label>Hareket Tipi</label>
+          <select id="bk_tip" style="margin-top:4px">
+            <option value="Giriş">Giriş (Alım)</option>
+            <option value="Çıkış">Çıkış (Kullanım)</option>
+            <option value="Sayım">Sayım Düzeltme</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:12px;padding:10px" onclick="barkodKaydet()">✓ Kaydet & Sonraki</button>
+      </div>
+    </div>
+    <div id="bk_gecmis" style="margin-top:12px"></div>`;
+  document.getElementById('saveBtn').style.display = 'none';
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(() => document.getElementById('bk_search')?.focus(), 100);
+};
+
+let _barkodSeciliId = null;
+const _barkodSayimGecmis = [];
+
+window.barkodAra = function() {
+  const q = (document.getElementById('bk_search')?.value||'').toLowerCase();
+  const res = document.getElementById('bk_results');
+  if(!q) { res.style.display='none'; return; }
+  const filtered = malzemeler.filter(m=>(m.ad||'').toLowerCase().includes(q)||(m.kod||'').toLowerCase().includes(q)).slice(0,8);
+  if(!filtered.length) { res.style.display='none'; return; }
+  res.style.display='block';
+  res.innerHTML = filtered.map(m=>`<div onclick="barkodSec('${m.id}')"
+    style="padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)"
+    onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
+    <strong>${m.ad}</strong> <span style="color:var(--text3);font-size:11px">${m.miktar||0} ${m.birim||'adet'} mevcut</span>
+  </div>`).join('');
+};
+
+window.barkodSec = function(id) {
+  const m = malzemeler.find(x=>x.id===id);
+  if(!m) return;
+  _barkodSeciliId = id;
+  document.getElementById('bk_search').value = m.ad;
+  document.getElementById('bk_results').style.display='none';
+  document.getElementById('bk_secili_alan').style.display='block';
+  document.getElementById('bk_secili_ad').textContent = m.ad;
+  document.getElementById('bk_secili_mevcut').textContent = `Mevcut: ${m.miktar||0} ${m.birim||'adet'}`;
+  document.getElementById('bk_miktar').value = '';
+  document.getElementById('bk_fiyat').value = m.birimFiyat||'';
+  document.getElementById('bk_miktar').focus();
+};
+
+window.barkodKaydet = async function() {
+  if(!_barkodSeciliId) return;
+  const m = malzemeler.find(x=>x.id===_barkodSeciliId);
+  const miktar = parseFloat(document.getElementById('bk_miktar')?.value||0);
+  if(!miktar||miktar<=0) { showToast('Miktar giriniz','error'); return; }
+  const tipRaw = document.getElementById('bk_tip')?.value||'Giriş';
+  const birimFiyat = parseFloat(document.getElementById('bk_fiyat')?.value||0);
+  const tipKey = tipRaw==='Giriş'?'Giris':tipRaw==='Çıkış'?'Cikis':'Sayim';
+  const mevcutMiktar = Number(m.miktar||0);
+  let yeniMiktar = tipKey==='Giris' ? mevcutMiktar+miktar : tipKey==='Cikis' ? mevcutMiktar-miktar : miktar;
+  if(tipKey==='Cikis'&&miktar>mevcutMiktar) { showToast('Yetersiz stok!','error'); return; }
+  const tarih = new Date().toISOString().split('T')[0];
+  try {
+    await db.collection('stokHareketler').add({malzemeId:_barkodSeciliId,malzemeAd:m.ad,tip:tipKey,miktar,birimFiyat,tarih,aciklama:'Barkod sayım',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    const updates = {miktar:yeniMiktar,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+    if(tipKey==='Giris'&&birimFiyat) updates.birimFiyat=birimFiyat;
+    await db.collection('malzemeler').doc(_barkodSeciliId).update(updates);
+    _barkodSayimGecmis.unshift({ad:m.ad,tip:tipRaw,miktar,zaman:new Date().toLocaleTimeString('tr-TR')});
+    const gecmisEl = document.getElementById('bk_gecmis');
+    if(gecmisEl && _barkodSayimGecmis.length) {
+      gecmisEl.innerHTML = '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:6px">Bu Oturumda Kaydedilenler</div>'
+        + _barkodSayimGecmis.slice(0,5).map(g=>`<div style="display:flex;justify-content:space-between;padding:5px 8px;background:var(--surface2);border-radius:3px;margin-bottom:4px;font-size:11px">
+          <span>${g.ad}</span><span style="color:var(--text3)">${g.tip} · ${g.miktar} · ${g.zaman}</span></div>`).join('');
+    }
+    showToast(`${m.ad} — ${tipRaw} kaydedildi ✓`);
+    // Reset
+    _barkodSeciliId = null;
+    document.getElementById('bk_search').value = '';
+    document.getElementById('bk_secili_alan').style.display='none';
+    document.getElementById('bk_search').focus();
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+};
+
+// ── FİRE & İSKARTA ───────────────────────────────────────────────────────────
+window.renderFire = function() {
+  const tipF   = document.getElementById('fireTipFilter')?.value||'';
+  const donemF = document.getElementById('fireDonemFilter')?.value||'bu_ay';
+  let liste = [...fireKayitlari];
+  if(tipF) liste = liste.filter(f=>f.tip===tipF);
+  if(donemF !== 'tumu') liste = donemFilter(liste,'tarih',donemF);
+
+  const buAy = new Date().toISOString().slice(0,7);
+  const buAyList = fireKayitlari.filter(f=>(f.tarih||'').startsWith(buAy));
+  const buAyMaliyet = buAyList.reduce((a,f)=>a+Number(f.tahminiKayip||0),0);
+  const topMaliyet = fireKayitlari.reduce((a,f)=>a+Number(f.tahminiKayip||0),0);
+
+  document.getElementById('fire-buay').textContent = buAyList.length;
+  document.getElementById('fire-buay-maliyet').textContent = fmtMoney(buAyMaliyet);
+  document.getElementById('fire-toplam').textContent = fireKayitlari.length;
+  document.getElementById('fire-toplam-maliyet').textContent = fmtMoney(topMaliyet);
+
+  const tbody = document.getElementById('fireTableBody');
+  if(!liste.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">Kayıt bulunamadı</div></div></td></tr>`;
+  } else {
+    const tipRenk = {Fire:'badge-red',İskarta:'badge-yellow',Hasar:'badge-gray'};
+    tbody.innerHTML = liste.map(f => `<tr>
+      <td class="mono" style="font-size:11px">${fmtDate(f.tarih)}</td>
+      <td><span class="badge ${tipRenk[f.tip]||'badge-gray'}">${f.tip||'—'}</span></td>
+      <td style="font-size:12px">${f.malzemeAd||'—'}</td>
+      <td class="mono">${f.miktar||'—'} <span style="font-size:10px;color:var(--text3)">${f.birim||''}</span></td>
+      <td class="mono" style="text-align:right;color:var(--red)">${f.tahminiKayip?fmtMoney(f.tahminiKayip):'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${f.neden||'—'}</td>
+      <td><button class="btn btn-danger" style="padding:2px 7px;font-size:10px" onclick="confirmDeleteFire('${f.id}')">✕</button></td>
+    </tr>`).join('');
+  }
+
+  // Tip dağılımı
+  const tipMap = {};
+  fireKayitlari.forEach(f => { tipMap[f.tip||'Diğer'] = (tipMap[f.tip||'Diğer']||0)+1; });
+  const tipEl = document.getElementById('fire-tip-dagilim');
+  const toplamTip = fireKayitlari.length||1;
+  tipEl.innerHTML = Object.entries(tipMap).length ? Object.entries(tipMap).map(([tip,sayi])=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:12px">${tip}</span>
+        <span class="mono" style="font-size:12px;color:var(--text2)">${sayi} kayıt</span>
+      </div>
+      <div style="background:var(--surface2);border-radius:2px;height:5px">
+        <div style="height:100%;background:${tip==='Fire'?'var(--red)':tip==='İskarta'?'var(--accent)':'var(--blue)'};width:${Math.round(sayi/toplamTip*100)}%;border-radius:2px"></div>
+      </div>
+    </div>`).join('')
+    : '<div style="padding:12px;text-align:center;color:var(--text3);font-size:12px">Veri yok</div>';
+
+  // Neden dağılımı
+  const nedenMap = {};
+  fireKayitlari.forEach(f => { if(f.neden) nedenMap[f.neden] = (nedenMap[f.neden]||0)+1; });
+  const nedenSirali = Object.entries(nedenMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const nedenEl = document.getElementById('fire-neden-dagilim');
+  nedenEl.innerHTML = nedenSirali.length ? nedenSirali.map(([neden,sayi])=>`
+    <div style="display:flex;justify-content:space-between;padding:6px 8px;background:var(--surface2);border-radius:3px;margin-bottom:5px;font-size:12px">
+      <span>${neden}</span><span class="mono" style="color:var(--red)">${sayi}</span>
+    </div>`).join('')
+    : '<div style="padding:12px;text-align:center;color:var(--text3);font-size:12px">Veri yok</div>';
+};
+
+window.openFireFrm = function() {
+  const malzOpts = malzemeler.map(m=>`<option value="${m.id}" data-ad="${m.ad}" data-birim="${m.birim||'adet'}" data-fiyat="${m.birimFiyat||0}">${m.ad} (${m.miktar||0} ${m.birim||'adet'})</option>`).join('');
+  document.getElementById('addModalTitle').textContent = 'Fire / İskarta Kaydı';
+  document.getElementById('addModalBody').innerHTML = `<div class="form-grid">
+    <div class="form-group"><label>Tip *</label>
+      <select id="fr_tip">
+        <option>Fire</option><option>İskarta</option><option>Hasar</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Tarih *</label><input id="fr_tarih" type="date" value="${new Date().toISOString().split('T')[0]}"></div>
+    <div class="form-group full"><label>Malzeme *</label>
+      <select id="fr_malzeme" onchange="fireKayipHesapla()">
+        <option value="">— Seçin —</option>${malzOpts}
+      </select>
+    </div>
+    <div class="form-group"><label>Miktar *</label><input id="fr_miktar" type="number" min="0.01" step="0.01" placeholder="0" oninput="fireKayipHesapla()"></div>
+    <div class="form-group"><label>Birim Fiyat (₺)</label><input id="fr_birimFiyat" type="number" min="0" placeholder="Otomatik" oninput="fireKayipHesapla()"></div>
+    <div class="form-group full">
+      <div style="padding:10px 12px;background:rgba(224,92,92,.06);border:1px solid rgba(224,92,92,.2);border-radius:4px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--text2)">Tahmini Kayıp</span>
+        <span id="fr_kayip" class="mono" style="font-size:16px;font-weight:700;color:var(--red)">₺0</span>
+      </div>
+    </div>
+    <div class="form-group full"><label>Neden / Açıklama *</label>
+      <input id="fr_neden" placeholder="Üretim hatası, düşme, kalite sorunu, vs...">
+    </div>
+    <div class="form-group full">
+      <label><input type="checkbox" id="fr_stokDus" checked style="margin-right:6px">Stok miktarından düş</label>
+    </div>
+    <div class="form-group full"><label>Not</label><textarea id="fr_not" style="min-height:50px" placeholder="Opsiyonel ek not..."></textarea></div>
+  </div>`;
+  document.getElementById('saveBtn').onclick = saveFire;
+  document.getElementById('addModal').classList.add('open');
+};
+
+window.fireKayipHesapla = function() {
+  const sel = document.getElementById('fr_malzeme');
+  const opt = sel?.options[sel?.selectedIndex];
+  const otomatikFiyat = Number(opt?.dataset?.fiyat||0);
+  const birimFiyatInp = document.getElementById('fr_birimFiyat');
+  if(birimFiyatInp && !birimFiyatInp.value && otomatikFiyat) birimFiyatInp.placeholder = otomatikFiyat.toLocaleString('tr-TR');
+  const birimFiyat = Number(birimFiyatInp?.value||otomatikFiyat||0);
+  const miktar = Number(document.getElementById('fr_miktar')?.value||0);
+  const kayip = birimFiyat * miktar;
+  const el = document.getElementById('fr_kayip');
+  if(el) el.textContent = fmtMoney(kayip);
+};
+
+window.saveFire = async function() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
+  const sel = document.getElementById('fr_malzeme');
+  const malzId = sel?.value;
+  const opt = sel?.options[sel?.selectedIndex];
+  const malzAd = opt?.dataset?.ad||'';
+  const birim = opt?.dataset?.birim||'adet';
+  const miktar = parseFloat(document.getElementById('fr_miktar')?.value||0);
+  const neden = document.getElementById('fr_neden')?.value?.trim();
+  if(!malzId||!miktar||!neden) { showToast('Malzeme, miktar ve neden zorunlu','error'); btn.disabled=false; btn.textContent='Kaydet'; return; }
+  const otomatikFiyat = Number(opt?.dataset?.fiyat||0);
+  const birimFiyat = Number(document.getElementById('fr_birimFiyat')?.value||otomatikFiyat||0);
+  const tahminiKayip = birimFiyat * miktar;
+  const stokDus = document.getElementById('fr_stokDus')?.checked;
+  try {
+    await db.collection('fireKayitlari').add({
+      tip: document.getElementById('fr_tip')?.value||'Fire',
+      tarih: document.getElementById('fr_tarih')?.value||'',
+      malzemeId: malzId, malzemeAd: malzAd, birim, miktar, birimFiyat, tahminiKayip, neden,
+      not: document.getElementById('fr_not')?.value||'',
+      stokDusuldu: stokDus,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    if(stokDus) {
+      const m = malzemeler.find(x=>x.id===malzId);
+      const yeniMiktar = Math.max(0, Number(m?.miktar||0)-miktar);
+      await db.collection('malzemeler').doc(malzId).update({miktar:yeniMiktar,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      await db.collection('stokHareketler').add({malzemeId:malzId,malzemeAd:malzAd,tip:'Cikis',miktar,birimFiyat,tarih:document.getElementById('fr_tarih').value,aciklama:`${document.getElementById('fr_tip').value}: ${neden}`,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    }
+    showToast('Fire kaydedildi ✓');
+    closeModal('addModal');
+  } catch(e) { showToast('Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Kaydet';
+};
+
+window.confirmDeleteFire = function(id) {
+  const f = fireKayitlari.find(x=>x.id===id);
+  document.getElementById('confirmText').textContent = `Bu fire kaydı silinecek.`;
+  document.getElementById('confirmOkBtn').onclick = async () => {
+    closeModal('confirmOverlay');
+    try { await db.collection('fireKayitlari').doc(id).delete(); showToast('Kayıt silindi ✓'); }
+    catch(e) { showToast('Hata: '+e.message,'error'); }
+  };
+  document.getElementById('confirmOverlay').classList.add('open');
+};
 
 </script>
 </body>
