@@ -1628,9 +1628,12 @@ function startListeners() {
   });
     setSyncStatus(true);
     updateBadge();
+    // Her siparişler güncellemesinde MDF logunu sıfırdan hesapla
+    mdfLogYenile();
     if(currentPage==='siparisler') renderSiparisler();
     if(currentPage==='dashboard') renderDashboard();
     if(currentPage==='uretim') renderUretim();
+    if(currentPage==='mdfstok') { renderMdfOn(); renderMdfArka(); }
   }, err => { console.error(err); setSyncStatus(false); });
 
   // Müşteriler
@@ -2693,13 +2696,14 @@ window.saveRecord = async function() {
       };
 
       if(editingId) {
-        await db.collection('siparisler').doc(editingId).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
-        showToast('Sipariş güncellendi ✓');
-        // Eski kalemleri geri al, yeni kalemleri düş
+        // eskiSip'i update()'ten ÖNCE al — sonra onSnapshot override edebilir
         const eskiSip = siparisler.find(x=>x.id===editingId);
         const eskiKalemler = (eskiSip?.kalemler && eskiSip.kalemler.length) ? eskiSip.kalemler : (eskiSip?.urun ? [{urun:eskiSip.urun,renk:eskiSip.renk||'',yon:eskiSip.yon||'',adet:eskiSip.adet||1}] : []);
+        const eskiDurumIptal = eskiSip?.durum === 'İptal';
+        await db.collection('siparisler').doc(editingId).update({...data, updatedAt: firebase.firestore.FieldValue.serverTimestamp()});
+        showToast('Sipariş güncellendi ✓');
         const yeniKalemler = data.durum === 'İptal' ? [] : gecerliKalemler;
-        mdfStokGuncelle(yeniKalemler, eskiSip?.durum === 'İptal' ? [] : eskiKalemler);
+        mdfStokGuncelle(yeniKalemler, eskiDurumIptal ? [] : eskiKalemler);
 
         // Cari hareketi de güncelle (sipId veya sipNo üzerinden bul)
         try {
@@ -3447,7 +3451,7 @@ window.deleteRecord = async function(type, id) {
 
 // ─── NAVİGASYON ──────────────────────────────────────────────────────────────
 // ─── MDF STOK (STATİK VERİ - EXCEL'DEN) ────────────────────────────────────
-window.MDF_ON = [{"kod": "101 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "101 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "102 sağ", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "102 sol", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "103", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "201", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "202", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "203", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "204 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "204 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "205", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "206", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "207", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "208", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "209 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "210 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "211", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "212", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "213", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "214", "siparis": 11, "satis": 11, "kalan": 0}, {"kod": "215 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "215 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "216 sağ", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "216 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "217 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "217 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "218", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "219", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "220", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "221", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "222", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "223", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "224", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "225", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "226", "siparis": 7, "satis": 2, "kalan": 5}, {"kod": "227", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "228", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "229", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "230", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "231", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "232", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "233", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "234", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "235", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "236", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "237", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "238 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "239 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "240", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "241", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "242", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "301", "siparis": 15, "satis": 3, "kalan": 12}, {"kod": "302", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "303", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "304 sağ", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "304 sol", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "305", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "306", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "307", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "308", "siparis": 8, "satis": 0, "kalan": 8}, {"kod": "309", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "310", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "311", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "312", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "313", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "314", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "315", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "316", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "317", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "318", "siparis": 5, "satis": 2, "kalan": 3}, {"kod": "319", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "320", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "321", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "401 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "401 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "402 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "403", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "404", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "405", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "406", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "407", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "408", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "409", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "410", "siparis": 5, "satis": 1, "kalan": 4}, {"kod": "411", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "412 sağ", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "412 sol", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "413", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "414 sağ", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "414 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "415", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "416", "siparis": 23, "satis": 3, "kalan": 20}, {"kod": "417", "siparis": 20, "satis": 2, "kalan": 18}, {"kod": "418", "siparis": 7, "satis": 1, "kalan": 6}, {"kod": "419", "siparis": 8, "satis": 5, "kalan": 3}, {"kod": "420", "siparis": 6, "satis": 5, "kalan": 1}, {"kod": "421", "siparis": 28, "satis": 0, "kalan": 28}, {"kod": "422", "siparis": 12, "satis": 1, "kalan": 11}, {"kod": "423", "siparis": 10, "satis": 1, "kalan": 9}, {"kod": "424", "siparis": 4, "satis": 3, "kalan": 1}, {"kod": "425", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "426", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "427", "siparis": 7, "satis": 0, "kalan": 7}, {"kod": "428", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "429", "siparis": 19, "satis": 1, "kalan": 18}, {"kod": "430", "siparis": 17, "satis": 0, "kalan": 17}, {"kod": "431", "siparis": 4, "satis": 4, "kalan": 0}, {"kod": "432", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "433", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "434", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "435", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "436", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "437", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "438", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "439", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "440", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "441", "siparis": 6, "satis": 2, "kalan": 4}, {"kod": "442", "siparis": 8, "satis": 2, "kalan": 6}, {"kod": "443", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "501", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "502", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "503", "siparis": 0, "satis": 0, "kalan": 0}];
+window.MDF_ON = [{"kod": "AYBAT-101 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-101 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-102 sağ", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-102 sol", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "AYBAT-103", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-201", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-202", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-203", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-204 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-204 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-205", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-206", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-207", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-208", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-209 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-209 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-210 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-210 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-211", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-212", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-213", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-214", "siparis": 11, "satis": 11, "kalan": 0}, {"kod": "AYBAT-215 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-215 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-216 sağ", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "AYBAT-216 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-217 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-217 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-218", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-219", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-220", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-221", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-222", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-223", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-224", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-225", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-226", "siparis": 7, "satis": 2, "kalan": 5}, {"kod": "AYBAT-227", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-228", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-229", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-230", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-231", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-232", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-233", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-234", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-235", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-236", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-237", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-238 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-238 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-239 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-239 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-240 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-240 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-241", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-242", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-301", "siparis": 15, "satis": 3, "kalan": 12}, {"kod": "AYBAT-302", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-303", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-304 sağ", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-304 sol", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-305", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "AYBAT-306", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-307", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-308", "siparis": 8, "satis": 0, "kalan": 8}, {"kod": "AYBAT-309", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-310", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-311", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "AYBAT-312", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-313", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-314", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-315", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-316", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-317", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-318", "siparis": 5, "satis": 2, "kalan": 3}, {"kod": "AYBAT-319", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-320", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-321", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-401 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-401 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-402 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-402 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-403", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-404", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-405", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-406", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-407", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-408", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-409", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-410", "siparis": 5, "satis": 1, "kalan": 4}, {"kod": "AYBAT-411", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-412 sağ", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "AYBAT-412 sol", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-413", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "AYBAT-414 sağ", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "AYBAT-414 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-415 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-415 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-416", "siparis": 23, "satis": 3, "kalan": 20}, {"kod": "AYBAT-417", "siparis": 20, "satis": 2, "kalan": 18}, {"kod": "AYBAT-418", "siparis": 7, "satis": 1, "kalan": 6}, {"kod": "AYBAT-419", "siparis": 8, "satis": 5, "kalan": 3}, {"kod": "AYBAT-420", "siparis": 6, "satis": 5, "kalan": 1}, {"kod": "AYBAT-421", "siparis": 28, "satis": 0, "kalan": 28}, {"kod": "AYBAT-422", "siparis": 12, "satis": 1, "kalan": 11}, {"kod": "AYBAT-423", "siparis": 10, "satis": 1, "kalan": 9}, {"kod": "AYBAT-424", "siparis": 4, "satis": 3, "kalan": 1}, {"kod": "AYBAT-425", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-426", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-427", "siparis": 7, "satis": 0, "kalan": 7}, {"kod": "AYBAT-428", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-429", "siparis": 19, "satis": 1, "kalan": 18}, {"kod": "AYBAT-430", "siparis": 17, "satis": 0, "kalan": 17}, {"kod": "AYBAT-431", "siparis": 4, "satis": 4, "kalan": 0}, {"kod": "AYBAT-432", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "AYBAT-433", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-434", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-435", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-436", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-437", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-438", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "AYBAT-439", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "AYBAT-440", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-441", "siparis": 6, "satis": 2, "kalan": 4}, {"kod": "AYBAT-442", "siparis": 8, "satis": 2, "kalan": 6}, {"kod": "AYBAT-443", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-501", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-502", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-503", "siparis": 0, "satis": 0, "kalan": 0}];
 window.MDF_ARKA = [{"renk": "Antrasit", "siparis": 77, "satis": 1, "kalan": 76}, {"renk": "Saruhan", "siparis": 50, "satis": 1, "kalan": 49}, {"renk": "Beyaz", "siparis": 22, "satis": 1, "kalan": 21}, {"renk": "Siyah", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Kapuçino", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Vizon", "siparis": 0, "satis": 0, "kalan": 0}, {"renk": "Kahverengi", "siparis": 2, "satis": 0, "kalan": 2}, {"renk": "Tanganika", "siparis": 12, "satis": 1, "kalan": 11}, {"renk": "Sarı", "siparis": 19, "satis": 0, "kalan": 19}];
 
 // MDF fiyatlarını localStorage'dan yükle
@@ -3483,13 +3487,14 @@ window.renderMdfOn = function() {
   const q = (document.getElementById('mdfOnSearch')?.value||'').toLowerCase();
   const el = document.getElementById('mdfOnTable');
   if(!el) return;
-  // Firebase'den kayıtlı değerleri al
+  // Kayıtlı değerleri al (eski format uyumluluğu: "101 sağ" → "AYBAT-101 sağ")
   const kayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
-  // Kayıtları MDF_ON'a uygula
   MDF_ON.forEach(m => {
-    if(kayitlar[m.kod]) {
-      m.siparis = kayitlar[m.kod].siparis ?? m.siparis;
-      m.satis   = kayitlar[m.kod].satis   ?? m.satis;
+    const eskiKey = m.kod.replace('AYBAT-', ''); // eski format key
+    const kayit = kayitlar[m.kod] || kayitlar[eskiKey] || null;
+    if(kayit) {
+      m.siparis = kayit.siparis ?? m.siparis;
+      m.satis   = kayit.satis   ?? m.satis;
     }
     m.kalan = Math.max(0, m.siparis - m.satis);
   });
@@ -3541,61 +3546,124 @@ window.renderMdfOn = function() {
 // yeniKalemler: yeni kaydedilen kalemler, eskiKalemler: daha önce düşülmüş kalemler
 // Fark hesaplayarak satis alanını günceller
 window.mdfStokGuncelle = function(yeniKalemler, eskiKalemler) {
-  // Ön MDF kodu çıkar: "AYBAT-214" + yon "Sağ" → "214 sağ"
+  // Sağ/sol MDF ayrımı olan modeller
+  const SAG_SOL_MODELLER = new Set(
+    MDF_ON.filter(m => m.kod.includes(' sağ') || m.kod.includes(' sol'))
+          .map(m => m.kod.replace(' sağ','').replace(' sol',''))
+  );
+
   function onKod(urun, yon) {
-    const no = (urun||'').replace('AYBAT-','').replace('-E','').trim();
-    if(!no || no==='Katalog Dışı') return null;
-    const yonStr = (yon||'').toLowerCase();
-    if(yonStr==='sağ') return no+' sağ';
-    if(yonStr==='sol') return no+' sol';
+    const raw = (urun||'').replace('-E','').trim();
+    const no = raw.startsWith('AYBAT-') ? raw : 'AYBAT-' + raw;
+    if(!no || no==='AYBAT-' || no==='AYBAT-Katalog Dışı') return null;
+    if(SAG_SOL_MODELLER.has(no)) {
+      const y = (yon||'');
+      if(y==='Sağ' || y==='sağ') return no+' sağ';
+      if(y==='Sol' || y==='sol') return no+' sol';
+    }
     return no;
   }
 
-  // delta hesapla: yeni - eski (eksi = geri iade, artı = düş)
-  const onDelta = {}, arkaDelta = {};
-  yeniKalemler.forEach(k => {
-    const adet = Number(k.adet||1);
-    const ok = onKod(k.urun, k.yon);
-    if(ok) onDelta[ok] = (onDelta[ok]||0) + adet;
-    const renk = k.renk;
-    if(renk && renk !== '—' && !renk.startsWith('Yok')) arkaDelta[renk] = (arkaDelta[renk]||0) + adet;
-  });
+  // Tüm aktif siparişlerden sıfırdan hesapla (delta hatalarını önler)
+  window._mdfSiparisLog = window._mdfSiparisLog || {};
+
+  // 1) Eski kalemleri logdan çıkar
   eskiKalemler.forEach(k => {
-    const adet = Number(k.adet||1);
     const ok = onKod(k.urun, k.yon);
-    if(ok) onDelta[ok] = (onDelta[ok]||0) - adet;
+    if(ok) {
+      window._mdfSiparisLog[ok] = Math.max(0, (window._mdfSiparisLog[ok]||0) - Number(k.adet||1));
+    }
     const renk = k.renk;
-    if(renk && renk !== '—' && !renk.startsWith('Yok')) arkaDelta[renk] = (arkaDelta[renk]||0) - adet;
+    if(renk && renk !== '—' && !renk.startsWith('Yok')) {
+      window._mdfSiparisLog['ARKA:'+renk] = Math.max(0, (window._mdfSiparisLog['ARKA:'+renk]||0) - Number(k.adet||1));
+    }
   });
 
-  // MDF_ON güncelle
+  // 2) Yeni kalemleri loga ekle
+  yeniKalemler.forEach(k => {
+    const ok = onKod(k.urun, k.yon);
+    if(ok) {
+      window._mdfSiparisLog[ok] = (window._mdfSiparisLog[ok]||0) + Number(k.adet||1);
+    }
+    const renk = k.renk;
+    if(renk && renk !== '—' && !renk.startsWith('Yok')) {
+      window._mdfSiparisLog['ARKA:'+renk] = (window._mdfSiparisLog['ARKA:'+renk]||0) + Number(k.adet||1);
+    }
+  });
+
+  // 3) MDF_ON'u logdan güncelle
   const onKayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar')||'{}');
-  Object.entries(onDelta).forEach(([kod, delta]) => {
-    if(delta === 0) return;
-    const m = MDF_ON.find(x => x.kod === kod);
-    if(!m) return;
-    m.satis = Math.max(0, (m.satis||0) + delta);
-    m.kalan = Math.max(0, m.siparis - m.satis);
-    if(!onKayitlar[kod]) onKayitlar[kod] = {};
-    onKayitlar[kod].satis = m.satis;
+  MDF_ON.forEach(m => {
+    const logSatis = window._mdfSiparisLog[m.kod] || 0;
+    if(logSatis > 0 || onKayitlar[m.kod]) {
+      // base siparis değerini koru, sadece satis'i güncelle
+      const baseSiparis = onKayitlar[m.kod]?.siparis ?? m.siparis;
+      m.satis = logSatis;
+      m.kalan = Math.max(0, baseSiparis - m.satis);
+      if(!onKayitlar[m.kod]) onKayitlar[m.kod] = {};
+      onKayitlar[m.kod].satis = m.satis;
+    }
   });
   localStorage.setItem('mdf_on_kayitlar', JSON.stringify(onKayitlar));
 
-  // MDF_ARKA güncelle
+  // 4) MDF_ARKA otomatik satis'ini kayitlar'a yaz (render hesabı yapacak)
   const arkaKayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar')||'{}');
-  Object.entries(arkaDelta).forEach(([renk, delta]) => {
-    if(delta === 0) return;
-    const m = MDF_ARKA.find(x => x.renk === renk);
-    if(!m) return;
-    m.satis = Math.max(0, (m.satis||0) + delta);
-    m.kalan = Math.max(0, m.siparis - m.satis);
-    if(!arkaKayitlar[renk]) arkaKayitlar[renk] = {};
-    arkaKayitlar[renk].satis = m.satis;
+  MDF_ARKA.forEach(m => {
+    const logSatis = window._mdfSiparisLog['ARKA:'+m.renk] || 0;
+    if(!arkaKayitlar[m.renk]) arkaKayitlar[m.renk] = {};
+    arkaKayitlar[m.renk].satis = logSatis;
   });
   localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(arkaKayitlar));
 
-  // Eğer MDF stok sayfası açıksa yenile
   if(currentPage === 'mdfstok') { renderMdfOn(); renderMdfArka(); }
+};
+
+// Uygulama açılışında tüm aktif siparişlerden MDF logunu yeniden oluştur
+window.mdfLogYenile = function() {
+  const SAG_SOL_MODELLER = new Set(
+    MDF_ON.filter(m => m.kod.includes(' sağ') || m.kod.includes(' sol'))
+          .map(m => m.kod.replace(' sağ','').replace(' sol',''))
+  );
+  function onKod(urun, yon) {
+    const raw = (urun||'').replace('-E','').trim();
+    const no = raw.startsWith('AYBAT-') ? raw : 'AYBAT-' + raw;
+    if(!no || no==='AYBAT-' || no==='AYBAT-Katalog Dışı') return null;
+    if(SAG_SOL_MODELLER.has(no)) {
+      const y = (yon||'');
+      if(y==='Sağ' || y==='sağ') return no+' sağ';
+      if(y==='Sol' || y==='sol') return no+' sol';
+    }
+    return no;
+  }
+  window._mdfSiparisLog = {};
+  siparisler.filter(s => s.durum !== 'İptal').forEach(s => {
+    const kalemler = (s.kalemler && s.kalemler.length) ? s.kalemler
+      : (s.urun ? [{urun:s.urun, renk:s.renk||'', yon:s.yon||'', adet:s.adet||1}] : []);
+    kalemler.forEach(k => {
+      const ok = onKod(k.urun, k.yon);
+      if(ok) window._mdfSiparisLog[ok] = (window._mdfSiparisLog[ok]||0) + Number(k.adet||1);
+      const renk = k.renk;
+      if(renk && renk !== '—' && !renk.startsWith('Yok'))
+        window._mdfSiparisLog['ARKA:'+renk] = (window._mdfSiparisLog['ARKA:'+renk]||0) + Number(k.adet||1);
+    });
+  });
+  // MDF_ON ve MDF_ARKA'yı güncelle
+  const onKayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar')||'{}');
+  MDF_ON.forEach(m => {
+    const satis = window._mdfSiparisLog[m.kod] || 0;
+    m.satis = satis;
+    m.kalan = Math.max(0, (onKayitlar[m.kod]?.siparis ?? m.siparis) - satis);
+    if(!onKayitlar[m.kod]) onKayitlar[m.kod] = {};
+    onKayitlar[m.kod].satis = satis;
+  });
+  localStorage.setItem('mdf_on_kayitlar', JSON.stringify(onKayitlar));
+  const arkaKayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar')||'{}');
+  MDF_ARKA.forEach(m => {
+    const satis = window._mdfSiparisLog['ARKA:'+m.renk] || 0;
+    if(!arkaKayitlar[m.renk]) arkaKayitlar[m.renk] = {};
+    arkaKayitlar[m.renk].satis = satis; // sadece oto satis'i kaydet, render hesaplar
+  });
+  localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(arkaKayitlar));
 };
 
 window.mdfOnKaydet = function(kod, alan, deger) {
@@ -3631,20 +3699,27 @@ window.renderMdfArka = function() {
   const el = document.getElementById('mdfArkaTable');
   if(!el) return;
   const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
+  const manueller = JSON.parse(localStorage.getItem('mdf_arka_manuel') || '{}');
   MDF_ARKA.forEach(m => {
     if(kayitlar[m.renk]) {
       m.siparis = kayitlar[m.renk].siparis ?? m.siparis;
-      m.satis   = kayitlar[m.renk].satis   ?? m.satis;
+    }
+    // Otomatik satis (sipariş logundan)
+    const otoSatis = kayitlar[m.renk]?.satis ?? m.satis;
+    if(manueller[m.renk] !== undefined) {
+      // Elle yazılmış: base + (şimdiki oto - kaydedildiğindeki oto)
+      const man = manueller[m.renk];
+      m.satis = man.base + Math.max(0, otoSatis - man.snapshot);
+    } else {
+      m.satis = otoSatis;
     }
     m.kalan = Math.max(0, m.siparis - m.satis);
   });
   const topKalan = MDF_ARKA.reduce((a,m)=>a+m.kalan,0);
   document.getElementById('mdf-arka-toplam').textContent = MDF_ARKA.length + ' renk';
   document.getElementById('mdf-arka-kalan').textContent = topKalan + ' adet';
-  const max = Math.max(...MDF_ARKA.map(x=>x.siparis), 1);
   const rows = MDF_ARKA.map(m => {
     const renkRengi = m.kalan > 5 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
-    const pct = Math.round((m.siparis/max)*100);
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:7px 14px;font-size:13px;font-weight:600;color:var(--text)">${m.renk}</td>
       <td style="padding:5px 10px;text-align:center">
@@ -3656,7 +3731,7 @@ window.renderMdfArka = function() {
       <td style="padding:5px 10px;text-align:center">
         <input type="number" min="0" value="${m.satis}"
           style="width:60px;text-align:center;padding:3px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);font-size:12px"
-          onchange="mdfArkaKaydet('${m.renk}','satis',this.value)"
+          onchange="mdfArkaManuelKaydet('${m.renk}',this.value)"
           onclick="this.select()">
       </td>
       <td style="padding:7px 10px;text-align:center">
@@ -3682,30 +3757,22 @@ window.renderMdfArka = function() {
   </table>`;
 };
 
+// Elle satış yazılınca: o anki otomatik sayıyı snapshot olarak kaydet
+window.mdfArkaManuelKaydet = function(renk, deger) {
+  const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
+  const manueller = JSON.parse(localStorage.getItem('mdf_arka_manuel') || '{}');
+  const otoSatis = kayitlar[renk]?.satis ?? 0;
+  manueller[renk] = { base: parseInt(deger)||0, snapshot: otoSatis };
+  localStorage.setItem('mdf_arka_manuel', JSON.stringify(manueller));
+  renderMdfArka();
+};
+
 window.mdfArkaKaydet = function(renk, alan, deger) {
   const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
   if(!kayitlar[renk]) kayitlar[renk] = {};
   kayitlar[renk][alan] = parseInt(deger)||0;
   localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(kayitlar));
-  const m = MDF_ARKA.find(x=>x.renk===renk);
-  if(m) {
-    m[alan] = parseInt(deger)||0;
-    m.kalan = Math.max(0, m.siparis - m.satis);
-    const rows = document.querySelectorAll('#mdfArkaTable tbody tr');
-    rows.forEach(row => {
-      const renkCell = row.querySelector('td:first-child');
-      if(renkCell && renkCell.textContent.trim() === renk) {
-        const kalanCell = row.querySelector('td:nth-child(4) span');
-        if(kalanCell) {
-          kalanCell.textContent = m.kalan;
-          kalanCell.style.color = m.kalan > 5 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
-        }
-      }
-    });
-    const topKalan = MDF_ARKA.reduce((a,x)=>a+x.kalan,0);
-    const kalanEl = document.getElementById('mdf-arka-kalan');
-    if(kalanEl) kalanEl.textContent = topKalan + ' adet';
-  }
+  renderMdfArka();
 };
 
 window.showPage = function(id, el) {
