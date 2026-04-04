@@ -299,6 +299,10 @@
     <div class="nav-item" onclick="showPage('tedarikciBorc',this)">
       <span class="icon">🏦</span> Tedarikçi Borçları
     </div>
+    <div class="nav-item" onclick="showPage('bankacilik',this)">
+      <span class="icon">🏧</span> Bankacılık
+      <span class="nav-badge gray" id="bankaBadge" style="display:none">!</span>
+    </div>
     <div class="nav-section" style="margin-top:8px">Ayarlar</div>
     <div class="nav-item" onclick="showPage('araclar',this)">
       <span class="icon">⚙️</span> Ayarlar
@@ -619,7 +623,7 @@
 
         <div class="page" id="page-kasa">
       <!-- Özet Kartlar -->
-      <div class="kasa-summary">
+      <div class="kasa-summary" style="grid-template-columns:repeat(5,1fr)">
         <div class="kasa-card" style="border-top:2px solid var(--green)">
           <div class="kasa-label">Kasa Bakiyesi</div>
           <div class="kasa-amount" id="kasa-bakiye" style="color:var(--green)">—</div>
@@ -633,8 +637,13 @@
           <div class="kasa-amount" id="kasa-gider" style="color:var(--red)">—</div>
         </div>
         <div class="kasa-card" style="border-top:2px solid var(--accent)">
-          <div class="kasa-label">Bu Ay Net Kar</div>
+          <div class="kasa-label">Bu Ay Net</div>
           <div class="kasa-amount" id="kasa-kar" style="color:var(--accent)">—</div>
+        </div>
+        <div class="kasa-card" style="border-top:2px solid var(--purple)">
+          <div class="kasa-label">Tahsil Bekleyen</div>
+          <div class="kasa-amount" id="kasa-bekleyen" style="color:var(--purple)">—</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">Aktif siparişler</div>
         </div>
       </div>
       <!-- Aylık Özet Tablosu -->
@@ -1264,6 +1273,97 @@
 </div>
 
 <!-- FİNANSAL ÖZET -->
+<div class="page" id="page-bankacilik">
+
+  <!-- Özet KPI Kartları -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+    <div class="kasa-card" style="border-top:2px solid var(--red)">
+      <div class="kasa-label">Toplam Kredi Borcu</div>
+      <div class="kasa-amount" id="banka-toplam-kredi" style="color:var(--red)">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">Kalan anapara</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--accent)">
+      <div class="kasa-label">Bu Ay Taksit</div>
+      <div class="kasa-amount" id="banka-buay-taksit" style="color:var(--accent)">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">Kredi + Kart ödemeleri</div>
+    </div>
+    <div class="kasa-card" style="border-top:2px solid var(--blue)">
+      <div class="kasa-label">Kredi Kartı Kullanım</div>
+      <div class="kasa-amount" id="banka-kk-kullanim" style="color:var(--blue)">—</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">Kullanılan / Limit</div>
+    </div>
+  </div>
+
+  <!-- Uyarı Bandı -->
+  <div id="banka-uyari-bandi" style="margin-bottom:14px"></div>
+
+  <!-- Sekmeler -->
+  <div style="display:flex;gap:4px;margin-bottom:0;border-bottom:1px solid var(--border);padding-bottom:0">
+    <button id="bTab-krediler"   class="btn btn-primary" style="font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0" onclick="bankaTabSec('krediler')">💳 Banka Kredileri</button>
+    <button id="bTab-kartlar"    class="btn btn-ghost"   style="font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0" onclick="bankaTabSec('kartlar')">🪙 Kredi Kartları</button>
+    <button id="bTab-esnek"      class="btn btn-ghost"   style="font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0" onclick="bankaTabSec('esnek')">📊 Esnek Hesap</button>
+  </div>
+  <div style="margin-bottom:14px"></div>
+
+  <!-- TAB: KREDİLER -->
+  <div id="banka-tab-krediler">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-primary" onclick="bankaEkle('kredi')">+ Yeni Kredi Ekle</button>
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr>
+          <th>Tip</th><th>Tarih</th><th>Banka</th>
+          <th style="text-align:right">Kredi Tutarı</th>
+          <th style="text-align:right">Faiz Tutarı</th>
+          <th style="text-align:right">Vadeli Tutar</th>
+          <th style="text-align:center">Vade</th>
+          <th style="text-align:center">Kalan Vade</th>
+          <th style="text-align:right">Vade Tutarı</th>
+          <th style="text-align:right">Kalan Ödeme</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="kredi-tbody"><tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text3)">Henüz kredi kaydı yok.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: KARTLAR -->
+  <div id="banka-tab-kartlar" style="display:none">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-primary" onclick="bankaEkle('kart')">+ Yeni Kart Ekle</button>
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr>
+          <th>Tip</th><th>Banka</th><th style="text-align:right">Limit</th>
+          <th style="text-align:right">Kullanılan</th><th style="text-align:right">Kalan</th>
+          <th style="text-align:right">Kullanım %</th>
+          <th>Son Ödeme Günü</th><th>Durum</th><th></th>
+        </tr></thead>
+        <tbody id="kart-tbody"><tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text3)">Henüz kart kaydı yok.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB: ESNEK HESAP -->
+  <div id="banka-tab-esnek" style="display:none">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-primary" onclick="bankaEkle('esnek')">+ Yeni Hesap Ekle</button>
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr>
+          <th>Tip</th><th>Banka</th><th style="text-align:right">Toplam Limit</th>
+          <th style="text-align:right">Kullanılan</th><th style="text-align:right">Kalan</th>
+          <th style="text-align:right">Günlük Faiz %</th><th>Açılış Tarihi</th><th>Durum</th><th></th>
+        </tr></thead>
+        <tbody id="esnek-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">Henüz esnek hesap kaydı yok.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /page-bankacilik -->
 <div class="page" id="page-finansOzet">
   <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
     <div class="stat-card green"><div class="stat-label">Kasa Bakiyesi</div><div class="stat-value" id="foz-kasa" style="font-size:18px">—</div><div class="stat-sub">Nakit pozisyon</div></div>
@@ -1588,6 +1688,28 @@ function musteriRenk(ad) {
 
 // ─── FIRESTORE LISTENERS ─────────────────────────────────────────────────────
 function startListeners() {
+  // MDF Stok — Firestore'dan gerçek zamanlı oku
+  db.collection('mdfStok').onSnapshot(snap => {
+    snap.docs.forEach(doc => {
+      const d = doc.data();
+      // Ön yüz
+      const onItem = MDF_ON.find(m => m.kod === doc.id);
+      if(onItem) {
+        if(d.siparis !== undefined) onItem.siparis = d.siparis;
+        if(d.satis   !== undefined) onItem.satis   = d.satis;
+        onItem.kalan = Math.max(0, onItem.siparis - onItem.satis);
+      }
+      // Arka yüz
+      const arkaItem = MDF_ARKA.find(m => ('ARKA:'+m.renk) === doc.id || m.renk === doc.id);
+      if(arkaItem) {
+        if(d.siparis !== undefined) arkaItem.siparis = d.siparis;
+        if(d.satis   !== undefined) arkaItem.satis   = d.satis;
+        arkaItem.kalan = Math.max(0, arkaItem.siparis - arkaItem.satis);
+      }
+    });
+    if(currentPage === 'mdfstok') { renderMdfOn(); renderMdfArka(); }
+  }, err => console.error('mdfStok listener:', err));
+
   // Siparişler
   db.collection('siparisler').orderBy('createdAt','desc').onSnapshot(snap => {
     siparisler = snap.docs.map(d => ({id:d.id, ...d.data()}));
@@ -3504,12 +3626,80 @@ window.updateDurum = async function(id, durum) {
 
 window.updateOdeme = async function(id, odeme, odemeMiktar) {
   try {
+    const sipDoc = await db.collection('siparisler').doc(id).get();
+    const sip = sipDoc.data();
+    const eskiMiktar = Number(sip?.odemeMiktar || 0);
+    const yeniMiktar = Number(odemeMiktar || 0);
+    const sipNo = sip?.sipNo || '';
+
     await db.collection('siparisler').doc(id).update({
       odeme,
-      odemeMiktar: Number(odemeMiktar||0),
+      odemeMiktar: yeniMiktar,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    showToast(`Ödeme: ${odeme} ✓`);
+
+    // Kasadaki bu siparişe ait otomatik kayıtları bul
+    const mevcutKasaSnap = await db.collection('kasaIslemleri')
+      .where('sipAno', '==', sipNo)
+      .where('otomatik', '==', true)
+      .get();
+
+    if(odeme === 'Bekliyor') {
+      // Bekliyor'a çekildi: kasadaki tüm otomatik tahsilat kayıtlarını sil
+      if(!mevcutKasaSnap.empty) {
+        const batch = db.batch();
+        mevcutKasaSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        showToast(`Ödeme: Bekliyor — Kasa kaydı silindi ✓`);
+      } else {
+        showToast(`Ödeme: Bekliyor ✓`);
+      }
+    } else {
+      // Ödeme var: kasadaki mevcut toplamı hesapla
+      const kasadakiToplam = mevcutKasaSnap.docs.reduce((a,d) => a + Number(d.data().tutar||0), 0);
+      const fark = yeniMiktar - kasadakiToplam;
+
+      if(fark > 0) {
+        // Ek ödeme geldi: farkı yaz
+        await db.collection('kasaIslemleri').add({
+          tip: 'Gelir',
+          kategori: odeme === 'Tamamlandı' ? 'Sipariş Tahsilatı' : 'Ön Ödeme / Kapora',
+          aciklama: 'Tahsilat — ' + sipNo + ' · ' + (sip?.musteriAd || ''),
+          tutar: fark,
+          tarih: new Date().toISOString().split('T')[0],
+          sipAno: sipNo,
+          odemeYontemi: 'Nakit',
+          not: 'Otomatik — ödeme durumu güncellendi',
+          otomatik: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast(`Ödeme: ${odeme} ✓  |  Kasa'ya +${fmtMoney(fark)} eklendi`);
+      } else if(fark < 0) {
+        // Miktar azaltıldı: eski kayıtları sil, yeni toplamı tek kayıt olarak yaz
+        const batch = db.batch();
+        mevcutKasaSnap.docs.forEach(d => batch.delete(d.ref));
+        if(yeniMiktar > 0) {
+          const ref = db.collection('kasaIslemleri').doc();
+          batch.set(ref, {
+            tip: 'Gelir',
+            kategori: 'Sipariş Tahsilatı',
+            aciklama: 'Tahsilat — ' + sipNo + ' · ' + (sip?.musteriAd || ''),
+            tutar: yeniMiktar,
+            tarih: new Date().toISOString().split('T')[0],
+            sipAno: sipNo,
+            odemeYontemi: 'Nakit',
+            not: 'Otomatik — düzeltildi',
+            otomatik: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+        await batch.commit();
+        showToast(`Ödeme güncellendi ✓  |  Kasa düzeltildi`);
+      } else {
+        showToast(`Ödeme: ${odeme} ✓`);
+      }
+    }
+
     openDetail('siparis', id);
   } catch(e) { showToast('Hata: '+e.message, 'error'); }
 };
@@ -3578,7 +3768,7 @@ window.deleteRecord = async function(type, id) {
 // ─── NAVİGASYON ──────────────────────────────────────────────────────────────
 // ─── MDF STOK (STATİK VERİ - EXCEL'DEN) ────────────────────────────────────
 window.MDF_ON = [{"kod": "AYBAT-101 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-101 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-102 sağ", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-102 sol", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "AYBAT-103", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-201", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-202", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-203", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-204 sağ", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-204 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-205", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-206", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-207", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-208", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-209 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-209 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-210 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-210 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-211", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-212", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-213", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-214", "siparis": 11, "satis": 11, "kalan": 0}, {"kod": "AYBAT-215 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-215 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-216 sağ", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "AYBAT-216 sol", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-217 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-217 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-218", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-219", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-220", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-221", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-222", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-223", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-224", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-225", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-226", "siparis": 7, "satis": 2, "kalan": 5}, {"kod": "AYBAT-227", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-228", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-229", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-230", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-231", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-232", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-233", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-234", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-235", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-236", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-237", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-238 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-238 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-239 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-239 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-240 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-240 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-241", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-242", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-301", "siparis": 15, "satis": 3, "kalan": 12}, {"kod": "AYBAT-302", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-303", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-304 sağ", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-304 sol", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-305", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "AYBAT-306", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-307", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-308", "siparis": 8, "satis": 0, "kalan": 8}, {"kod": "AYBAT-309", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-310", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-311", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "AYBAT-312", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-313", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-314", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-315", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-316", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-317", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-318", "siparis": 5, "satis": 2, "kalan": 3}, {"kod": "AYBAT-319", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-320", "siparis": 3, "satis": 0, "kalan": 3}, {"kod": "AYBAT-321", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-401 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-401 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-402 sağ", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-402 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-403", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-404", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-405", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-406", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-407", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-408", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-409", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-410", "siparis": 5, "satis": 1, "kalan": 4}, {"kod": "AYBAT-411", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-412 sağ", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "AYBAT-412 sol", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-413", "siparis": 10, "satis": 0, "kalan": 10}, {"kod": "AYBAT-414 sağ", "siparis": 1, "satis": 1, "kalan": 0}, {"kod": "AYBAT-414 sol", "siparis": 1, "satis": 0, "kalan": 1}, {"kod": "AYBAT-415 sağ", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-415 sol", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-416", "siparis": 23, "satis": 3, "kalan": 20}, {"kod": "AYBAT-417", "siparis": 20, "satis": 2, "kalan": 18}, {"kod": "AYBAT-418", "siparis": 7, "satis": 1, "kalan": 6}, {"kod": "AYBAT-419", "siparis": 8, "satis": 5, "kalan": 3}, {"kod": "AYBAT-420", "siparis": 6, "satis": 5, "kalan": 1}, {"kod": "AYBAT-421", "siparis": 28, "satis": 0, "kalan": 28}, {"kod": "AYBAT-422", "siparis": 12, "satis": 1, "kalan": 11}, {"kod": "AYBAT-423", "siparis": 10, "satis": 1, "kalan": 9}, {"kod": "AYBAT-424", "siparis": 4, "satis": 3, "kalan": 1}, {"kod": "AYBAT-425", "siparis": 5, "satis": 0, "kalan": 5}, {"kod": "AYBAT-426", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-427", "siparis": 7, "satis": 0, "kalan": 7}, {"kod": "AYBAT-428", "siparis": 2, "satis": 1, "kalan": 1}, {"kod": "AYBAT-429", "siparis": 19, "satis": 1, "kalan": 18}, {"kod": "AYBAT-430", "siparis": 17, "satis": 0, "kalan": 17}, {"kod": "AYBAT-431", "siparis": 4, "satis": 4, "kalan": 0}, {"kod": "AYBAT-432", "siparis": 2, "satis": 2, "kalan": 0}, {"kod": "AYBAT-433", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-434", "siparis": 6, "satis": 0, "kalan": 6}, {"kod": "AYBAT-435", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-436", "siparis": 3, "satis": 1, "kalan": 2}, {"kod": "AYBAT-437", "siparis": 4, "satis": 1, "kalan": 3}, {"kod": "AYBAT-438", "siparis": 4, "satis": 0, "kalan": 4}, {"kod": "AYBAT-439", "siparis": 4, "satis": 2, "kalan": 2}, {"kod": "AYBAT-440", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-441", "siparis": 6, "satis": 2, "kalan": 4}, {"kod": "AYBAT-442", "siparis": 8, "satis": 2, "kalan": 6}, {"kod": "AYBAT-443", "siparis": 2, "satis": 0, "kalan": 2}, {"kod": "AYBAT-501", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-502", "siparis": 0, "satis": 0, "kalan": 0}, {"kod": "AYBAT-503", "siparis": 0, "satis": 0, "kalan": 0}];
-window.MDF_ARKA = [{"renk": "Antrasit", "siparis": 77, "satis": 1, "kalan": 76}, {"renk": "Saruhan", "siparis": 50, "satis": 1, "kalan": 49}, {"renk": "Beyaz", "siparis": 22, "satis": 1, "kalan": 21}, {"renk": "Siyah", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Kapuçino", "siparis": 10, "satis": 0, "kalan": 10}, {"renk": "Vizon", "siparis": 0, "satis": 0, "kalan": 0}, {"renk": "Kahverengi", "siparis": 2, "satis": 0, "kalan": 2}, {"renk": "Tanganika", "siparis": 12, "satis": 1, "kalan": 11}, {"renk": "Sarı", "siparis": 19, "satis": 0, "kalan": 19}];
+window.MDF_ARKA = [{"renk": "Antrasit", "siparis": 99, "satis": 92, "kalan": 7}, {"renk": "Saruhan", "siparis": 50, "satis": 8, "kalan": 42}, {"renk": "Beyaz", "siparis": 22, "satis": 16, "kalan": 6}, {"renk": "Siyah", "siparis": 10, "satis": 10, "kalan": 0}, {"renk": "Kapuçino", "siparis": 10, "satis": 3, "kalan": 7}, {"renk": "Vizon", "siparis": 0, "satis": 0, "kalan": 0}, {"renk": "Kahverengi", "siparis": 2, "satis": 0, "kalan": 2}, {"renk": "Tanganika", "siparis": 12, "satis": 6, "kalan": 6}, {"renk": "Sarı", "siparis": 19, "satis": 0, "kalan": 19}];
 
 // MDF fiyatlarını localStorage'dan yükle
 (function() {
@@ -3614,13 +3804,7 @@ window.renderMdfOn = function() {
   const el = document.getElementById('mdfOnTable');
   if(!el) return;
 
-  const kayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
-
   MDF_ON.forEach(m => {
-    const eskiKey = m.kod.replace('AYBAT-', '');
-    const kayit = kayitlar[m.kod] || kayitlar[eskiKey] || null;
-    if(kayit?.siparis !== undefined) m.siparis = kayit.siparis;
-    if(kayit?.satis  !== undefined) m.satis    = kayit.satis;
     m.kalan = Math.max(0, m.siparis - m.satis);
   });
 
@@ -3719,47 +3903,26 @@ window.mdfStokGuncelle = function() {
 window.mdfLogYenile = function() {};
 
 window.mdfOnKaydet = function(kod, alan, deger) {
-  // Sadece 'siparis' alanı için çağrılır
-  const kayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
-  if(!kayitlar[kod]) kayitlar[kod] = {};
-  kayitlar[kod][alan] = parseInt(deger)||0;
-  localStorage.setItem('mdf_on_kayitlar', JSON.stringify(kayitlar));
+  const val = parseInt(deger)||0;
   const m = MDF_ON.find(x=>x.kod===kod);
-  if(m) {
-    m[alan] = parseInt(deger)||0;
-    m.kalan = Math.max(0, m.siparis - m.satis);
-    const rows = document.querySelectorAll('#mdfOnTable tbody tr');
-    rows.forEach(row => {
-      if(row.querySelector('td:first-child')?.textContent.trim() === kod) {
-        const kalanCell = row.querySelector('td:nth-child(4) span');
-        if(kalanCell) {
-          kalanCell.textContent = m.kalan;
-          kalanCell.style.color = m.kalan > 2 ? 'var(--green)' : m.kalan > 0 ? 'var(--accent)' : 'var(--red)';
-        }
-      }
-    });
-    const topKalan = MDF_ON.reduce((a,x)=>a+x.kalan,0);
-    const kalanEl = document.getElementById('mdf-on-kalan');
-    if(kalanEl) kalanEl.textContent = topKalan + ' adet';
-  }
+  if(m) { m[alan] = val; m.kalan = Math.max(0, m.siparis - m.satis); }
+  db.collection('mdfStok').doc(kod).set({ [alan]: val }, { merge: true })
+    .catch(e => console.error('mdfOnKaydet:', e));
 };
 
-// Elle satış yazılınca: doğrudan kayitlar'a yaz
+// Elle satış yazılınca: Firestore'a yaz
 window.mdfOnManuelKaydet = function(kod, deger) {
-  const kayitlar = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
-  if(!kayitlar[kod]) kayitlar[kod] = {};
-  kayitlar[kod].satis = parseInt(deger)||0;
-  localStorage.setItem('mdf_on_kayitlar', JSON.stringify(kayitlar));
-  renderMdfOn();
+  const val = parseInt(deger)||0;
+  const m = MDF_ON.find(x=>x.kod===kod);
+  if(m) { m.satis = val; m.kalan = Math.max(0, m.siparis - val); }
+  db.collection('mdfStok').doc(kod).set({ satis: val }, { merge: true })
+    .catch(e => console.error('mdfOnManuelKaydet:', e));
 };
 
 window.renderMdfArka = function() {
   const el = document.getElementById('mdfArkaTable');
   if(!el) return;
-  const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
   MDF_ARKA.forEach(m => {
-    if(kayitlar[m.renk]?.siparis !== undefined) m.siparis = kayitlar[m.renk].siparis;
-    if(kayitlar[m.renk]?.satis  !== undefined) m.satis    = kayitlar[m.renk].satis;
     m.kalan = Math.max(0, m.siparis - m.satis);
   });
   const topKalan = MDF_ARKA.reduce((a,m)=>a+m.kalan,0);
@@ -3804,21 +3967,176 @@ window.renderMdfArka = function() {
   </table>`;
 };
 
-// Elle satış yazılınca: doğrudan kayitlar'a yaz
+// Elle satış yazılınca: Firestore'a yaz
 window.mdfArkaManuelKaydet = function(renk, deger) {
-  const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
-  if(!kayitlar[renk]) kayitlar[renk] = {};
-  kayitlar[renk].satis = parseInt(deger)||0;
-  localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(kayitlar));
-  renderMdfArka();
+  const val = parseInt(deger)||0;
+  const m = MDF_ARKA.find(x=>x.renk===renk);
+  if(m) { m.satis = val; m.kalan = Math.max(0, m.siparis - val); }
+  db.collection('mdfStok').doc(renk).set({ satis: val }, { merge: true })
+    .catch(e => console.error('mdfArkaManuelKaydet:', e));
 };
 
 window.mdfArkaKaydet = function(renk, alan, deger) {
-  const kayitlar = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
-  if(!kayitlar[renk]) kayitlar[renk] = {};
-  kayitlar[renk][alan] = parseInt(deger)||0;
-  localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(kayitlar));
-  renderMdfArka();
+  const val = parseInt(deger)||0;
+  const m = MDF_ARKA.find(x=>x.renk===renk);
+  if(m) { m[alan] = val; m.kalan = Math.max(0, m.siparis - m.satis); }
+  db.collection('mdfStok').doc(renk).set({ [alan]: val }, { merge: true })
+    .catch(e => console.error('mdfArkaKaydet:', e));
+};
+
+window.kasaOtomatikSenkronize = async function() {
+  const btn = document.getElementById('kasaSenkBtn');
+  const sonuc = document.getElementById('kasaSenkSonuc');
+  btn.disabled = true;
+  btn.textContent = '⏳ Kontrol ediliyor...';
+  sonuc.textContent = '';
+
+  try {
+    // Kasadaki tüm otomatik kayıtları çek
+    const kasaSnap = await db.collection('kasaIslemleri').where('otomatik','==',true).get();
+    if(kasaSnap.empty) {
+      sonuc.style.color = 'var(--text2)';
+      sonuc.textContent = 'Otomatik kayıt bulunamadı.';
+      btn.disabled = false; btn.textContent = '🔄 Senkronize Et';
+      return;
+    }
+
+    // Sipariş no → ödeme durumu map
+    const sipMap = {};
+    siparisler.forEach(s => { if(s.sipNo) sipMap[s.sipNo] = s; });
+
+    const batch = db.batch();
+    let silinen = 0;
+
+    kasaSnap.docs.forEach(doc => {
+      const k = doc.data();
+      // Sipariş bazlı otomatik kayıt
+      if(k.sipAno && !k.poId) {
+        const sip = sipMap[k.sipAno];
+        if(!sip || sip.odeme === 'Bekliyor' || Number(sip.odemeMiktar||0) === 0) {
+          batch.delete(doc.ref);
+          silinen++;
+        }
+      }
+      // PO bazlı otomatik kayıt
+      if(k.poId) {
+        const po = satinalmaEmirleri.find(p => p.id === k.poId);
+        if(!po || po.durum !== 'Teslim Alındı' || !po.teslimAlindi) {
+          batch.delete(doc.ref);
+          silinen++;
+        }
+      }
+    });
+
+    if(silinen === 0) {
+      sonuc.style.color = 'var(--green)';
+      sonuc.textContent = '✓ Tüm kayıtlar zaten senkronde — silinecek bir şey yok.';
+    } else {
+      await batch.commit();
+      sonuc.style.color = 'var(--green)';
+      sonuc.textContent = `✓ ${silinen} tutarsız kasa kaydı temizlendi.`;
+    }
+    btn.textContent = '✓ Tamamlandı';
+  } catch(e) {
+    sonuc.style.color = 'var(--red)';
+    sonuc.textContent = 'Hata: ' + e.message;
+    btn.disabled = false; btn.textContent = '🔄 Senkronize Et';
+  }
+};
+
+window.gecmisTahsilatlariAktar = async function() {
+  const btn = document.getElementById('kasaAktarBtn');
+  const sonuc = document.getElementById('kasaAktarSonuc');
+  btn.disabled = true;
+  btn.textContent = '⏳ Kontrol ediliyor...';
+  sonuc.textContent = '';
+
+  try {
+    // Kasada zaten kayıtlı sipariş no'larını bul
+    const mevcutSipNolar = new Set(kasaIslemler.filter(k=>k.sipAno).map(k=>k.sipAno));
+
+    // Ödenmiş veya kısmi ödenmiş siparişleri bul
+    const aktarilacaklar = siparisler.filter(s =>
+      s.durum !== 'İptal' &&
+      (s.odeme === 'Tamamlandı' || s.odeme === 'Kısmi Ödendi') &&
+      Number(s.odemeMiktar||0) > 0 &&
+      !mevcutSipNolar.has(s.sipNo)  // kasada zaten yoksa
+    );
+
+    if(!aktarilacaklar.length) {
+      sonuc.style.color = 'var(--text2)';
+      sonuc.textContent = 'Aktarılacak yeni kayıt bulunamadı — tüm tahsilatlar zaten kasada mevcut.';
+      btn.disabled = false;
+      btn.textContent = '🚀 Geçmiş Tahsilatları Kasaya Yaz';
+      return;
+    }
+
+    // Batch ile toplu yaz (max 500)
+    const chunks = [];
+    for(let i=0; i<aktarilacaklar.length; i+=400) chunks.push(aktarilacaklar.slice(i,i+400));
+
+    let toplam = 0;
+    for(const chunk of chunks) {
+      const batch = db.batch();
+      chunk.forEach(s => {
+        const miktar = Number(s.odemeMiktar||0);
+        toplam += miktar;
+        const ref = db.collection('kasaIslemleri').doc();
+        batch.set(ref, {
+          tip: 'Gelir',
+          kategori: 'Sipariş Tahsilatı',
+          aciklama: 'Geçmiş tahsilat — ' + s.sipNo + ' · ' + (s.musteriAd||''),
+          tutar: miktar,
+          tarih: s.sipTarihi || s.teslimTarihi || new Date().toISOString().split('T')[0],
+          sipAno: s.sipNo || '',
+          odemeYontemi: 'Nakit',
+          not: 'Toplu aktarım — geçmiş sipariş',
+          otomatik: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      await batch.commit();
+    }
+
+    sonuc.style.color = 'var(--green)';
+    sonuc.textContent = `✓ ${aktarilacaklar.length} sipariş aktarıldı — toplam ${fmtMoney(toplam)} gelir eklendi.`;
+    btn.textContent = '✓ Tamamlandı';
+  } catch(e) {
+    sonuc.style.color = 'var(--red)';
+    sonuc.textContent = 'Hata: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '🚀 Geçmiş Tahsilatları Kasaya Yaz';
+  }
+};
+
+window.mdfFirebaseAktar = async function() {
+  const btn = document.getElementById('mdfAktarBtn');
+  const sonuc = document.getElementById('mdfAktarSonuc');
+  btn.disabled = true;
+  btn.textContent = '⏳ Yazılıyor...';
+  sonuc.textContent = '';
+  try {
+    const batch = db.batch();
+    // Ön yüz
+    MDF_ON.forEach(m => {
+      const ref = db.collection('mdfStok').doc(m.kod);
+      batch.set(ref, { siparis: m.siparis, satis: m.satis }, { merge: true });
+    });
+    // Arka yüz
+    MDF_ARKA.forEach(m => {
+      const ref = db.collection('mdfStok').doc(m.renk);
+      batch.set(ref, { siparis: m.siparis, satis: m.satis }, { merge: true });
+    });
+    await batch.commit();
+    sonuc.style.color = 'var(--green)';
+    sonuc.textContent = '✓ ' + (MDF_ON.length + MDF_ARKA.length) + ' kayıt Firebase\'e yazıldı.';
+    btn.textContent = '✓ Tamamlandı';
+  } catch(e) {
+    sonuc.style.color = 'var(--red)';
+    sonuc.textContent = 'Hata: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '🚀 Stok Verilerini Firebase\'e Yaz';
+  }
 };
 
 window.showPage = function(id, el) {
@@ -3847,6 +4165,7 @@ window.showPage = function(id, el) {
     fatura:['Faturalar','Fatura oluşturma & takibi'],
     tedarikciBorc:['Tedarikçi Borçları','Tedarikçi ödeme & borç takibi'],
     finansOzet:['Finansal Özet','Bilanço, tahakkuk & nakit akışı'],
+    bankacilik:['Bankacılık','Krediler · Kredi Kartları · Esnek Hesap · Çekler'],
   };
   const [title, sub] = titles[id] || [id,''];
   document.getElementById('pageTitle').textContent = title;
@@ -3860,7 +4179,7 @@ window.showPage = function(id, el) {
   document.getElementById('searchInput').value = '';
   const searchPlaceholders = {musteriler:'Müşteri ara...', siparisler:'Sipariş ara...', analiz:'Müşteri ara...'};
   document.getElementById('searchInput').placeholder = searchPlaceholders[id] || 'Ara...';
-  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',cari:'',maliyet:'+ Yeni Reçete',karlilik:'',araclar:'',scm:'',tedarikciler:'+ Yeni Tedarikçi',satinalma:'+ Yeni PO',stokhareket:'+ Giriş / Çıkış',tedarikciBorc:'',finansOzet:''};
+  const addLabels = {dashboard:'+ Yeni Sipariş',musteriler:'+ Yeni Müşteri',siparisler:'+ Yeni Sipariş',uretim:'',stok:'+ Stok Hareketi',mdfstok:'',kasa:'+ Yeni İşlem',cari:'',maliyet:'+ Yeni Reçete',karlilik:'',araclar:'',scm:'',tedarikciler:'+ Yeni Tedarikçi',satinalma:'+ Yeni PO',stokhareket:'+ Giriş / Çıkış',tedarikciBorc:'',finansOzet:'',bankacilik:''};
   const addBtn = document.getElementById('addBtn');
   const hiddenPages = ['analiz'];
   if(hiddenPages.includes(id)) {
@@ -3901,6 +4220,7 @@ window.showPage = function(id, el) {
   if(id==='fatura') renderFaturalar();
   if(id==='tedarikciBorc') { renderTedCariListe(); }
   if(id==='finansOzet') renderFinansOzet();
+  if(id==='bankacilik') { renderBankaKPI(); bankaTabSec(aktifBankaTab||'krediler'); }
 };
 
 window.handleSearch = function() {
@@ -4937,12 +5257,18 @@ window.renderKasa = function() {
   const bakiye = tumGelir - tumGider;
   const kar = buAyGelir - buAyGider;
 
+  // Tahsil bekleyen: aktif siparişlerde ödenmemiş kısım
+  const tahsilBekleyen = siparisler
+    .filter(s => s.durum !== 'İptal' && s.odeme !== 'Tamamlandı')
+    .reduce((a,s) => a + Math.max(0, Number(s.tutar||0) - Number(s.odemeMiktar||0)), 0);
+
   document.getElementById('kasa-bakiye').textContent = fmtMoney(bakiye);
   document.getElementById('kasa-bakiye').style.color = bakiye >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('kasa-gelir').textContent = fmtMoney(buAyGelir);
   document.getElementById('kasa-gider').textContent = fmtMoney(buAyGider);
   document.getElementById('kasa-kar').textContent = fmtMoney(kar);
   document.getElementById('kasa-kar').style.color = kar >= 0 ? 'var(--accent)' : 'var(--red)';
+  document.getElementById('kasa-bekleyen').textContent = fmtMoney(tahsilBekleyen);
 
   // Yıl filtresi
   const yillar = [...new Set(kasaIslemler.map(k=>(k.tarih||'').slice(0,4)).filter(Boolean))].sort().reverse();
@@ -7371,10 +7697,10 @@ window.updatePODurum = async function(id, durum) {
   if(!p) return;
 
   const eskiDurum = p.durum;
-  const zatenTeslim = p.teslimAlindi === true; // Flag kontrolü
+  const zatenTeslim = p.teslimAlindi === true;
 
   try {
-    // ── Teslim Alındı → stok EKLE (sadece daha önce eklenmemişse) ──
+    // ── Teslim Alındı → stok EKLE + kasaya GİDER yaz ──
     if(durum === 'Teslim Alındı' && !zatenTeslim) {
       const kalemler = p.kalemler || [];
       const bugun = new Date().toISOString().split('T')[0];
@@ -7395,14 +7721,11 @@ window.updatePODurum = async function(id, durum) {
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             await db.collection('stokHareketler').add({
-              malzemeId: gercekId,
-              malzemeAd: m.ad || k.ad || '',
-              tip: 'Giris', miktar,
-              birimFiyat: Number(k.birimFiyat || 0),
+              malzemeId: gercekId, malzemeAd: m.ad || k.ad || '',
+              tip: 'Giris', miktar, birimFiyat: Number(k.birimFiyat || 0),
               tarih: bugun,
               aciklama: 'PO Teslim: ' + (p.poNo || id) + ' — ' + (p.tedarikcAd || ''),
-              poId: id,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              poId: id, createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             stokEklenen++;
           }
@@ -7412,12 +7735,7 @@ window.updatePODurum = async function(id, durum) {
           if(m) {
             m.siparis = (m.siparis || 0) + miktar;
             m.kalan = Math.max(0, m.siparis - (m.satis || 0));
-            try {
-              const klt = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
-              if(!klt[kod]) klt[kod] = {};
-              klt[kod].siparis = m.siparis;
-              localStorage.setItem('mdf_on_kayitlar', JSON.stringify(klt));
-            } catch(e) {}
+            db.collection('mdfStok').doc(kod).set({ siparis: m.siparis }, { merge: true }).catch(()=>{});
             stokEklenen++;
           }
         } else if(malzId.startsWith('mdfarka:')) {
@@ -7426,30 +7744,45 @@ window.updatePODurum = async function(id, durum) {
           if(m) {
             m.siparis = (m.siparis || 0) + miktar;
             m.kalan = Math.max(0, m.siparis - (m.satis || 0));
-            try {
-              const klt = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
-              if(!klt[renk]) klt[renk] = {};
-              klt[renk].siparis = m.siparis;
-              localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(klt));
-            } catch(e) {}
+            db.collection('mdfStok').doc(renk).set({ siparis: m.siparis }, { merge: true }).catch(()=>{});
             stokEklenen++;
           }
         }
       }
 
-      // Firestore'a teslimAlindi flag'ini yaz
+      // Firestore'a flag yaz
       await db.collection('satinalmaEmirleri').doc(id).update({
-        durum,
-        teslimAlindi: true,
-        teslimTarihi2: new Date().toISOString().split('T')[0],
+        durum, teslimAlindi: true,
+        teslimTarihi2: bugun,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      showToast(stokEklenen > 0
-        ? `✓ Teslim alındı — ${stokEklenen} kalem stoğa eklendi`
-        : 'Teslim alındı olarak işaretlendi ✓');
+      // Kasaya otomatik GİDER yaz
+      const toplamTutar = Number(p.toplamTutar || 0);
+      if(toplamTutar > 0) {
+        await db.collection('kasaIslemleri').add({
+          tip: 'Gider',
+          kategori: 'Sac / Malzeme Alımı',
+          aciklama: 'PO Teslim — ' + (p.poNo || id) + ' · ' + (p.tedarikcAd || ''),
+          tutar: toplamTutar,
+          tarih: bugun,
+          sipAno: p.poNo || '',
+          odemeYontemi: 'Banka Transferi',
+          not: 'Otomatik — PO teslim alındı',
+          otomatik: true,
+          poId: id,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast(stokEklenen > 0
+          ? `✓ Teslim alındı — ${stokEklenen} kalem stoğa eklendi | Kasa'ya -${fmtMoney(toplamTutar)} gider eklendi`
+          : `✓ Teslim alındı | Kasa'ya -${fmtMoney(toplamTutar)} gider eklendi`);
+      } else {
+        showToast(stokEklenen > 0
+          ? `✓ Teslim alındı — ${stokEklenen} kalem stoğa eklendi`
+          : 'Teslim alındı olarak işaretlendi ✓');
+      }
 
-    // ── Durum geri alındı (Teslim Alındı → başka) → stok DÜŞÜR ──
+    // ── Durum geri alındı (Teslim Alındı → başka) → stok DÜŞÜR + kasadan GİDER SİL ──
     } else if(eskiDurum === 'Teslim Alındı' && zatenTeslim && durum !== 'Teslim Alındı') {
       const kalemler = p.kalemler || [];
       const bugun = new Date().toISOString().split('T')[0];
@@ -7470,14 +7803,11 @@ window.updatePODurum = async function(id, durum) {
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             await db.collection('stokHareketler').add({
-              malzemeId: gercekId,
-              malzemeAd: m.ad || k.ad || '',
-              tip: 'Cikis', miktar,
-              birimFiyat: Number(k.birimFiyat || 0),
+              malzemeId: gercekId, malzemeAd: m.ad || k.ad || '',
+              tip: 'Cikis', miktar, birimFiyat: Number(k.birimFiyat || 0),
               tarih: bugun,
               aciklama: 'PO İptal/Geri: ' + (p.poNo || id),
-              poId: id,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+              poId: id, createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             stokDusuruldu++;
           }
@@ -7487,12 +7817,7 @@ window.updatePODurum = async function(id, durum) {
           if(m) {
             m.siparis = Math.max(0, (m.siparis || 0) - miktar);
             m.kalan = Math.max(0, m.siparis - (m.satis || 0));
-            try {
-              const klt = JSON.parse(localStorage.getItem('mdf_on_kayitlar') || '{}');
-              if(!klt[kod]) klt[kod] = {};
-              klt[kod].siparis = m.siparis;
-              localStorage.setItem('mdf_on_kayitlar', JSON.stringify(klt));
-            } catch(e) {}
+            db.collection('mdfStok').doc(kod).set({ siparis: m.siparis }, { merge: true }).catch(()=>{});
             stokDusuruldu++;
           }
         } else if(malzId.startsWith('mdfarka:')) {
@@ -7501,33 +7826,36 @@ window.updatePODurum = async function(id, durum) {
           if(m) {
             m.siparis = Math.max(0, (m.siparis || 0) - miktar);
             m.kalan = Math.max(0, m.siparis - (m.satis || 0));
-            try {
-              const klt = JSON.parse(localStorage.getItem('mdf_arka_kayitlar') || '{}');
-              if(!klt[renk]) klt[renk] = {};
-              klt[renk].siparis = m.siparis;
-              localStorage.setItem('mdf_arka_kayitlar', JSON.stringify(klt));
-            } catch(e) {}
+            db.collection('mdfStok').doc(renk).set({ siparis: m.siparis }, { merge: true }).catch(()=>{});
             stokDusuruldu++;
           }
         }
       }
 
-      // Flag'i kaldır
+      // Kasadaki bu PO'ya ait otomatik gider kayıtlarını sil
+      const kasaPoSnap = await db.collection('kasaIslemleri')
+        .where('poId', '==', id)
+        .where('otomatik', '==', true)
+        .get();
+      if(!kasaPoSnap.empty) {
+        const batch = db.batch();
+        kasaPoSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+
       await db.collection('satinalmaEmirleri').doc(id).update({
-        durum,
-        teslimAlindi: false,
+        durum, teslimAlindi: false,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
       showToast(stokDusuruldu > 0
-        ? `⚠ Durum geri alındı — ${stokDusuruldu} kalem stoktan düşüldü`
-        : 'Durum güncellendi ✓', stokDusuruldu > 0 ? 'info' : '');
+        ? `⚠ Durum geri alındı — ${stokDusuruldu} kalem stoktan düşüldü | Kasa gideri silindi`
+        : 'Durum güncellendi — Kasa gideri silindi', 'info');
 
     // ── Sıradan durum değişikliği ──
     } else {
       await db.collection('satinalmaEmirleri').doc(id).update({
-        durum,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        durum, updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       showToast('Durum güncellendi ✓');
     }
@@ -8835,7 +9163,357 @@ window.renderFinansOzet = function() {
     </div>`).join('') : '<div style="padding:12px;text-align:center;color:var(--text3);font-size:12px">Açık alacak yok</div>';
 };
 
+// ═══════════════════════════════════════════════════════════════
+// BANKACILIK MODÜLÜ
+// ═══════════════════════════════════════════════════════════════
+
+const BANKA_KEYS = {
+  krediler:'banka_krediler', kartlar:'banka_kartlar', esnek:'banka_esnek',
+  kredi:'banka_krediler', kart:'banka_kartlar',
+};
+function _bankaNorm(k){ return k==='kredi'?'krediler':k==='kart'?'kartlar':k; }
+function bankaVeri(key){ const k=_bankaNorm(key); try{return JSON.parse(localStorage.getItem(BANKA_KEYS[k])||'[]');}catch{return[];} }
+function bankaKaydet(key,arr){ const k=_bankaNorm(key); localStorage.setItem(BANKA_KEYS[k],JSON.stringify(arr)); }
+function bankaIdUret(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+let aktifBankaTab = 'krediler';
+
+window.bankaTabSec = function(tab) {
+  aktifBankaTab = tab;
+  ['krediler','kartlar','esnek'].forEach(t => {
+    const el = document.getElementById('banka-tab-'+t);
+    if(el) el.style.display = (t===tab)?'':'none';
+    const btn = document.getElementById('bTab-'+t);
+    if(btn){ btn.className=(t===tab)?'btn btn-primary':'btn btn-ghost'; btn.style.cssText='font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0'; }
+  });
+  if(tab==='krediler')   renderKrediler();
+  if(tab==='kartlar')    renderKartlar();
+  if(tab==='esnek')      renderEsnek();
+
+};
+
+function renderBankaKPI() {
+  const krediler=bankaVeri('krediler'), kartlar=bankaVeri('kartlar');
+
+  // Gün duyarlı kalan vade hesabı (merkezi yardımcı)
+  function _kalanVade(tarih, vadeSayisi) {
+    if(!tarih||!vadeSayisi) return 0;
+    const cekim=new Date(tarih), bugun=new Date();
+    let gecen=(bugun.getFullYear()-cekim.getFullYear())*12+(bugun.getMonth()-cekim.getMonth());
+    if(bugun.getDate() < cekim.getDate()) gecen=Math.max(0, gecen-1);
+    return Math.max(0, Number(vadeSayisi)-gecen);
+  }
+
+  const topKredi=krediler.reduce((s,k)=>s+_kalanVade(k.tarih,k.vadeSayisi)*Number(k.vadeTutari||0),0);
+  document.getElementById('banka-toplam-kredi').textContent=fmtMoney(topKredi);
+
+  const buAyKredi=krediler.reduce((s,k)=>_kalanVade(k.tarih,k.vadeSayisi)>0?s+Number(k.vadeTutari||0):s,0);
+  document.getElementById('banka-buay-taksit').textContent=fmtMoney(buAyKredi);
+
+  const kkK=kartlar.filter(k=>k.durum!=='İptal').reduce((s,k)=>s+Number(k.kullanilan||0),0);
+  const kkL=kartlar.filter(k=>k.durum!=='İptal').reduce((s,k)=>s+Number(k.limit||0),0);
+  document.getElementById('banka-kk-kullanim').textContent=fmtMoney(kkK)+' / '+fmtMoney(kkL);
+
+  renderBankaKPI_badge();
+}
+
+function renderBankaKPI_badge() {
+  const kritik=bankaVadesiYaklaşanlar(3).length;
+  const badge=document.getElementById('bankaBadge');
+  if(badge){ badge.style.display=kritik>0?'':'none'; badge.textContent=kritik; badge.className='nav-badge'+(kritik?'':' gray'); }
+}
+
+function bankaVadesiYaklaşanlar(gun) {
+  const bugun=new Date().toISOString().slice(0,10);
+  const limit=new Date(Date.now()+gun*86400000).toISOString().slice(0,10);
+  const list=[];
+  bankaVeri('krediler').forEach(k=>{
+    if(!k.tarih||!k.vadeSayisi) return;
+    const cekim=new Date(k.tarih), bugun2=new Date();
+    const gecen=(bugun2.getFullYear()-cekim.getFullYear())*12+(bugun2.getMonth()-cekim.getMonth());
+    const kalanV=Math.max(0,Number(k.vadeSayisi)-gecen);
+    if(kalanV>0&&kalanV<=gun) list.push({tip:'Kredi Taksiti',aciklama:(k.banka||'—')+' — '+fmtMoney(k.vadeTutari),tarih:'~'+kalanV+' ay',renk:'var(--accent)'});
+  });
+  bankaVeri('kartlar').filter(k=>k.durum!=='İptal'&&k.sonOdeme>=bugun&&k.sonOdeme<=limit)
+    .forEach(k=>list.push({tip:'Kart Ödemesi',aciklama:k.kartAdi+' — '+fmtMoney(k.kullanilan),tarih:k.sonOdeme,renk:'var(--blue)'}));
+
+  return list;
+}
+
+function renderBankaUyariBandi() {
+  const el=document.getElementById('banka-uyari-bandi'); if(!el)return;
+  el.innerHTML=''; // 7 gün uyarısı devre dışı
+}
+
+window.renderKrediler = function() {
+  const data=bankaVeri('krediler');
+  const tbody=document.getElementById('kredi-tbody'); if(!tbody)return;
+  if(!data.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text3)">Henüz kredi kaydı yok.</td></tr>';return;}
+
+  // Kalan vade: çekim gününü dikkate alarak hesapla
+  // Örnek: 25 Şubat başlayan kredi, bugün 4 Nisan → henüz Nisan taksidi ödenmedi
+  // gecen = Şubat→Mart=1, ama bugün(4) < cekimGun(25) olduğu için Nisan sayılmaz → gecen=1, kalan=toplam-1
+  function kalanVadeHesapla(tarih, vadeSayisi) {
+    if(!tarih || !vadeSayisi) return null;
+    const cekim = new Date(tarih);
+    const bugun = new Date();
+    let gecenAy = (bugun.getFullYear()-cekim.getFullYear())*12 + (bugun.getMonth()-cekim.getMonth());
+    // Bugün, çekim gününden önce ise bu ay henüz ödenmedi — geçen ay sayısını 1 azalt
+    if(bugun.getDate() < cekim.getDate()) gecenAy = Math.max(0, gecenAy - 1);
+    return Math.max(0, Number(vadeSayisi) - gecenAy);
+  }
+
+  function fmtTarih(tarih) {
+    if(!tarih) return '—';
+    const [y,m,d] = tarih.split('-');
+    if(!y||!m||!d) return tarih;
+    return `${d}/${m}/${y}`;
+  }
+
+  tbody.innerHTML=data.map(k=>{
+    const krediTutar  = Number(k.krediTutari||0);
+    const faizTutar   = Number(k.faizTutari||0);
+    const vadeToplam  = Number(k.vadeToplam||(krediTutar+faizTutar)||0);
+    const vadeSayisi  = Number(k.vadeSayisi||0);
+    const vadeTutari  = Number(k.vadeTutari||0);
+    const kalanVade   = kalanVadeHesapla(k.tarih, vadeSayisi);
+    const goKalanVade = kalanVade !== null ? kalanVade : 0;
+    const kalanOdeme  = goKalanVade * vadeTutari;
+    const progress    = vadeSayisi > 0 ? Math.round((1 - goKalanVade/vadeSayisi)*100) : 0;
+    const bitmeyeYakin = goKalanVade > 0 && goKalanVade <= 3;
+    const kapali       = goKalanVade <= 0;
+
+    let durumBadge;
+    if(kapali)           durumBadge=`<span class="badge badge-gray">Kapalı</span>`;
+    else if(bitmeyeYakin)durumBadge=`<span class="badge badge-yellow">Bitmek Üzere</span>`;
+    else                 durumBadge=`<span class="badge badge-green">Aktif</span>`;
+
+    return `<tr>
+      <td><span class="badge ${k.hesapTipi==='Şirket'?'badge-blue':'badge-gray'}">${k.hesapTipi||'—'}</span></td>
+      <td class="mono" style="font-size:12px">${fmtTarih(k.tarih)}</td>
+      <td><strong>${k.banka||'—'}</strong></td>
+      <td class="mono" style="text-align:right;color:var(--red)">${fmtMoney(krediTutar)}</td>
+      <td class="mono" style="text-align:right;color:var(--purple)">${faizTutar?fmtMoney(faizTutar):'—'}</td>
+      <td class="mono" style="text-align:right">${vadeToplam?fmtMoney(vadeToplam):'—'}</td>
+      <td class="mono" style="text-align:center">${vadeSayisi||'—'}</td>
+      <td style="text-align:center">
+        <div style="display:flex;align-items:center;gap:6px;justify-content:center">
+          <span class="mono" style="font-weight:700;min-width:24px;color:${bitmeyeYakin?'var(--red)':kapali?'var(--text3)':'var(--text)'}">${goKalanVade}</span>
+          ${vadeSayisi?`<div style="width:48px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden"><div style="width:${progress}%;height:100%;background:${kapali?'var(--text3)':bitmeyeYakin?'var(--red)':'var(--green)'};border-radius:2px"></div></div>`:''}
+        </div>
+      </td>
+      <td class="mono" style="text-align:right">${vadeTutari?fmtMoney(vadeTutari):'—'}</td>
+      <td class="mono" style="text-align:right;font-weight:700;color:var(--accent)">${kalanOdeme?fmtMoney(kalanOdeme):'—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="bankaDuzenle('kredi','${k.id}')">✏</button>
+        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="bankaSil('kredi','${k.id}')">✕</button>
+      </td></tr>`;
+  }).join('');
+};
+
+window.renderKartlar = function() {
+  const data=bankaVeri('kartlar');
+  const tbody=document.getElementById('kart-tbody'); if(!tbody)return;
+  if(!data.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">Henüz kart kaydı yok.</td></tr>';return;}
+  tbody.innerHTML=data.map(k=>{
+    const kul=Number(k.kullanilan||0), lim=Number(k.limit||0), kal=lim-kul;
+    const yuzde=lim?Math.round(kul/lim*100):0;
+    const renk=yuzde>=90?'var(--red)':yuzde>=70?'var(--accent)':'var(--green)';
+    const gun=k.sonOdemeGun?k.sonOdemeGun+'. gün':'—';
+    return `<tr>
+      <td><span class="badge ${k.hesapTipi==='Şirket'?'badge-blue':'badge-gray'}">${k.hesapTipi||'—'}</span></td>
+      <td><strong>${k.banka||'—'}</strong></td>
+      <td class="mono" style="text-align:right">${fmtMoney(k.limit)}</td>
+      <td class="mono" style="text-align:right;color:var(--red)">${fmtMoney(k.kullanilan)}</td>
+      <td class="mono" style="text-align:right;color:var(--green)">${fmtMoney(kal)}</td>
+      <td style="text-align:right">
+        <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+          <div style="width:60px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
+            <div style="width:${yuzde}%;height:100%;background:${renk};border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;color:${renk};font-family:monospace">${yuzde}%</span>
+        </div>
+      </td>
+      <td>${gun}</td>
+      <td><span class="badge ${k.durum==='Aktif'?'badge-green':k.durum==='İptal'?'badge-gray':'badge-yellow'}">${k.durum||'—'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="bankaDuzenle('kart','${k.id}')">✏</button>
+        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="bankaSil('kart','${k.id}')">✕</button>
+      </td></tr>`;
+  }).join('');
+};
+
+window.renderEsnek = function() {
+  const data=bankaVeri('esnek');
+  const tbody=document.getElementById('esnek-tbody'); if(!tbody)return;
+  if(!data.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Henüz esnek hesap kaydı yok.</td></tr>';return;}
+  function fmtTarih(tarih) {
+    if(!tarih) return '—';
+    const [y,m,d] = tarih.split('-');
+    if(!y||!m||!d) return tarih;
+    return `${d}/${m}/${y}`;
+  }
+  tbody.innerHTML=data.map(e=>{
+    const kul=Number(e.kullanilan||0), lim=Number(e.limit||0);
+    return `<tr>
+      <td><span class="badge ${e.hesapTipi==='Şirket'?'badge-blue':'badge-gray'}">${e.hesapTipi||'—'}</span></td>
+      <td><strong>${e.banka||'—'}</strong></td>
+      <td class="mono" style="text-align:right">${fmtMoney(e.limit)}</td>
+      <td class="mono" style="text-align:right;color:var(--red)">${fmtMoney(e.kullanilan)}</td>
+      <td class="mono" style="text-align:right;color:var(--green)">${fmtMoney(lim-kul)}</td>
+      <td class="mono" style="text-align:right">%${e.gunlukFaiz||'—'}</td>
+      <td>${fmtTarih(e.acilisTarihi)}</td>
+      <td><span class="badge ${e.durum==='Aktif'?'badge-green':e.durum==='Kapatıldı'?'badge-gray':'badge-yellow'}">${e.durum||'—'}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="bankaDuzenle('esnek','${e.id}')">✏</button>
+        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="bankaSil('esnek','${e.id}')">✕</button>
+      </td></tr>`;
+  }).join('');
+};
+
+
+
+// MODAL
+let bankaModalTip=null, bankaModalDuzenleId=null;
+
+const bankaFormTanimlari = {
+  kredi:{baslik:'Banka Kredisi',alanlar:[
+    {key:'hesapTipi',label:'Hesap Tipi',type:'select',options:['Şirket','Bireysel'],required:true},
+    {key:'tarih',label:'Tarih (Kredi Çekim Tarihi)',type:'date',required:true},
+    {key:'banka',label:'Banka',type:'text',required:true},
+    {key:'krediTutari',label:'Kredi Tutarı — Ana Para (₺)',type:'number',required:true},
+    {key:'faizTutari',label:'Faiz Tutarı (₺)',type:'number'},
+    {key:'vadeToplam',label:'Vadeli Tutar — Toplam (₺)',type:'number'},
+    {key:'vadeSayisi',label:'Vade Sayısı (Ay)',type:'number',required:true},
+    {key:'vadeTutari',label:'Vade Tutarı — Aylık Taksit (₺)',type:'number',required:true},
+    {key:'not',label:'Not',type:'text'},
+  ]},
+  kart:{baslik:'Kredi Kartı',alanlar:[
+    {key:'hesapTipi',label:'Hesap Tipi',type:'select',options:['Şirket','Bireysel'],required:true},
+    {key:'banka',label:'Banka',type:'text',required:true},
+    {key:'limit',label:'Kart Limiti (₺)',type:'number',required:true},
+    {key:'kullanilan',label:'Kullanılan (₺)',type:'number'},
+    {key:'sonOdemeGun',label:'Son Ödeme Günü (Her Ayın Kaçı)',type:'number_day',required:true},
+    {key:'durum',label:'Durum',type:'select',options:['Aktif','İptal'],required:true},
+    {key:'not',label:'Not',type:'text'},
+  ]},
+  esnek:{baslik:'Esnek Hesap / Kredi Limiti',alanlar:[
+    {key:'hesapTipi',label:'Hesap Tipi',type:'select',options:['Şirket','Bireysel'],required:true},
+    {key:'banka',label:'Banka',type:'text',required:true},
+    {key:'limit',label:'Toplam Limit (₺)',type:'number',required:true},
+    {key:'kullanilan',label:'Kullanılan (₺)',type:'number'},
+    {key:'gunlukFaiz',label:'Günlük Faiz (%)',type:'number'},
+    {key:'acilisTarihi',label:'Açılış Tarihi',type:'date'},
+    {key:'durum',label:'Durum',type:'select',options:['Aktif','Kapatıldı'],required:true},
+    {key:'not',label:'Not',type:'text'},
+  ]},
+};
+
+window.bankaEkle = function(tip) {
+  bankaModalTip=tip; bankaModalDuzenleId=null;
+  const t=bankaFormTanimlari[tip];
+  document.getElementById('bankaModalBaslik').textContent='+ '+t.baslik+' Ekle';
+  document.getElementById('bankaFormIcerik').innerHTML=bankaFormHtml(t.alanlar,{});
+  document.getElementById('bankaModal').style.display='flex';
+};
+
+window.bankaDuzenle = function(tip,id) {
+  const tipN=tip==='kredi'?'krediler':tip==='kart'?'kartlar':tip;
+  const tipForm=tip==='krediler'?'kredi':tip==='kartlar'?'kart':tip; // form tanimı anahtarı
+  bankaModalTip=tipN; bankaModalDuzenleId=id;
+  const kayit=bankaVeri(tipN).find(k=>k.id===id); if(!kayit)return;
+  const t=bankaFormTanimlari[tipForm]||bankaFormTanimlari[tipN]||bankaFormTanimlari[tip];
+  document.getElementById('bankaModalBaslik').textContent='✏ '+t.baslik+' Düzenle';
+  document.getElementById('bankaFormIcerik').innerHTML=bankaFormHtml(t.alanlar,kayit);
+  document.getElementById('bankaModal').style.display='flex';
+};
+
+function bankaFormHtml(alanlar,mevcut) {
+  const html = alanlar.map(a=>{
+    const val=mevcut[a.key]!==undefined?mevcut[a.key]:'';
+    const req=a.required?'required':'';
+    const style='width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:3px;font-size:13px;font-family:inherit;box-sizing:border-box';
+    let input;
+    const hint = a.key==='vadeToplam' ? ' <span style="font-size:10px;color:var(--accent)">(boş bırakırsan Kredi + Faiz toplamı kullanılır)</span>' : '';
+    const oninput = (a.key==='krediTutari'||a.key==='faizTutari') ? ' oninput="bankaVadeliHesapla()"' : '';
+    const bgStyle = a.key==='vadeToplam' ? style.replace('var(--surface2)','rgba(92,158,224,0.08)').replace('var(--border)','rgba(92,158,224,0.3)') : style;
+    if(a.type==='select'){
+      input=`<select name="${a.key}" ${req} style="${style}">${(a.options||[]).map(o=>`<option value="${o}"${val===o?' selected':''}>${o}</option>`).join('')}</select>`;
+    } else if(a.type==='number_day'){
+      // 1-31 gün seçici
+      const days = Array.from({length:31},(_,i)=>i+1);
+      input=`<select name="${a.key}" ${req} style="${style}">`
+        +`<option value="">— Gün seçin —</option>`
+        +days.map(d=>`<option value="${d}"${Number(val)===d?' selected':''}>${d}. gün</option>`).join('')
+        +`</select>`;
+    } else {
+      input=`<input type="${a.type||'text'}" name="${a.key}" id="bform_${a.key}" value="${val}" ${req} ${a.type==='number'?'step="any"':''}${oninput} style="${bgStyle}">`;
+    }
+    return `<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">${a.label}${hint}</label>${input}</div>`;
+  }).join('');
+  return html;
+}
+
+window.bankaVadeliHesapla = function() {
+  const kredi = Number(document.getElementById('bform_krediTutari')?.value)||0;
+  const faiz  = Number(document.getElementById('bform_faizTutari')?.value)||0;
+  const vadeEl= document.getElementById('bform_vadeToplam');
+  if(vadeEl && (kredi||faiz)) vadeEl.value = kredi + faiz || '';
+};
+
+window.bankaModalKapat = function() {
+  document.getElementById('bankaModal').style.display='none';
+  bankaModalTip=null; bankaModalDuzenleId=null;
+};
+
+window.bankaFormKaydet = function(e) {
+  e.preventDefault();
+  const data=Object.fromEntries(new FormData(document.getElementById('bankaForm')).entries());
+  const tip=bankaModalTip==='kredi'?'krediler':bankaModalTip==='kart'?'kartlar':bankaModalTip;
+  const arr=bankaVeri(tip);
+  if(bankaModalDuzenleId){
+    const idx=arr.findIndex(k=>k.id===bankaModalDuzenleId);
+    if(idx!==-1) arr[idx]={...arr[idx],...data};
+  } else {
+    data.id=bankaIdUret(); data.olusturma=new Date().toISOString().slice(0,10); arr.push(data);
+  }
+  bankaKaydet(tip,arr);
+  bankaModalKapat();
+  renderBankaKPI();
+  if(tip==='krediler') renderKrediler();
+  else if(tip==='kartlar') renderKartlar();
+  else if(tip==='esnek') renderEsnek();
+  showToast('Kaydedildi ✓','success');
+};
+
+window.bankaSil = function(tip,id) {
+  if(!confirm('Bu kayıt silinsin mi?')) return;
+  bankaKaydet(tip, bankaVeri(tip).filter(k=>k.id!==id));
+  renderBankaKPI();
+  if(tip==='krediler') renderKrediler();
+  else if(tip==='kartlar') renderKartlar();
+  else if(tip==='esnek') renderEsnek();
+};
+
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- BANKACILIK MODAL -->
+<div id="bankaModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;width:480px;max-height:90vh;overflow-y:auto">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <span id="bankaModalBaslik" style="font-size:14px;font-weight:700"></span>
+      <button onclick="bankaModalKapat()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <form id="bankaForm" onsubmit="bankaFormKaydet(event)" style="padding:20px;display:flex;flex-direction:column;gap:14px">
+      <div id="bankaFormIcerik"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">
+        <button type="button" class="btn btn-ghost" onclick="bankaModalKapat()">İptal</button>
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
 </body>
 </html>
