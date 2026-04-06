@@ -746,16 +746,18 @@
           </div>
         </div>
 
-      <!-- Migrasyon -->
+        <!-- Geçmiş Aktarım -->
         <div class="card" style="padding:24px">
           <div style="display:flex;align-items:flex-start;gap:16px">
-            <div style="font-size:32px;line-height:1">🔧</div>
+            <div style="font-size:32px;line-height:1">📦</div>
             <div style="flex:1">
-              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Geçmiş Sipariş Düzeltme</div>
-              <div style="font-size:12px;color:var(--text3);margin-bottom:16px">Eski siparişlerdeki üretim ve teslim tarihlerini otomatik doldurur. Zaten dolu alanları değiştirmez.</div>
-              <button class="btn btn-primary" style="padding:10px 20px" onclick="migrasyonCalistir()">
-                ⚡ Geçmiş Siparişleri Düzelt
-              </button>
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Geçmiş Sipariş Aktarımı</div>
+              <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ödeme tamamlanmış geçmiş siparişlerin gelir ve hammadde giderlerini kasaya toplu aktarır. Sipariş tarihini kullanır. Daha önce eklenmiş kayıtların üzerine yazar.</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="btn btn-primary" style="padding:10px 20px" onclick="gecmisAktar('tahsilat')">⚡ Geçmiş Gelirleri Aktar</button>
+                <button class="btn btn-primary" style="padding:10px 20px" onclick="gecmisAktar('hammadde')">⚡ Geçmiş Giderleri Aktar</button>
+                <button class="btn btn-danger" style="padding:10px 20px" onclick="gecmisAktar('temizle')">🗑️ Hepsini Temizle</button>
+              </div>
             </div>
           </div>
         </div>
@@ -2984,7 +2986,11 @@ window.saveRecord = async function() {
         odemeMiktar: (()=>{
           const musteriObj = musteriler.find(m=>m.id===musteriId);
           if(musteriObj?.calismaKipi==='Vadeli') return 0;
-          return Number(document.getElementById('f_odemeMiktar')?.value||0);
+          const odeVal = Number(document.getElementById('f_odemeMiktar')?.value||0);
+          const odeDurum = document.getElementById('f_odeme')?.value||'Bekliyor';
+          // Tamamlandı seçili ama miktar girilmemişse toplam tutarı kullan
+          if(odeVal === 0 && odeDurum === 'Tamamlandı') return toplamTutar;
+          return odeVal;
         })(),
         uretimTarihi: document.getElementById('f_uretimTarihi')?.value||'',
         teslimTarihi: document.getElementById('f_teslimTarihi')?.value||'',
@@ -3001,6 +3007,49 @@ window.saveRecord = async function() {
         showToast('Sipariş güncellendi ✓');
         const yeniKalemler = data.durum === 'İptal' ? [] : gecerliKalemler;
         mdfStokGuncelle(yeniKalemler, eskiDurumIptal ? [] : eskiKalemler);
+        // Kasa: ödeme durumu değişince gelir + hammadde giderini güncelle
+        const eskiOdeme = eskiSip?.odeme || 'Bekliyor';
+        const yeniOdeme = data.odeme || 'Bekliyor';
+        // Tamamlandı seçilmişse ve miktar girilmemişse toplam tutarı kullan
+        let yeniMiktar = Number(data.odemeMiktar || 0);
+        if(yeniMiktar === 0 && (yeniOdeme === 'Tamamlandı')) {
+          yeniMiktar = Number(data.tutar || 0);
+          data.odemeMiktar = yeniMiktar;
+        }
+
+        // Gelir kayıtlarını yönet (sadece tip===Gelir olanlar)
+        const gelirSil = async () => {
+          const s1 = await db.collection('kasaIslemleri').where('sipId','==',editingId).where('tip','==','Gelir').where('otomatik','==',true).get();
+          const s2 = await db.collection('kasaIslemleri').where('sipAno','==',data.sipNo).where('tip','==','Gelir').where('otomatik','==',true).get();
+          const ids = new Set([...s1.docs.map(d=>d.id), ...s2.docs.map(d=>d.id)]);
+          if(ids.size) { const b=db.batch(); [...s1.docs,...s2.docs].filter((d,i,a)=>a.findIndex(x=>x.id===d.id)===i).forEach(d=>b.delete(d.ref)); await b.commit(); }
+        };
+
+        if(data.durum === 'İptal') {
+          await gelirSil();
+          await hammaddeGiderSil(editingId);
+        } else if(yeniOdeme === 'Tamamlandı' || yeniOdeme === 'Kısmi Ödendi' || yeniOdeme === 'Kısmi') {
+          // Gelir: sil ve yeniden yaz
+          await gelirSil();
+          // Tamamlandı ise her zaman toplam tutarı yaz
+          const gelirTutar = yeniOdeme === 'Tamamlandı' ? toplamTutar : (yeniMiktar > 0 ? yeniMiktar : toplamTutar);
+          console.log('GELİR YAZILIYOR:', gelirTutar, 'yeniOdeme:', yeniOdeme, 'sipNo:', data.sipNo);
+          await db.collection('kasaIslemleri').add({
+            tip:'Gelir', kategori: yeniOdeme==='Tamamlandı' ? 'Sipariş Tahsilatı' : 'Ön Ödeme',
+            aciklama:'Tahsilat — ' + data.sipNo + ' · ' + (data.musteriAd||''),
+            tutar: gelirTutar,
+            tarih: data.sipTarihi || new Date().toISOString().split('T')[0],
+            sipNo: data.sipNo||'', sipAno: data.sipNo||'', sipId: editingId,
+            odemeYontemi:'Nakit', not:'Otomatik', otomatik:true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          // Hammadde gideri
+          await hammaddeGiderSil(editingId);
+          await hammaddeGiderYaz(editingId, data.sipNo, data, gecerliKalemler);
+        } else if(yeniOdeme === 'Bekliyor') {
+          await gelirSil();
+          await hammaddeGiderSil(editingId);
+        }
 
         // Cari hareketi de güncelle (sipId veya sipNo üzerinden bul)
         try {
@@ -3878,19 +3927,25 @@ window.updateOdeme = async function(id, odeme, odemeMiktar) {
       .get();
 
     if(odeme === 'Bekliyor') {
-      // Bekliyor'a çekildi: kasadaki tüm otomatik tahsilat kayıtlarını sil
+      // Bekliyor'a çekildi: kasadaki tüm otomatik tahsilat + hammadde kayıtlarını sil
       if(!mevcutKasaSnap.empty) {
         const batch = db.batch();
         mevcutKasaSnap.docs.forEach(d => batch.delete(d.ref));
         await batch.commit();
-        showToast(`Ödeme: Bekliyor — Kasa kaydı silindi ✓`);
-      } else {
-        showToast(`Ödeme: Bekliyor ✓`);
       }
+      await hammaddeGiderSil(id);
+      showToast(`Ödeme: Bekliyor — Kasa kaydı silindi ✓`);
     } else {
       // Ödeme var: kasadaki mevcut toplamı hesapla
       const kasadakiToplam = mevcutKasaSnap.docs.reduce((a,d) => a + Number(d.data().tutar||0), 0);
       const fark = yeniMiktar - kasadakiToplam;
+
+      // Tamamlandı ise hammadde giderini (yeniden) yaz
+      if(odeme === 'Tamamlandı') {
+        const kalemler = (sip.kalemler && sip.kalemler.length) ? sip.kalemler : (sip.urun ? [{urun:sip.urun, adet:sip.adet||1}] : []);
+        await hammaddeGiderSil(id);
+        await hammaddeGiderYaz(id, sipNo, sip, kalemler);
+      }
 
       if(fark > 0) {
         // Ek ödeme geldi: farkı yaz
@@ -3899,8 +3954,9 @@ window.updateOdeme = async function(id, odeme, odemeMiktar) {
           kategori: odeme === 'Tamamlandı' ? 'Sipariş Tahsilatı' : 'Ön Ödeme',
           aciklama: 'Tahsilat — ' + sipNo + ' · ' + (sip?.musteriAd || ''),
           tutar: fark,
-          tarih: new Date().toISOString().split('T')[0],
+          tarih: sip?.sipTarihi || new Date().toISOString().split('T')[0],
           sipAno: sipNo,
+          sipNo: sipNo || '',
           odemeYontemi: 'Nakit',
           not: 'Otomatik — ödeme durumu güncellendi',
           otomatik: true,
@@ -3918,8 +3974,9 @@ window.updateOdeme = async function(id, odeme, odemeMiktar) {
             kategori: 'Sipariş Tahsilatı',
             aciklama: 'Tahsilat — ' + sipNo + ' · ' + (sip?.musteriAd || ''),
             tutar: yeniMiktar,
-            tarih: new Date().toISOString().split('T')[0],
+            tarih: sip?.sipTarihi || new Date().toISOString().split('T')[0],
             sipAno: sipNo,
+            sipNo: sipNo || '',
             odemeYontemi: 'Nakit',
             not: 'Otomatik — düzeltildi',
             otomatik: true,
@@ -4223,160 +4280,6 @@ window.mdfArkaKaydet = function(renk, alan, deger) {
     .catch(e => console.error('mdfArkaKaydet:', e));
 };
 
-window.kasaOtomatikSenkronize = async function() {
-  const btn = document.getElementById('kasaSenkBtn');
-  const sonuc = document.getElementById('kasaSenkSonuc');
-  btn.disabled = true;
-  btn.textContent = '⏳ Kontrol ediliyor...';
-  sonuc.textContent = '';
-
-  try {
-    // Kasadaki tüm otomatik kayıtları çek
-    const kasaSnap = await db.collection('kasaIslemleri').where('otomatik','==',true).get();
-    if(kasaSnap.empty) {
-      sonuc.style.color = 'var(--text2)';
-      sonuc.textContent = 'Otomatik kayıt bulunamadı.';
-      btn.disabled = false; btn.textContent = '🔄 Senkronize Et';
-      return;
-    }
-
-    // Sipariş no → ödeme durumu map
-    const sipMap = {};
-    siparisler.forEach(s => { if(s.sipNo) sipMap[s.sipNo] = s; });
-
-    const batch = db.batch();
-    let silinen = 0;
-
-    kasaSnap.docs.forEach(doc => {
-      const k = doc.data();
-      // Sipariş bazlı otomatik kayıt
-      if(k.sipAno && !k.poId) {
-        const sip = sipMap[k.sipAno];
-        if(!sip || sip.odeme === 'Bekliyor' || Number(sip.odemeMiktar||0) === 0) {
-          batch.delete(doc.ref);
-          silinen++;
-        }
-      }
-      // PO bazlı otomatik kayıt
-      if(k.poId) {
-        const po = satinalmaEmirleri.find(p => p.id === k.poId);
-        if(!po || po.durum !== 'Teslim Alındı' || !po.teslimAlindi) {
-          batch.delete(doc.ref);
-          silinen++;
-        }
-      }
-    });
-
-    if(silinen === 0) {
-      sonuc.style.color = 'var(--green)';
-      sonuc.textContent = '✓ Tüm kayıtlar zaten senkronde — silinecek bir şey yok.';
-    } else {
-      await batch.commit();
-      sonuc.style.color = 'var(--green)';
-      sonuc.textContent = `✓ ${silinen} tutarsız kasa kaydı temizlendi.`;
-    }
-    btn.textContent = '✓ Tamamlandı';
-  } catch(e) {
-    sonuc.style.color = 'var(--red)';
-    sonuc.textContent = 'Hata: ' + e.message;
-    btn.disabled = false; btn.textContent = '🔄 Senkronize Et';
-  }
-};
-
-window.gecmisTahsilatlariAktar = async function() {
-  const btn = document.getElementById('kasaAktarBtn');
-  const sonuc = document.getElementById('kasaAktarSonuc');
-  btn.disabled = true;
-  btn.textContent = '⏳ Kontrol ediliyor...';
-  sonuc.textContent = '';
-
-  try {
-    // Kasada zaten kayıtlı sipariş no'larını bul
-    const mevcutSipNolar = new Set(kasaIslemler.filter(k=>k.sipAno).map(k=>k.sipAno));
-
-    // Ödenmiş veya kısmi ödenmiş siparişleri bul
-    const aktarilacaklar = siparisler.filter(s =>
-      s.durum !== 'İptal' &&
-      (s.odeme === 'Tamamlandı' || s.odeme === 'Kısmi Ödendi') &&
-      Number(s.odemeMiktar||0) > 0 &&
-      !mevcutSipNolar.has(s.sipNo)  // kasada zaten yoksa
-    );
-
-    if(!aktarilacaklar.length) {
-      sonuc.style.color = 'var(--text2)';
-      sonuc.textContent = 'Aktarılacak yeni kayıt bulunamadı — tüm tahsilatlar zaten kasada mevcut.';
-      btn.disabled = false;
-      btn.textContent = '🚀 Geçmiş Tahsilatları Kasaya Yaz';
-      return;
-    }
-
-    // Batch ile toplu yaz (max 500)
-    const chunks = [];
-    for(let i=0; i<aktarilacaklar.length; i+=400) chunks.push(aktarilacaklar.slice(i,i+400));
-
-    let toplam = 0;
-    for(const chunk of chunks) {
-      const batch = db.batch();
-      chunk.forEach(s => {
-        const miktar = Number(s.odemeMiktar||0);
-        toplam += miktar;
-        const ref = db.collection('kasaIslemleri').doc();
-        batch.set(ref, {
-          tip: 'Gelir',
-          kategori: 'Sipariş Tahsilatı',
-          aciklama: 'Geçmiş tahsilat — ' + s.sipNo + ' · ' + (s.musteriAd||''),
-          tutar: miktar,
-          tarih: s.sipTarihi || s.teslimTarihi || new Date().toISOString().split('T')[0],
-          sipAno: s.sipNo || '',
-          odemeYontemi: 'Nakit',
-          not: 'Toplu aktarım — geçmiş sipariş',
-          otomatik: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      });
-      await batch.commit();
-    }
-
-    sonuc.style.color = 'var(--green)';
-    sonuc.textContent = `✓ ${aktarilacaklar.length} sipariş aktarıldı — toplam ${fmtMoney(toplam)} gelir eklendi.`;
-    btn.textContent = '✓ Tamamlandı';
-  } catch(e) {
-    sonuc.style.color = 'var(--red)';
-    sonuc.textContent = 'Hata: ' + e.message;
-    btn.disabled = false;
-    btn.textContent = '🚀 Geçmiş Tahsilatları Kasaya Yaz';
-  }
-};
-
-window.mdfFirebaseAktar = async function() {
-  const btn = document.getElementById('mdfAktarBtn');
-  const sonuc = document.getElementById('mdfAktarSonuc');
-  btn.disabled = true;
-  btn.textContent = '⏳ Yazılıyor...';
-  sonuc.textContent = '';
-  try {
-    const batch = db.batch();
-    // Ön yüz
-    MDF_ON.forEach(m => {
-      const ref = db.collection('mdfStok').doc(m.kod);
-      batch.set(ref, { siparis: m.siparis, satis: m.satis }, { merge: true });
-    });
-    // Arka yüz
-    MDF_ARKA.forEach(m => {
-      const ref = db.collection('mdfStok').doc(m.renk);
-      batch.set(ref, { siparis: m.siparis, satis: m.satis }, { merge: true });
-    });
-    await batch.commit();
-    sonuc.style.color = 'var(--green)';
-    sonuc.textContent = '✓ ' + (MDF_ON.length + MDF_ARKA.length) + ' kayıt Firebase\'e yazıldı.';
-    btn.textContent = '✓ Tamamlandı';
-  } catch(e) {
-    sonuc.style.color = 'var(--red)';
-    sonuc.textContent = 'Hata: ' + e.message;
-    btn.disabled = false;
-    btn.textContent = '🚀 Stok Verilerini Firebase\'e Yaz';
-  }
-};
 
 window.showPage = function(id, el) {
   currentPage = id;
@@ -4846,7 +4749,7 @@ window.KATALOG = [
 // ─── KASA STATE & LISTENERS ─────────────────────────────────────────────────
 let kasaIslemler = [];
 const GELIR_KATS = ['Sipariş Tahsilatı','Ön Ödeme','Diğer Gelir'];
-const GIDER_KATS = ['Malzeme Alımı','Maaş Ödemesi','Kira','Elektrik & Su','Diğer Gider'];
+const GIDER_KATS = ['Malzeme Alımı','Maaş Ödemesi','Kira','Elektrik & Su','Hammadde Maliyeti','Diğer Gider'];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CARİ EKSTRE
@@ -5558,6 +5461,15 @@ window.renderKasaHareketler = function() {
   let list = kasaIslemler;
   if(tipF) list = list.filter(k=>k.tip===tipF);
   if(ayF) list = list.filter(k=>(k.tarih||'').startsWith(ayF));
+  // sipNo büyükten küçüğe; aynı sipNo'da gelir önce gider sonra; sipNo yoksa en sona tarih sırasıyla
+  list = [...list].sort((a,b) => {
+    const sA = parseInt(a.sipNo||'0')||0;
+    const sB = parseInt(b.sipNo||'0')||0;
+    if(sA !== sB) return sB - sA;
+    // Aynı sipNo: gelir (1) önce, gider (2) sonra
+    const tipSira = x => x.tip === 'Gelir' ? 1 : 2;
+    return tipSira(a) - tipSira(b);
+  });
   const el = document.getElementById('kasaHareketListesi');
   if(!list.length) {
     el.innerHTML = '<div class="empty-state" style="padding:40px"><div class="empty-icon">💰</div><div class="empty-title">İşlem bulunamadı</div></div>';
@@ -5568,6 +5480,7 @@ window.renderKasaHareketler = function() {
   const rows = list.map(k => {
     const isGelir = k.tip==='Gelir';
     const row = '<tr onclick="openKasaDetay(\''+k.id+'\')" style="cursor:pointer">'
+      +'<td class="mono" style="font-size:12px;font-weight:700;color:var(--accent)">'+(k.sipNo||'—')+'</td>'
       +'<td class="mono" style="font-size:11px">'+k.tarih+'</td>'
       +'<td><strong>'+(k.aciklama||'—')+'</strong><br><span style="font-size:10px;color:var(--text2)">'+( k.kategori||'')+(k.odemeYontemi?' · '+k.odemeYontemi:'')+'</span></td>'
       +'<td>'+(isGelir?'<span class="badge badge-green">Gelir</span>':'<span class="badge badge-red">Gider</span>')+'</td>'
@@ -5575,7 +5488,7 @@ window.renderKasaHareketler = function() {
       +'</tr>';
     return row;
   }).join('');
-  el.innerHTML = '<table class="table"><thead><tr><th>Tarih</th><th>Açıklama</th><th>Tip</th><th>Tutar</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML = '<table class="table"><thead><tr><th>Sip No</th><th>Tarih</th><th>Açıklama</th><th>Tip</th><th>Tutar</th></tr></thead><tbody>'+rows+'</tbody></table>';
 };
 
 window.openKasaIslem = function(prefillSip) {
@@ -6819,6 +6732,113 @@ function startMaliyetListeners() {
 }
 
 // Bir modelin toplam maliyetini hesapla
+
+window.gecmisAktar = async function(mod) {
+  if(mod === 'temizle') {
+    if(!confirm('Kasadaki tüm Sipariş Tahsilatı, Ön Ödeme ve Hammadde Maliyeti kayıtları silinecek. Devam?')) return;
+    const kategoriler = ['Sipariş Tahsilatı', 'Ön Ödeme', 'Hammadde Maliyeti'];
+    let toplam = 0;
+    for(const kat of kategoriler) {
+      const snap = await db.collection('kasaIslemleri').where('kategori', '==', kat).get();
+      if(!snap.empty) {
+        for(let i=0; i<snap.docs.length; i+=500) {
+          const b = db.batch(); snap.docs.slice(i,i+500).forEach(d=>b.delete(d.ref)); await b.commit();
+          toplam += snap.docs.slice(i,i+500).length;
+        }
+      }
+    }
+    showToast('✓ ' + toplam + ' kayıt silindi');
+    return;
+  }
+  if(mod === 'tahsilat') {
+    if(!confirm('Ödemesi tamamlanmış geçmiş siparişlerin tahsilatları kasaya yazılacak. Devam?')) return;
+    const mevcutSnap = await db.collection('kasaIslemleri').where('otomatik','==',true).where('tip','==','Gelir').get();
+    if(!mevcutSnap.empty) {
+      const b = db.batch(); mevcutSnap.docs.forEach(d=>b.delete(d.ref)); await b.commit();
+    }
+    const aktarilacaklar = siparisler.filter(s => s.durum !== 'İptal' && (s.odeme==='Tamamlandı'||s.odeme==='Kısmi Ödendi') && Number(s.odemeMiktar||0) > 0);
+    if(!aktarilacaklar.length) { showToast('Aktarılacak kayıt yok', 'info'); return; }
+    for(let i=0; i<aktarilacaklar.length; i+=400) {
+      const b = db.batch();
+      aktarilacaklar.slice(i,i+400).forEach(s => {
+        const ref = db.collection('kasaIslemleri').doc();
+        b.set(ref, {
+          tip:'Gelir', kategori:'Sipariş Tahsilatı',
+          aciklama:'Tahsilat — ' + s.sipNo + ' · ' + (s.musteriAd||''),
+          tutar: Number(s.odemeMiktar||0),
+          tarih: s.sipTarihi || new Date().toISOString().split('T')[0],
+          sipNo: s.sipNo||'', sipAno: s.sipNo||'',
+          odemeYontemi:'Nakit', not:'Geçmiş aktarım', otomatik:true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      await b.commit();
+    }
+    showToast('✓ ' + aktarilacaklar.length + ' sipariş geliri aktarıldı');
+    return;
+  }
+  if(mod === 'hammadde') {
+    if(!confirm('Ödemesi tamamlanmış geçmiş siparişlerin hammadde giderleri kasaya yazılacak. Devam?')) return;
+    const aktarilacaklar = siparisler.filter(s => s.durum !== 'İptal' && (s.odeme==='Tamamlandı'||s.odeme==='Kısmi Ödendi'));
+    let eklendi = 0, atlandı = 0;
+    for(const s of aktarilacaklar) {
+      const kalemler = (s.kalemler&&s.kalemler.length) ? s.kalemler : (s.urun ? [{urun:s.urun,adet:s.adet||1}] : []);
+      let var_mi = false;
+      for(const k of kalemler) { if(modelMaliyeti(k.urun)) { var_mi=true; break; } }
+      if(!var_mi) { atlandı++; continue; }
+      await hammaddeGiderSil(s.id);
+      await hammaddeGiderYaz(s.id, s.sipNo, s, kalemler);
+      eklendi++;
+    }
+    showToast('✓ ' + eklendi + ' sipariş gideri aktarıldı' + (atlandı ? ', ' + atlandı + ' atlandı (reçete yok)' : ''));
+  }
+};
+
+// ── Hammadde Gider Yardımcı Fonksiyonları ─────────────────────────────────
+async function hammaddeGiderYaz(sipId, sipNo, sipData, kalemler) {
+  let toplamMaliyet = 0;
+  const kalemDetay = [];
+  const kaynak = (kalemler && kalemler.length) ? kalemler : (sipData.urun ? [{urun:sipData.urun, adet:sipData.adet||1}] : []);
+  for(const k of kaynak) {
+    const mc = modelMaliyeti(k.urun);
+    if(mc) {
+      const adet = Number(k.adet||1);
+      toplamMaliyet += mc * adet;
+      kalemDetay.push(k.urun + ' ×' + adet);
+    }
+  }
+  if(!toplamMaliyet) return;
+  const tarih = sipData.sipTarihi || new Date().toISOString().split('T')[0];
+  await db.collection('kasaIslemleri').add({
+    tip: 'Gider',
+    kategori: 'Hammadde Maliyeti',
+    aciklama: 'Hammadde — ' + (sipNo||sipId) + (kalemDetay.length ? ' (' + kalemDetay.join(', ') + ')' : ''),
+    tutar: toplamMaliyet,
+    tarih,
+    odemeYontemi: 'Otomatik',
+    not: '',
+    sipId,
+    sipNo: sipNo || '',
+    otomatik: true,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function hammaddeGiderSil(sipId) {
+  try {
+    const snap = await db.collection('kasaIslemleri')
+      .where('sipId', '==', sipId)
+      .where('tip', '==', 'Gider')
+      .where('otomatik', '==', true)
+      .get();
+    if(!snap.empty) {
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+    }
+  } catch(e) { console.warn('hammaddeGiderSil:', e); }
+}
+
 function modelMaliyeti(modelNo) {
   const m = maliyetler[modelNo];
   if(!m) return null;
@@ -10164,60 +10184,6 @@ window.bankaSil = async function(tip,id) {
 
 // ─── GEÇMİŞ SİPARİŞ MİGRATION ──────────────────────────────────────────────
 // teslimHazirAt → uretimTarihi, teslimEdildiAt → gercekTeslimTarihi
-window.migrasyonCalistir = async function() {
-  if(!confirm('Geçmiş siparişlerdeki üretim ve teslim tarihleri otomatik doldurulsun mu?\n\n• Teslim Hazır/Teslim Edildi durumundaki siparişlerde teslimHazirAt → Üretim Tarihi\n• Teslim Edildi durumundakilerde teslimEdildiAt veya teslimTarihi → Gerçek Teslim Tarihi\n\nZaten dolu olan alanlar değiştirilmez.')) return;
-  
-  showToast('Migrasyon başladı...', 'info');
-  const snap = await db.collection('siparisler').get();
-  const batch = db.batch();
-  let count = 0;
-
-  snap.docs.forEach(doc => {
-    const d = doc.data();
-    const updates = {};
-
-    // Üretim Tarihi: teslimHazirAt varsa tarih string'e çevir
-    if(!d.uretimTarihi && d.teslimHazirAt) {
-      try {
-        const dt = d.teslimHazirAt.toDate ? d.teslimHazirAt.toDate() : new Date(d.teslimHazirAt);
-        updates.uretimTarihi = dt.toISOString().split('T')[0];
-      } catch(e) {}
-    }
-
-    // Gerçek Teslim Tarihi: teslimEdildiAt varsa, yoksa teslimTarihi (Teslim Edildi durumundakiler için)
-    if(!d.gercekTeslimTarihi && d.durum === 'Teslim Edildi') {
-      if(d.teslimEdildiAt) {
-        try {
-          const dt = d.teslimEdildiAt.toDate ? d.teslimEdildiAt.toDate() : new Date(d.teslimEdildiAt);
-          updates.gercekTeslimTarihi = dt.toISOString().split('T')[0];
-        } catch(e) {}
-      } else if(d.teslimTarihi) {
-        // Eski sipariş — form'daki teslim tarihi var, onu kullan
-        updates.gercekTeslimTarihi = d.teslimTarihi;
-      }
-    }
-
-    // Teslim Hazır durumu — uretimTarihi yoksa teslimTarihi veya bugün
-    if(!d.uretimTarihi && d.durum === 'Teslim Hazır' && !d.teslimHazirAt) {
-      if(d.teslimTarihi) updates.uretimTarihi = d.teslimTarihi;
-    }
-
-    if(Object.keys(updates).length > 0) {
-      batch.update(doc.ref, updates);
-      count++;
-    }
-  });
-
-  if(count === 0) {
-    showToast('Güncellenecek sipariş bulunamadı.', 'info');
-    return;
-  }
-
-  await batch.commit();
-  showToast(`✓ ${count} sipariş güncellendi!`, 'success');
-};
-
-
 </script>
 
 <!-- BANKACILIK MODAL -->
