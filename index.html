@@ -3284,11 +3284,12 @@ window.openDetail = function(type, id) {
       </div>
       <div class="detail-section">
         <div class="detail-section-title">Ödeme Durumunu Güncelle</div>
+        ${s.odeme === 'Vadeli' ? '<div style="padding:8px 12px;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.2);border-radius:4px;font-size:11px;color:var(--accent)">⚠ Vadeli müşteri — ödeme takibi Cari modülünden yapılır.</div>' : `
         <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
           <button class="btn ${s.odeme==='Bekliyor'?'btn-primary':'btn-ghost'}" style="font-size:11px;padding:5px 10px" onclick="updateOdeme('${id}','Bekliyor',0)">Bekliyor</button>
           <button class="btn ${s.odeme==='Kısmi Ödendi'?'btn-primary':'btn-ghost'}" style="font-size:11px;padding:5px 10px" onclick="odemeKismiGoster('${id}',${Number(s.tutar||0)},${Number(s.odemeMiktar||0)})">Kısmi Ödendi</button>
           <button class="btn ${s.odeme==='Tamamlandı'?'btn-primary':'btn-ghost'}" style="font-size:11px;padding:5px 10px" onclick="updateOdeme('${id}','Tamamlandı',${Number(s.tutar||0)})">Tamamlandı</button>
-        </div>
+        </div>`}
         <div id="kismiOdemeRow" style="display:none;margin-top:10px;display:flex;gap:8px;align-items:center">
           <input type="number" id="kismiMiktarInput" min="0" step="0.01" placeholder="Ödenen miktar (₺)"
             style="width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--text);padding:6px 10px;font-size:13px">
@@ -3910,6 +3911,8 @@ window.updateOdeme = async function(id, odeme, odemeMiktar) {
   try {
     const sipDoc = await db.collection('siparisler').doc(id).get();
     const sip = sipDoc.data();
+    // Vadeli müşteride ödeme durumu değiştirilemez
+    if(sip?.odeme === 'Vadeli') { showToast('Vadeli müşteri — ödeme Cari modülünden takip edilir', 'error'); return; }
     const eskiMiktar = Number(sip?.odemeMiktar || 0);
     const yeniMiktar = Number(odemeMiktar || 0);
     const sipNo = sip?.sipNo || '';
