@@ -832,21 +832,7 @@
           </div>
         </div>
 
-        <!-- Geçmiş Aktarım -->
-        <div class="card" style="padding:24px">
-          <div style="display:flex;align-items:flex-start;gap:16px">
-            <div style="font-size:32px;line-height:1">📦</div>
-            <div style="flex:1">
-              <div style="font-size:15px;font-weight:700;margin-bottom:4px">Geçmiş Sipariş Aktarımı</div>
-              <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Ödeme tamamlanmış geçmiş siparişlerin gelir ve hammadde giderlerini kasaya toplu aktarır. Sipariş tarihini kullanır. Daha önce eklenmiş kayıtların üzerine yazar.</div>
-              <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <button class="btn btn-primary" style="padding:10px 20px" onclick="gecmisAktar('tahsilat')">⚡ Geçmiş Gelirleri Aktar</button>
-                <button class="btn btn-primary" style="padding:10px 20px" onclick="gecmisAktar('hammadde')">⚡ Geçmiş Giderleri Aktar</button>
-                <button class="btn btn-danger" style="padding:10px 20px" onclick="gecmisAktar('temizle')">🗑️ Hepsini Temizle</button>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
       </div>
     </div>
@@ -1411,6 +1397,7 @@
     <button id="bTab-krediler"   class="btn btn-primary" style="font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0" onclick="bankaTabSec('krediler')">💳 Banka Kredileri</button>
     <button id="bTab-kartlar"    class="btn btn-ghost"   style="font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0" onclick="bankaTabSec('kartlar')">🪙 Kredi Kartları</button>
     <button id="bTab-esnek"      class="btn btn-ghost"   style="font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0" onclick="bankaTabSec('esnek')">📊 Esnek Hesap</button>
+    <button id="bTab-cekler"     class="btn btn-ghost"   style="font-size:12px;padding:6px 16px;border-radius:3px 3px 0 0" onclick="bankaTabSec('cekler')">🧾 Çekler <span id="cekler-badge" style="display:none;background:var(--red);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:4px;font-family:'IBM Plex Mono',monospace"></span></button>
   </div>
   <div style="margin-bottom:14px"></div>
 
@@ -1470,6 +1457,96 @@
         <tbody id="esnek-tbody"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Henüz esnek hesap kaydı yok.</td></tr></tbody>
       </table>
     </div>
+  </div>
+
+
+  <!-- TAB: ÇEKLER -->
+  <div id="banka-tab-cekler" style="display:none">
+
+    <!-- Alt sekme: Alınan / Verilen -->
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <button id="cTab-alinan" class="btn btn-primary" style="font-size:11px;padding:5px 14px" onclick="cekAltTabSec('alinan')">📥 Alınan Çekler</button>
+      <button id="cTab-verilen" class="btn btn-ghost" style="font-size:11px;padding:5px 14px" onclick="cekAltTabSec('verilen')">📤 Verilen Çekler</button>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="cekEkle()">+ Yeni Çek Ekle</button>
+      </div>
+    </div>
+
+    <!-- KPI: Alınan -->
+    <div id="cek-kpi-alinan" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <div class="kasa-card" style="border-top:2px solid var(--green)">
+        <div class="kasa-label">Portföydeki Çekler</div>
+        <div class="kasa-amount" id="cek-kpi-portfolyo" style="color:var(--green)">—</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Tahsil bekliyor</div>
+      </div>
+      <div class="kasa-card" style="border-top:2px solid var(--accent)">
+        <div class="kasa-label">Bu Ay Vadeli</div>
+        <div class="kasa-amount" id="cek-kpi-buay-alinan" style="color:var(--accent)">—</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">30 gün içinde</div>
+      </div>
+      <div class="kasa-card" style="border-top:2px solid var(--red)">
+        <div class="kasa-label">Vadesi Geçen</div>
+        <div class="kasa-amount" id="cek-kpi-gecmis-alinan" style="color:var(--red)">—</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Tahsil edilmedi</div>
+      </div>
+    </div>
+
+    <!-- KPI: Verilen -->
+    <div id="cek-kpi-verilen" style="display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+      <div class="kasa-card" style="border-top:2px solid var(--red)">
+        <div class="kasa-label">Toplam Açık Borç</div>
+        <div class="kasa-amount" id="cek-kpi-acik-borc" style="color:var(--red)">—</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Verildi · ödenmedi</div>
+      </div>
+      <div class="kasa-card" style="border-top:2px solid var(--accent)">
+        <div class="kasa-label">Bu Ay Ödenecek</div>
+        <div class="kasa-amount" id="cek-kpi-buay-verilen" style="color:var(--accent)">—</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">30 gün içinde</div>
+      </div>
+      <div class="kasa-card" style="border-top:2px solid var(--purple)">
+        <div class="kasa-label">7 Gün İçinde</div>
+        <div class="kasa-amount" id="cek-kpi-7gun" style="color:var(--purple)">—</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px">Acil ödeme</div>
+      </div>
+    </div>
+
+    <!-- Tablo: Alınan -->
+    <div id="cek-tablo-alinan">
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>Müşteri</th>
+            <th>Çek No</th>
+            <th>Banka / Şube</th>
+            <th style="text-align:right">Tutar</th>
+            <th style="text-align:center">Vade Tarihi</th>
+            <th>Durum</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="cek-tbody-alinan"><tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Henüz alınan çek kaydı yok.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tablo: Verilen -->
+    <div id="cek-tablo-verilen" style="display:none">
+      <div class="card">
+        <table class="table">
+          <thead><tr>
+            <th>Tedarikçi</th>
+            <th>Çek No</th>
+            <th>Banka</th>
+            <th style="text-align:right">Tutar</th>
+            <th style="text-align:center">Vade Tarihi</th>
+            <th>Durum</th>
+            <th>Kaynak</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="cek-tbody-verilen"><tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Henüz verilen çek kaydı yok.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
 </div><!-- /page-bankacilik -->
@@ -1778,13 +1855,13 @@ window.temaSec = function(tema) {
 function temaUygula(tema) {
   const root = document.documentElement;
   if(tema === 'aydinlik') {
-    root.style.setProperty('--bg','#f5f4f2');
-    root.style.setProperty('--surface','#ffffff');
-    root.style.setProperty('--surface2','#eeecea');
-    root.style.setProperty('--border','#dddbd8');
-    root.style.setProperty('--text','#1a1a1a');
-    root.style.setProperty('--text2','#555250');
-    root.style.setProperty('--text3','#aaa8a5');
+    root.style.setProperty('--bg','#eeece8');
+    root.style.setProperty('--surface','#f7f5f2');
+    root.style.setProperty('--surface2','#e5e2de');
+    root.style.setProperty('--border','#ccc9c4');
+    root.style.setProperty('--text','#1c1a17');
+    root.style.setProperty('--text2','#4a4640');
+    root.style.setProperty('--text3','#999590');
   } else {
     root.style.setProperty('--bg','#0f0f0f');
     root.style.setProperty('--surface','#171717');
@@ -7008,66 +7085,7 @@ function startMaliyetListeners() {
 
 // Bir modelin toplam maliyetini hesapla
 
-window.gecmisAktar = async function(mod) {
-  if(mod === 'temizle') {
-    if(!confirm('Kasadaki tüm Sipariş Tahsilatı, Ön Ödeme ve Hammadde Maliyeti kayıtları silinecek. Devam?')) return;
-    const kategoriler = ['Sipariş Tahsilatı', 'Ön Ödeme', 'Hammadde Maliyeti'];
-    let toplam = 0;
-    for(const kat of kategoriler) {
-      const snap = await db.collection('kasaIslemleri').where('kategori', '==', kat).get();
-      if(!snap.empty) {
-        for(let i=0; i<snap.docs.length; i+=500) {
-          const b = db.batch(); snap.docs.slice(i,i+500).forEach(d=>b.delete(d.ref)); await b.commit();
-          toplam += snap.docs.slice(i,i+500).length;
-        }
-      }
-    }
-    showToast('✓ ' + toplam + ' kayıt silindi');
-    return;
-  }
-  if(mod === 'tahsilat') {
-    if(!confirm('Ödemesi tamamlanmış geçmiş siparişlerin tahsilatları kasaya yazılacak. Devam?')) return;
-    const mevcutSnap = await db.collection('kasaIslemleri').where('otomatik','==',true).where('tip','==','Gelir').get();
-    if(!mevcutSnap.empty) {
-      const b = db.batch(); mevcutSnap.docs.forEach(d=>b.delete(d.ref)); await b.commit();
-    }
-    const aktarilacaklar = siparisler.filter(s => s.durum !== 'İptal' && (s.odeme==='Tamamlandı'||s.odeme==='Kısmi Ödendi') && Number(s.odemeMiktar||0) > 0);
-    if(!aktarilacaklar.length) { showToast('Aktarılacak kayıt yok', 'info'); return; }
-    for(let i=0; i<aktarilacaklar.length; i+=400) {
-      const b = db.batch();
-      aktarilacaklar.slice(i,i+400).forEach(s => {
-        const ref = db.collection('kasaIslemleri').doc();
-        b.set(ref, {
-          tip:'Gelir', kategori:'Sipariş Tahsilatı',
-          aciklama:'Tahsilat — ' + s.sipNo + ' · ' + (s.musteriAd||''),
-          tutar: Number(s.odemeMiktar||0),
-          tarih: s.sipTarihi || new Date().toISOString().split('T')[0],
-          sipNo: s.sipNo||'', sipAno: s.sipNo||'',
-          odemeYontemi:'Nakit', not:'Geçmiş aktarım', otomatik:true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      });
-      await b.commit();
-    }
-    showToast('✓ ' + aktarilacaklar.length + ' sipariş geliri aktarıldı');
-    return;
-  }
-  if(mod === 'hammadde') {
-    if(!confirm('Ödemesi tamamlanmış geçmiş siparişlerin hammadde giderleri kasaya yazılacak. Devam?')) return;
-    const aktarilacaklar = siparisler.filter(s => s.durum !== 'İptal' && (s.odeme==='Tamamlandı'||s.odeme==='Kısmi Ödendi'));
-    let eklendi = 0, atlandı = 0;
-    for(const s of aktarilacaklar) {
-      const kalemler = (s.kalemler&&s.kalemler.length) ? s.kalemler : (s.urun ? [{urun:s.urun,adet:s.adet||1}] : []);
-      let var_mi = false;
-      for(const k of kalemler) { if(modelMaliyeti(k.urun)) { var_mi=true; break; } }
-      if(!var_mi) { atlandı++; continue; }
-      await hammaddeGiderSil(s.id);
-      await hammaddeGiderYaz(s.id, s.sipNo, s, kalemler);
-      eklendi++;
-    }
-    showToast('✓ ' + eklendi + ' sipariş gideri aktarıldı' + (atlandı ? ', ' + atlandı + ' atlandı (reçete yok)' : ''));
-  }
-};
+
 
 // ── Hammadde Gider Yardımcı Fonksiyonları ─────────────────────────────────
 async function hammaddeGiderYaz(sipId, sipNo, sipData, kalemler) {
@@ -10146,7 +10164,7 @@ let aktifBankaTab = 'krediler';
 
 window.bankaTabSec = function(tab) {
   aktifBankaTab = tab;
-  ['krediler','kartlar','esnek'].forEach(t => {
+  ['krediler','kartlar','esnek','cekler'].forEach(t => {
     const el = document.getElementById('banka-tab-'+t);
     if(el) el.style.display = (t===tab)?'':'none';
     const btn = document.getElementById('bTab-'+t);
@@ -10155,7 +10173,7 @@ window.bankaTabSec = function(tab) {
   if(tab==='krediler')   renderKrediler();
   if(tab==='kartlar')    renderKartlar();
   if(tab==='esnek')      renderEsnek();
-
+  if(tab==='cekler')     { renderCekler('alinan'); renderCekler('verilen'); renderCekKPI(); }
 };
 
 function renderBankaKPI() {
@@ -10542,6 +10560,615 @@ window.bankaSil = async function(tip,id) {
     showToast('Silme hatası: '+err.message,'error');
   }
 };
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ÇEK MODÜLÜ
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _cekCache = { alinan:[], verilen:[] };
+const _cekListeners = {};
+let _aktifCekAltTab = 'alinan';
+
+function cekListenerBaslat(tip) {
+  if(_cekListeners[tip]) return;
+  // where+orderBy composite index gerektirir — tüm çekleri çekip JS'de filtrele/sırala
+  _cekListeners[tip] = db.collection('cekler')
+    .onSnapshot(snap => {
+      const tumCekler = snap.docs.map(d=>({id:d.id,...d.data()}));
+      _cekCache['alinan']  = tumCekler.filter(c=>c.tip==='alinan').sort((a,b)=>(a.vadeTarihi||'').localeCompare(b.vadeTarihi||''));
+      _cekCache['verilen'] = tumCekler.filter(c=>c.tip==='verilen').sort((a,b)=>(a.vadeTarihi||'').localeCompare(b.vadeTarihi||''));
+      renderCekler('alinan');
+      renderCekler('verilen');
+      renderCekKPI();
+      renderCekBadge();
+      renderBankaUyariBandi();
+    }, err => console.error('cek listener:', err));
+}
+
+// Tek listener yeterli — ikinci çağrı zaten çalışan listener'ı tekrar başlatmaz
+(function(){ cekListenerBaslat('alinan'); })();
+
+// ── Alt sekme geçişi ──────────────────────────────────────────────────────
+window.cekAltTabSec = function(tab) {
+  _aktifCekAltTab = tab;
+  document.getElementById('cek-tablo-alinan').style.display = tab==='alinan' ? '' : 'none';
+  document.getElementById('cek-tablo-verilen').style.display = tab==='verilen' ? '' : 'none';
+  document.getElementById('cek-kpi-alinan').style.display = tab==='alinan' ? 'grid' : 'none';
+  document.getElementById('cek-kpi-verilen').style.display = tab==='verilen' ? 'grid' : 'none';
+  const bA = document.getElementById('cTab-alinan');
+  const bV = document.getElementById('cTab-verilen');
+  if(bA){ bA.className = tab==='alinan' ? 'btn btn-primary' : 'btn btn-ghost'; bA.style.cssText='font-size:11px;padding:5px 14px'; }
+  if(bV){ bV.className = tab==='verilen' ? 'btn btn-primary' : 'btn btn-ghost'; bV.style.cssText='font-size:11px;padding:5px 14px'; }
+};
+
+// ── KPI ──────────────────────────────────────────────────────────────────
+window.renderCekKPI = function() {
+  const bugun = new Date().toISOString().slice(0,10);
+  const bugun30 = new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  const bugun7  = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+
+  // Alınan KPI
+  const alinan = _cekCache.alinan;
+  const portfolyo = alinan.filter(c=>c.durum==='Portföyde'||c.durum==='Bankaya Verildi');
+  const portfolyoTutar = portfolyo.reduce((s,c)=>s+Number(c.tutar||0),0);
+  const buayAlinan = alinan.filter(c=>['Portföyde','Bankaya Verildi'].includes(c.durum)&&c.vadeTarihi>=bugun&&c.vadeTarihi<=bugun30)
+    .reduce((s,c)=>s+Number(c.tutar||0),0);
+  const gecmisAlinan = alinan.filter(c=>['Portföyde','Bankaya Verildi'].includes(c.durum)&&c.vadeTarihi<bugun)
+    .reduce((s,c)=>s+Number(c.tutar||0),0);
+
+  const el1=document.getElementById('cek-kpi-portfolyo');
+  const el2=document.getElementById('cek-kpi-buay-alinan');
+  const el3=document.getElementById('cek-kpi-gecmis-alinan');
+  if(el1) el1.textContent=fmtMoney(portfolyoTutar);
+  if(el2) el2.textContent=fmtMoney(buayAlinan);
+  if(el3) el3.textContent=fmtMoney(gecmisAlinan);
+
+  // Verilen KPI
+  const verilen = _cekCache.verilen;
+  const acikBorc = verilen.filter(c=>c.durum==='Verildi').reduce((s,c)=>s+Number(c.tutar||0),0);
+  const buayVerilen = verilen.filter(c=>c.durum==='Verildi'&&c.vadeTarihi>=bugun&&c.vadeTarihi<=bugun30)
+    .reduce((s,c)=>s+Number(c.tutar||0),0);
+  const yediGun = verilen.filter(c=>c.durum==='Verildi'&&c.vadeTarihi>=bugun&&c.vadeTarihi<=bugun7)
+    .reduce((s,c)=>s+Number(c.tutar||0),0);
+
+  const el4=document.getElementById('cek-kpi-acik-borc');
+  const el5=document.getElementById('cek-kpi-buay-verilen');
+  const el6=document.getElementById('cek-kpi-7gun');
+  if(el4) el4.textContent=fmtMoney(acikBorc);
+  if(el5) el5.textContent=fmtMoney(buayVerilen);
+  if(el6) el6.textContent=fmtMoney(yediGun);
+};
+
+// ── Badge (sekme üzerinde uyarı) ─────────────────────────────────────────
+function renderCekBadge() {
+  const bugun = new Date().toISOString().slice(0,10);
+  const bugun7 = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+  // Vadesi geçmiş alınan + 7 gün içinde ödenecek verilen
+  const gecmis = _cekCache.alinan.filter(c=>['Portföyde','Bankaya Verildi'].includes(c.durum)&&c.vadeTarihi<bugun).length;
+  const acil   = _cekCache.verilen.filter(c=>c.durum==='Verildi'&&c.vadeTarihi>=bugun&&c.vadeTarihi<=bugun7).length;
+  const toplam = gecmis + acil;
+  const badge  = document.getElementById('cekler-badge');
+  if(badge){ badge.style.display=toplam>0?'':'none'; badge.textContent=toplam; }
+}
+
+// ── Render: Alınan çekler tablosu ────────────────────────────────────────
+window.renderCekler = function(tip) {
+  const bugun = new Date().toISOString().slice(0,10);
+  const data = (_cekCache[tip]||[]).slice().sort((a,b)=>(a.vadeTarihi||'').localeCompare(b.vadeTarihi||''));
+  const tbody = document.getElementById('cek-tbody-'+tip);
+  if(!tbody) return;
+
+  if(!data.length){
+    const cols = tip==='alinan' ? 7 : 8;
+    tbody.innerHTML=`<tr><td colspan="${cols}" style="text-align:center;padding:32px;color:var(--text3)">Henüz ${tip==='alinan'?'alınan':'verilen'} çek kaydı yok.</td></tr>`;
+    return;
+  }
+
+  function durumBadge(d, tip, vadeTarihi) {
+    const gecti = vadeTarihi && vadeTarihi < bugun;
+    if(tip==='alinan') {
+      const map = {
+        'Portföyde':    gecti ? 'badge-red' : 'badge-yellow',
+        'Bankaya Verildi': 'badge-blue',
+        'Tahsil Edildi':'badge-green',
+        'Karşılıksız':  'badge-red',
+        'Ciro Edildi':  'badge-gray',
+        'İptal':        'badge-gray',
+      };
+      const label = (d==='Portföyde'&&gecti) ? 'Portföyde ⚠' : d;
+      return `<span class="badge ${map[d]||'badge-gray'}">${label}</span>`;
+    } else {
+      const map = {
+        'Verildi':   gecti ? 'badge-red' : 'badge-yellow',
+        'Ödendi':    'badge-green',
+        'İptal':     'badge-gray',
+      };
+      const label = (d==='Verildi'&&gecti) ? 'Verildi ⚠' : d;
+      return `<span class="badge ${map[d]||'badge-gray'}">${label}</span>`;
+    }
+  }
+
+  function fmtV(t){ if(!t)return '—'; const [y,m,d]=t.split('-'); return d+'/'+m+'/'+y; }
+  function satirRenk(c, tip) {
+    if(tip==='alinan' && ['Portföyde','Bankaya Verildi'].includes(c.durum) && c.vadeTarihi < bugun) return 'background:rgba(224,92,92,0.05)';
+    if(tip==='verilen' && c.durum==='Verildi' && c.vadeTarihi < bugun) return 'background:rgba(224,92,92,0.05)';
+    return '';
+  }
+
+  if(tip==='alinan') {
+    tbody.innerHTML = data.map(c => `<tr style="${satirRenk(c,'alinan')}">
+      <td><strong>${c.karsiTaraf||'—'}</strong></td>
+      <td class="mono" style="font-size:12px">${c.cekNo||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${c.banka||'—'}</td>
+      <td class="mono" style="text-align:right;font-weight:700;color:var(--accent)">${fmtMoney(c.tutar)}</td>
+      <td class="mono" style="text-align:center;font-size:12px">${fmtV(c.vadeTarihi)}</td>
+      <td>${durumBadge(c.durum,'alinan',c.vadeTarihi)}</td>
+      <td style="white-space:nowrap">
+        ${c.durum==='Portföyde'||c.durum==='Bankaya Verildi' ? `<button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="cekDurumGuncelle('${c.id}','alinan')">⚡ Durum</button>` : ''}
+        ${(c.durum==='Portföyde'||c.durum==='Bankaya Verildi') ? `<button class="btn btn-primary" style="padding:3px 8px;font-size:11px;background:var(--purple);color:#fff;border:none" onclick="cekCiroEt('${c.id}')">↗ Ciro</button>` : ''}
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="cekDuzenle('${c.id}','alinan')">✏</button>
+        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="cekSil('${c.id}')">✕</button>
+      </td></tr>`).join('');
+  } else {
+    tbody.innerHTML = data.map(c => {
+      const ciroLabel = c.ciroKaynak ? `<div style="font-size:10px;color:var(--purple);margin-top:2px">🔄 Ciro · ${c.ciroKaynak}</div>` : '';
+      return `<tr style="${satirRenk(c,'verilen')}">
+      <td><strong>${c.karsiTaraf||'—'}</strong></td>
+      <td class="mono" style="font-size:12px">${c.cekNo||'—'}</td>
+      <td style="font-size:12px;color:var(--text2)">${c.banka||'—'}</td>
+      <td class="mono" style="text-align:right;font-weight:700;color:var(--red)">${fmtMoney(c.tutar)}</td>
+      <td class="mono" style="text-align:center;font-size:12px">${fmtV(c.vadeTarihi)}</td>
+      <td>${durumBadge(c.durum,'verilen',c.vadeTarihi)}</td>
+      <td style="font-size:11px;color:var(--purple)">${c.ciroKaynak?'🔄 '+c.ciroKaynak:'—'}</td>
+      <td style="white-space:nowrap">
+        ${c.durum==='Verildi' ? `<button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="cekDurumGuncelle('${c.id}','verilen')">⚡ Durum</button>` : ''}
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:11px" onclick="cekDuzenle('${c.id}','verilen')">✏</button>
+        <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="cekSil('${c.id}')">✕</button>
+      </td></tr>`;
+    }).join('');
+  }
+};
+
+// ── Ciro modal ────────────────────────────────────────────────────────────
+window.cekCiroEt = function(cekId) {
+  const cek = _cekCache.alinan.find(c=>c.id===cekId);
+  if(!cek) return;
+
+  // Tedarikçi listesini çek (window.tedarikciler'den veya boş)
+  const tedOptions = tedarikciler.length
+    ? '<option value="">— Tedarikçi seçin —</option>' + tedarikciler.map(t=>`<option value="${t.id}" data-ad="${t.ad}">${t.ad}</option>`).join('')
+    : '<option value="">Tedarikçi bulunamadı</option>';
+
+  const html = `
+    <div style="background:rgba(0,0,0,.65);position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center" id="ciro-overlay">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;width:420px;max-width:96vw;padding:24px;display:flex;flex-direction:column;gap:16px">
+        <div style="font-size:14px;font-weight:700">↗ Çek Ciro Et</div>
+        <div style="font-size:12px;color:var(--text2)">
+          <strong>${cek.karsiTaraf||'—'}</strong> · ${cek.cekNo||'—'} · ${fmtMoney(cek.tutar)} · Vade: ${cek.vadeTarihi||'—'}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Ciro Edilecek Tedarikçi</label>
+          <select id="ciro-tedarikci-id" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+            ${tedOptions}
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="document.getElementById('ciro-overlay').remove()">İptal</button>
+          <button class="btn btn-primary" onclick="cekCiroKaydet('${cekId}')">Ciro Et</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.cekCiroKaydet = async function(cekId) {
+  const sel = document.getElementById('ciro-tedarikci-id');
+  const tedarikciId = sel?.value || '';
+  const secilenOpt  = sel?.options[sel?.selectedIndex];
+  const tedarikciAd = secilenOpt?.dataset?.ad || secilenOpt?.textContent?.trim() || '';
+  if(!tedarikciId) { showToast('Tedarikçi seçin', 'error'); return; }
+
+  const cek = _cekCache.alinan.find(c=>c.id===cekId);
+  if(!cek) return;
+
+  try {
+    const bugun = new Date().toISOString().slice(0,10);
+
+    // 1. Alınan çekin durumunu güncelle
+    await db.collection('cekler').doc(cekId).update({
+      durum: 'Ciro Edildi',
+      ciroTedarikci: tedarikciAd,
+      ciroTedarikciId: tedarikciId,
+      guncelleme: bugun
+    });
+
+    // 2. Verilen çekler listesine otomatik kayıt ekle
+    const verilenRef = await db.collection('cekler').add({
+      tip: 'verilen',
+      karsiTaraf: tedarikciAd,
+      karsiTarafId: tedarikciId,
+      cekNo: cek.cekNo || '',
+      banka: cek.banka || '',
+      tutar: Number(cek.tutar||0),
+      vadeTarihi: cek.vadeTarihi || '',
+      durum: 'Verildi',
+      ciroKaynak: cek.karsiTaraf || 'Bilinmiyor',
+      not: 'Ciro — ' + (cek.karsiTaraf||'') + ' çekinden',
+      olusturma: bugun,
+      kasaYazildi: false
+    });
+
+    // 3. Tedarikçi cari hesabına otomatik çek ödemesi düş (Seçenek A)
+    await db.collection('tedCariHareketler').add({
+      tedarikciId: tedarikciId,
+      tip: 'odeme_cek',
+      tarih: bugun,
+      tutar: Number(cek.tutar||0),
+      aciklama: 'Ciro Çeki' + (cek.cekNo ? ' · ' + cek.cekNo : '') + (cek.banka ? ' · ' + cek.banka : '') + ' — ' + (cek.karsiTaraf||'') + ' çekinden (Vade: ' + (cek.vadeTarihi||'—') + ')',
+      cekId: verilenRef.id,
+      otomatik: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    document.getElementById('ciro-overlay')?.remove();
+    showToast('✓ Ciro edildi — ' + tedarikciAd + ' cari hesabına işlendi', 'success');
+  } catch(err) {
+    console.error('cekCiroKaydet:', err);
+    showToast('Hata: ' + err.message, 'error');
+  }
+};
+
+// ── Durum güncelleme modal ────────────────────────────────────────────────
+window.cekDurumGuncelle = function(cekId, tip) {
+  const cek = (tip==='alinan'?_cekCache.alinan:_cekCache.verilen).find(c=>c.id===cekId);
+  if(!cek) return;
+
+  const durumlar = tip==='alinan'
+    ? ['Portföyde','Bankaya Verildi','Tahsil Edildi','Karşılıksız','İptal']
+    : ['Verildi','Ödendi','İptal'];
+
+  const options = durumlar.map(d=>`<option value="${d}"${cek.durum===d?' selected':''}>${d}</option>`).join('');
+
+  const html = `
+    <div style="background:rgba(0,0,0,.65);position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center" id="durum-overlay">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;width:360px;max-width:96vw;padding:24px;display:flex;flex-direction:column;gap:16px">
+        <div style="font-size:14px;font-weight:700">⚡ Durum Güncelle</div>
+        <div style="font-size:12px;color:var(--text2)">${cek.karsiTaraf||'—'} · ${cek.cekNo||'—'} · ${fmtMoney(cek.tutar)}</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Yeni Durum</label>
+          <select id="durum-sec" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+            ${options}
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost" onclick="document.getElementById('durum-overlay').remove()">İptal</button>
+          <button class="btn btn-primary" onclick="cekDurumKaydet('${cekId}','${tip}')">Kaydet</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+};
+
+window.cekDurumKaydet = async function(cekId, tip) {
+  const yeniDurum = document.getElementById('durum-sec')?.value;
+  if(!yeniDurum) return;
+
+  const cek = (tip==='alinan'?_cekCache.alinan:_cekCache.verilen).find(c=>c.id===cekId);
+  if(!cek) return;
+
+  try {
+    await db.collection('cekler').doc(cekId).update({
+      durum: yeniDurum,
+      guncelleme: new Date().toISOString().slice(0,10)
+    });
+
+    // Kasaya otomatik yaz
+    if(!cek.kasaYazildi) {
+      if(tip==='alinan' && yeniDurum==='Tahsil Edildi') {
+        await db.collection('kasaIslemleri').add({
+          tip:'Gelir', kategori:'Çek Tahsilatı',
+          aciklama:'Çek Tahsilatı — ' + (cek.karsiTaraf||'') + (cek.cekNo?' · '+cek.cekNo:''),
+          tutar: Number(cek.tutar||0),
+          tarih: new Date().toISOString().slice(0,10),
+          not:'Çekler modülünden otomatik',
+          otomatik: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await db.collection('cekler').doc(cekId).update({ kasaYazildi: true });
+        showToast('✓ Durum güncellendi — Kasaya gelir yazıldı (' + fmtMoney(cek.tutar) + ')', 'success');
+      } else if(tip==='verilen' && yeniDurum==='Ödendi') {
+        await db.collection('kasaIslemleri').add({
+          tip:'Gider', kategori:'Çek Ödemesi',
+          aciklama:'Çek Ödemesi — ' + (cek.karsiTaraf||'') + (cek.cekNo?' · '+cek.cekNo:''),
+          tutar: Number(cek.tutar||0),
+          tarih: new Date().toISOString().slice(0,10),
+          not:'Çekler modülünden otomatik',
+          otomatik: true,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await db.collection('cekler').doc(cekId).update({ kasaYazildi: true });
+        showToast('✓ Durum güncellendi — Kasaya gider yazıldı (' + fmtMoney(cek.tutar) + ')', 'success');
+      } else {
+        showToast('✓ Durum güncellendi', 'success');
+      }
+    } else {
+      showToast('✓ Durum güncellendi', 'success');
+    }
+
+    document.getElementById('durum-overlay')?.remove();
+  } catch(err) {
+    console.error('cekDurumKaydet:', err);
+    showToast('Hata: ' + err.message, 'error');
+  }
+};
+
+// ── Yeni çek ekle / düzenle ───────────────────────────────────────────────
+let _cekModalId = null;
+let _cekModalTip = null;
+
+window.cekEkle = function() {
+  _cekModalId = null;
+  _cekModalTip = null;
+  cekModalAc({}, null, null);
+};
+
+window.cekDuzenle = function(id, tip) {
+  const cek = (tip==='alinan'?_cekCache.alinan:_cekCache.verilen).find(c=>c.id===id);
+  if(!cek) return;
+  _cekModalId = id;
+  _cekModalTip = tip;
+  cekModalAc(cek, id, tip);
+};
+
+function cekModalAc(mevcut, id, tip) {
+  const baslik = id ? '✏ Çek Düzenle' : '+ Yeni Çek';
+  const secilenTip = tip || mevcut.tip || 'alinan';
+  const alinDurumlar = ['Portföyde','Bankaya Verildi','Tahsil Edildi','Karşılıksız','İptal'];
+  const verDurumlar  = ['Verildi','Ödendi','İptal'];
+  const durumlar = secilenTip==='alinan' ? alinDurumlar : verDurumlar;
+
+  const html = `
+    <div style="background:rgba(0,0,0,.65);position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center" id="cek-modal-overlay">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;width:480px;max-width:96vw;max-height:90vh;overflow-y:auto">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface)">
+          <span style="font-size:14px;font-weight:700">${baslik}</span>
+          <button onclick="document.getElementById('cek-modal-overlay').remove()" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;line-height:1">×</button>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+
+          ${!id ? `<div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Çek Tipi</label>
+            <select id="cm-tip" onchange="cekModalTipDegis()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+              <option value="alinan"${secilenTip==='alinan'?' selected':''}>📥 Alınan Çek (Müşteriden)</option>
+              <option value="verilen"${secilenTip==='verilen'?' selected':''}>📤 Verilen Çek (Tedarikçiye)</option>
+            </select>
+          </div>` : ''}
+
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em" id="cm-karsitaraf-label">${secilenTip==='alinan'?'Müşteri Adı':'Tedarikçi'}</label>
+            <div id="cm-karsiTaraf-wrap">
+              ${secilenTip==='verilen'
+                ? `<select id="cm-karsiTarafId" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+                    <option value="">— Tedarikçi seçin —</option>
+                    ${tedarikciler.map(t=>`<option value="${t.id}" data-ad="${t.ad}" ${mevcut.karsiTarafId===t.id?'selected':''}>${t.ad}</option>`).join('')}
+                   </select>`
+                : `<input id="cm-karsiTaraf" type="text" value="${mevcut.karsiTaraf||''}" placeholder="Müşteri adı" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">`
+              }
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Çek Numarası</label>
+              <input id="cm-cekNo" type="text" value="${mevcut.cekNo||''}" placeholder="Çek no" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Tutar (₺)</label>
+              <input id="cm-tutar" type="number" step="any" value="${mevcut.tutar||''}" placeholder="0" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Banka / Şube</label>
+              <input id="cm-banka" type="text" value="${mevcut.banka||''}" placeholder="Banka adı" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Vade Tarihi</label>
+              <input id="cm-vadeTarihi" type="date" value="${mevcut.vadeTarihi||''}" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Durum</label>
+            <select id="cm-durum" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+              ${durumlar.map(d=>`<option value="${d}"${mevcut.durum===d?' selected':''}>${d}</option>`).join('')}
+            </select>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:10px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Not</label>
+            <input id="cm-not" type="text" value="${mevcut.not||''}" placeholder="Opsiyonel not" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px;padding-top:12px;border-top:1px solid var(--border)">
+            <button class="btn btn-ghost" onclick="document.getElementById('cek-modal-overlay').remove()">İptal</button>
+            <button class="btn btn-primary" onclick="cekKaydet('${id||''}','${secilenTip}')">Kaydet</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+window.cekModalTipDegis = function() {
+  const tip = document.getElementById('cm-tip')?.value || 'alinan';
+  const label = document.getElementById('cm-karsitaraf-label');
+  const wrap = document.getElementById('cm-karsiTaraf-wrap');
+  const durumSec = document.getElementById('cm-durum');
+  if(label) label.textContent = tip==='alinan' ? 'Müşteri Adı' : 'Tedarikçi';
+  // Karşı taraf alanını yeniden çiz
+  if(wrap) {
+    if(tip==='verilen') {
+      const opts = '<option value="">— Tedarikçi seçin —</option>'
+        + tedarikciler.map(t=>`<option value="${t.id}" data-ad="${t.ad}">${t.ad}</option>`).join('');
+      wrap.innerHTML = `<select id="cm-karsiTarafId" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">${opts}</select>`;
+    } else {
+      wrap.innerHTML = `<input id="cm-karsiTaraf" type="text" placeholder="Müşteri adı" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;font-size:13px;border-radius:3px;outline:none;width:100%">`;
+    }
+  }
+  const durumlar = tip==='alinan'
+    ? ['Portföyde','Bankaya Verildi','Tahsil Edildi','Karşılıksız','İptal']
+    : ['Verildi','Ödendi','İptal'];
+  if(durumSec) durumSec.innerHTML = durumlar.map(d=>`<option value="${d}">${d}</option>`).join('');
+  const kaydetBtn = document.querySelector('#cek-modal-overlay .btn-primary:last-child');
+  if(kaydetBtn) kaydetBtn.setAttribute('onclick', `cekKaydet('','${tip}')`);
+};
+
+window.cekKaydet = async function(id, tipFallback) {
+  const tip = document.getElementById('cm-tip')?.value || tipFallback || 'alinan';
+  const cekNo      = document.getElementById('cm-cekNo')?.value?.trim();
+  const tutar      = Number(document.getElementById('cm-tutar')?.value||0);
+  const banka      = document.getElementById('cm-banka')?.value?.trim();
+  const vadeTarihi = document.getElementById('cm-vadeTarihi')?.value;
+  const durum      = document.getElementById('cm-durum')?.value;
+  const not        = document.getElementById('cm-not')?.value?.trim();
+
+  // Karşı taraf: verilen → dropdown (id+ad), alınan → text input
+  let karsiTaraf = '', karsiTarafId = '';
+  if(tip === 'verilen') {
+    const sel = document.getElementById('cm-karsiTarafId');
+    karsiTarafId = sel?.value || '';
+    const secilenOpt = sel?.options[sel.selectedIndex];
+    karsiTaraf = secilenOpt?.dataset?.ad || secilenOpt?.textContent?.trim() || '';
+    if(!karsiTarafId) { showToast('Tedarikçi seçin','error'); return; }
+  } else {
+    karsiTaraf = document.getElementById('cm-karsiTaraf')?.value?.trim() || '';
+    if(!karsiTaraf) { showToast('Müşteri adı zorunlu','error'); return; }
+  }
+
+  if(!tutar)      { showToast('Tutar zorunlu','error'); return; }
+  if(!vadeTarihi) { showToast('Vade tarihi zorunlu','error'); return; }
+
+  const veri = { tip, karsiTaraf, karsiTarafId, cekNo, tutar, banka, vadeTarihi, durum, not: not||'', kasaYazildi: false };
+
+  try {
+    const bugun = new Date().toISOString().slice(0,10);
+    let cekDocId = id;
+
+    if(id) {
+      await db.collection('cekler').doc(id).update({ ...veri, guncelleme: bugun });
+    } else {
+      veri.olusturma = bugun;
+      const ref = await db.collection('cekler').add(veri);
+      cekDocId = ref.id;
+    }
+
+    // Seçenek A: Verilen çek → anında tedarikçi cari borcundan düş
+    if(tip === 'verilen' && !id && karsiTarafId) {
+      await db.collection('tedCariHareketler').add({
+        tedarikciId: karsiTarafId,
+        tip: 'odeme_cek',
+        tarih: bugun,
+        tutar: tutar,
+        aciklama: 'Çek Ödemesi' + (cekNo ? ' · ' + cekNo : '') + (banka ? ' · ' + banka : '') + ' (Vade: ' + vadeTarihi + ')',
+        cekId: cekDocId,
+        otomatik: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('✓ Kaydedildi — ' + karsiTaraf + ' cari hesabına çek ödemesi işlendi', 'success');
+    } else {
+      showToast('Kaydedildi ✓', 'success');
+    }
+
+    document.getElementById('cek-modal-overlay')?.remove();
+  } catch(err) {
+    console.error('cekKaydet:', err);
+    showToast('Hata: ' + err.message, 'error');
+  }
+};
+
+window.cekSil = async function(id) {
+  if(!confirm('Bu çek kaydı silinsin mi?')) return;
+  try {
+    await db.collection('cekler').doc(id).delete();
+    showToast('Silindi ✓', 'success');
+  } catch(err) {
+    showToast('Hata: ' + err.message, 'error');
+  }
+};
+
+// ── Uyarı bandına çek uyarıları ekle ────────────────────────────────────
+const _origRenderBankaUyariBandi = renderBankaUyariBandi;
+renderBankaUyariBandi = function() {
+  _origRenderBankaUyariBandi();
+  // Çek uyarılarını ayrı div'e ekle
+  let el = document.getElementById('cek-uyari-bandi');
+  if(!el) {
+    const parent = document.getElementById('banka-uyari-bandi')?.parentNode;
+    if(!parent) return;
+    el = document.createElement('div');
+    el.id = 'cek-uyari-bandi';
+    el.style.marginBottom = '14px';
+    const bankaUyari = document.getElementById('banka-uyari-bandi');
+    bankaUyari?.parentNode.insertBefore(el, bankaUyari.nextSibling);
+  }
+
+  const bugun = new Date().toISOString().slice(0,10);
+  const bugun7 = new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+  const items = [];
+
+  // Vadesi geçmiş alınan çekler
+  _cekCache.alinan.filter(c=>['Portföyde','Bankaya Verildi'].includes(c.durum)&&c.vadeTarihi<bugun)
+    .forEach(c=>{
+      const fark = Math.ceil((new Date(bugun)-new Date(c.vadeTarihi))/86400000);
+      items.push({icon:'🧾',tip:'Alınan Çek — Vadesi Geçti',aciklama:(c.karsiTaraf||'—')+(c.cekNo?' · '+c.cekNo:''),
+        tutar:Number(c.tutar||0),tarih:c.vadeTarihi,fark:-fark,renk:'var(--red)',gecmis:true});
+    });
+
+  // 7 gün içinde ödenecek verilen çekler
+  _cekCache.verilen.filter(c=>c.durum==='Verildi'&&c.vadeTarihi>=bugun&&c.vadeTarihi<=bugun7)
+    .forEach(c=>{
+      const fark = Math.ceil((new Date(c.vadeTarihi)-new Date(bugun))/86400000);
+      items.push({icon:'🧾',tip:'Verilen Çek — Ödeme Yaklaşıyor',aciklama:(c.karsiTaraf||'—')+(c.cekNo?' · '+c.cekNo:''),
+        tutar:Number(c.tutar||0),tarih:c.vadeTarihi,fark,renk:'var(--purple)',gecmis:false});
+    });
+
+  if(!items.length){ el.innerHTML=''; return; }
+
+  function fmtG(fark,gecmis) {
+    if(gecmis) return `<span style="color:var(--red);font-weight:700">${Math.abs(fark)} GÜN GEÇTİ</span>`;
+    if(fark===0) return `<span style="color:var(--red);font-weight:700">BUGÜN</span>`;
+    if(fark===1) return `<span style="color:var(--purple);font-weight:700">YARIN</span>`;
+    return `<span style="color:var(--purple)">${fark} gün sonra</span>`;
+  }
+
+  el.innerHTML = `<div style="background:rgba(156,108,224,0.06);border:1px solid rgba(156,108,224,0.25);border-left:3px solid var(--purple);border-radius:4px;overflow:hidden">
+    <div style="padding:10px 16px;border-bottom:1px solid rgba(156,108,224,0.15);display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px">🧾</span>
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-family:'IBM Plex Mono',monospace;color:var(--purple)">Çek Uyarıları</span>
+      <span style="margin-left:auto;font-size:10px;color:var(--text3)">${items.length} kalem</span>
+    </div>
+    ${items.map(it=>`
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <span style="font-size:18px">${it.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text)">${it.aciklama}</div>
+          <div style="font-size:10px;color:var(--text2);font-family:'IBM Plex Mono',monospace;margin-top:1px">${it.tip} · ${it.tarih}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${it.renk}">${fmtMoney(it.tutar)}</div>
+          <div style="font-size:10px;margin-top:2px">${fmtG(it.fark,it.gecmis)}</div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+};
+
+// ── Sayfa açılışında listener başlat ─────────────────────────────────────
 
 // ─── GEÇMİŞ SİPARİŞ MİGRATION ──────────────────────────────────────────────
 // teslimHazirAt → uretimTarihi, teslimEdildiAt → gercekTeslimTarihi
