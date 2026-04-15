@@ -4167,11 +4167,6 @@ window.printSiparis = async function(id) {
           </tr>`;
         }).join('')}
       </tbody>
-      <tfoot><tr>
-        <td colspan="${5 + (_hasLaminoks?1:0) + (_hasNot?1:0)}" style="color:#888;font-size:10px">Toplam</td>
-        <td class="c mono" style="font-weight:700">${kalemler.reduce((a,k)=>a+Number(k.adet||1),0)}</td>
-        <td colspan="2"></td>
-      </tr></tfoot>
     </table>` : `
     <table class="kalem-tablo">
       <thead><tr>
@@ -8198,30 +8193,17 @@ window.poMalzOpts = function() {
   return fbOpts + mdfOpts;
 };
 
-window.poMalzKatDegisti = function() {
-  _poMalzKat = document.getElementById('po_malz_kat')?.value || '';
-  document.querySelectorAll('.po_malzeme').forEach(sel => {
-    const secili = sel.value;
-    sel.innerHTML = '<option value="">— Seçin —</option>' + poMalzOpts();
-    sel.value = secili;
-  });
-};
-
 window.poTedSecildi = function() {
   const tedId = document.getElementById('po_ted')?.value;
   const ted = tedarikciler.find(t => t.id === tedId);
-  // Tedarikçi kategorisine göre malzeme filtresini otomatik set et
   const katMap = { 'MDF': 'MDF', 'Aksesuar': 'Aksesuar', 'Sac': 'Sac', 'Boya': 'Boya', 'Diğer': '' };
-  const yeniKat = ted?.kategori ? (katMap[ted.kategori] ?? '') : '';
-  _poMalzKat = yeniKat;
-  const katSel = document.getElementById('po_malz_kat');
-  if(katSel) katSel.value = yeniKat;
+  _poMalzKat = ted?.kategori ? (katMap[ted.kategori] ?? '') : '';
   document.querySelectorAll('.po_malzeme').forEach(sel => {
     const secili = sel.value;
     sel.innerHTML = '<option value="">— Seçin —</option>' + poMalzOpts();
     sel.value = secili;
   });
-  if(ted?.kategori) showToast(`"${ted.kategori}" kategorisi seçildi`, 'info');
+  if(ted?.kategori) showToast(`"${ted.kategori}" kategorisindeki malzemeler listelendi`, 'info');
 };
 
 // Malzeme seçilince birim fiyatı otomatik doldur
@@ -8266,7 +8248,6 @@ window.openPOFrm = function(prefillTedId) {
   const autoPONo = nextPONo();
   const bugun = new Date().toISOString().split('T')[0];
   const tedOpts = tedarikciler.map(t=>`<option value="${t.id}" ${t.id===prefillTedId?'selected':''}>${t.ad} ${t.kategori?'('+t.kategori+')':''}</option>`).join('');
-  const katOpts = ['','Sac','Aksesuar','MDF','Boya','Diğer'].map(k=>`<option value="${k}" ${k===_poMalzKat?'selected':''}>${k||'Tüm Kategoriler'}</option>`).join('');
 
   document.getElementById('addModalTitle').textContent = 'Yeni Satın Alma Siparişi (PO)';
   document.getElementById('addModalBody').innerHTML = `<div class="form-grid">
@@ -8275,7 +8256,7 @@ window.openPOFrm = function(prefillTedId) {
     <div class="form-group full"><label>Tedarikçi *</label>
       <select id="po_ted" onchange="poTedSecildi()"><option value="">— Tedarikçi seçin —</option>${tedOpts}</select>
     </div>
-    <div class="form-group"><label>Tahmini Teslim Tarihi</label><input id="po_teslim" type="date"></div>
+    <div class="form-group"><label>Teslim Tarihi</label><input id="po_teslim" type="date"></div>
     <div class="form-group"><label>Durum</label>
       <select id="po_durum">
         <option>Beklemede</option><option>Onaylandı</option><option>Teslim Alındı</option><option>İptal</option>
@@ -8284,10 +8265,7 @@ window.openPOFrm = function(prefillTedId) {
     <div class="form-group full">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <label style="margin:0">Sipariş Kalemleri *</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select id="po_malz_kat" onchange="poMalzKatDegisti()" style="background:var(--surface2);border:1px solid var(--border);padding:4px 8px;font-size:11px;border-radius:3px;color:var(--text)">${katOpts}</select>
-          <button type="button" class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="poKalemEkle()">+ Kalem Ekle</button>
-        </div>
+        <button type="button" class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="poKalemEkle()">+ Kalem Ekle</button>
       </div>
       <div id="poKalemlerContainer">
         <div class="po-kalem" id="po_kalem_0" style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:8px">
@@ -8443,10 +8421,35 @@ window.openPODetay = function(id) {
   document.getElementById('detailOverlay').classList.add('open');
 };
 
+// ── PO DÜZENLEME: mevcut PO'ya yeni kalem ekle ──────────────────────────────
+window.poEditKalemEkle = function() {
+  const container = document.getElementById('po_kalemler_edit');
+  if(!container) return;
+  const idx = 'new_' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'po-kalem';
+  div.id = 'po_kalem_' + idx;
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:8px;margin-bottom:8px;align-items:center;padding:8px;background:var(--surface2);border-radius:3px';
+  div.innerHTML = `
+    <select class="po_malzeme" onchange="poKalemHesapla('${idx}')" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-size:12px;border-radius:3px">
+      <option value="">— Malzeme seç —</option>${poMalzOpts()}
+    </select>
+    <input class="po_miktar" type="number" min="0" step="0.01" value="1" oninput="poKalemHesapla('${idx}')" placeholder="Miktar" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px;font-size:12px;border-radius:3px">
+    <input class="po_birimFiyat" type="number" min="0" step="0.01" value="0" oninput="poKalemHesapla('${idx}')" placeholder="Birim ₺" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px;font-size:12px;border-radius:3px">
+    <span class="po_kalem_tutar mono" style="font-size:12px;color:var(--accent);min-width:80px;text-align:right">₺0</span>
+    <button type="button" onclick="this.parentElement.remove();poToplamHesapla()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px" title="Kalemi sil">✕</button>
+  `;
+  container.appendChild(div);
+};
+
 // ── PO DÜZENLEME ─────────────────────────────────────────────────────────────
 window.openEditPO = function(id) {
   const p = satinalmaEmirleri.find(x => x.id === id);
   if(!p) return;
+  // Tedarikçi kategorisine göre malzeme filtresini ayarla (yeni kalem ekleme için)
+  const poTed = tedarikciler.find(t => t.id === p.tedarikcId);
+  const katMap = { 'MDF': 'MDF', 'Aksesuar': 'Aksesuar', 'Sac': 'Sac', 'Boya': 'Boya', 'Diğer': '' };
+  _poMalzKat = poTed?.kategori ? (katMap[poTed.kategori] ?? '') : '';
   const tedOpts = tedarikciler.map(t => `<option value="${t.id}" ${t.id===p.tedarikcId?'selected':''}>${t.ad}</option>`).join('');
   const malzOpts = '<option value="">— Malzeme seç —</option>'
     + malzemeler.map(m => `<option value="${m.id}" data-ad="${m.ad}" data-birim="${m.birim||'adet'}">${m.ad} (${m.miktar||0} ${m.birim||'adet'})</option>`).join('');
@@ -8454,7 +8457,7 @@ window.openEditPO = function(id) {
   let kalemHTML = '';
   (p.kalemler||[]).forEach((k,i) => {
     const tutar = (k.miktar||0)*(k.birimFiyat||0);
-    kalemHTML += `<div class="po-kalem" id="po_kalem_${i}" style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:center;padding:8px;background:var(--surface2);border-radius:3px">
+    kalemHTML += `<div class="po-kalem" id="po_kalem_${i}" style="display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:8px;margin-bottom:8px;align-items:center;padding:8px;background:var(--surface2);border-radius:3px">
       <select class="po_malzeme" onchange="poKalemHesapla(${i})" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-size:12px;border-radius:3px">
         ${ (() => {
           const val = k.malzId || '';
@@ -8466,6 +8469,7 @@ window.openEditPO = function(id) {
       <input class="po_miktar" type="number" min="0" step="0.01" value="${k.miktar||0}" oninput="poKalemHesapla(${i})" placeholder="Miktar" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px;font-size:12px;border-radius:3px">
       <input class="po_birimFiyat" type="number" min="0" step="0.01" value="${k.birimFiyat||0}" oninput="poKalemHesapla(${i})" placeholder="Birim ₺" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px;font-size:12px;border-radius:3px">
       <span class="po_kalem_tutar mono" style="font-size:12px;color:var(--accent);min-width:80px;text-align:right">${fmtMoney(tutar)}</span>
+      <button type="button" onclick="this.parentElement.remove();poToplamHesapla()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px" title="Kalemi sil">✕</button>
     </div>`;
   });
 
@@ -8478,7 +8482,7 @@ window.openEditPO = function(id) {
       <div class="form-group"><label>PO No</label><input id="epo_no" value="${p.poNo||''}"></div>
       <div class="form-group"><label>Tedarikçi *</label><select id="epo_ted">${tedOpts}</select></div>
       <div class="form-group"><label>Tarih *</label><input id="epo_tarih" type="date" value="${p.tarih||''}"></div>
-      <div class="form-group"><label>Tahmini Teslim</label><input id="epo_teslim" type="date" value="${p.teslimTarihi||''}"></div>
+      <div class="form-group"><label>Teslim Tarihi</label><input id="epo_teslim" type="date" value="${p.teslimTarihi||''}"></div>
       <div class="form-group"><label>Durum</label>
         <select id="epo_durum">
           ${['Beklemede','Onaylandı','Teslim Alındı','İptal'].map(d=>`<option ${p.durum===d?'selected':''}>${d}</option>`).join('')}
@@ -8487,7 +8491,10 @@ window.openEditPO = function(id) {
       <div class="form-group full"><label>Not</label><textarea id="epo_not" style="min-height:50px">${p.not||''}</textarea></div>
     </div>
     <div style="margin-top:12px">
-      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:8px">Kalemler</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)">Kalemler</div>
+        <button type="button" class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="poEditKalemEkle()">+ Kalem Ekle</button>
+      </div>
       <div id="po_kalemler_edit">${kalemHTML}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
         <span style="font-size:12px;color:var(--text2)">Toplam</span>
