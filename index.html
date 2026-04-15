@@ -232,6 +232,12 @@
   .confirm-sub{font-size:13px;color:var(--text2);margin-bottom:20px;}
   .confirm-actions{display:flex;gap:10px;justify-content:center;}
 
+  /* HAMBURGER & OVERLAY (default gizli) */
+  .hamburger-btn{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px 10px;line-height:1;}
+  .hamburger-btn:hover{color:var(--accent);}
+  .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:80;}
+  .sidebar-overlay.open{display:block;}
+
   /* ═══ TABLET OPTİMİZASYONU (≤1024px) ═══ */
   @media (max-width: 1024px) {
     /* Sidebar: sadece ikonlar */
@@ -286,6 +292,70 @@
     /* Filtreler sarsın */
     .filters{gap:8px;}
     .filter-select{padding:8px 10px;font-size:12px;}
+  }
+
+  /* ═══ TELEFON (≤640px) ═══ */
+  @media (max-width: 640px) {
+    body{overflow:auto;height:auto;min-height:100vh;}
+
+    /* Sidebar: dışarı kaydırılmış, tap ile açılır */
+    .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:90;width:240px;min-width:240px;
+             transform:translateX(-100%);transition:transform 0.25s ease;box-shadow:2px 0 12px rgba(0,0,0,0.4);}
+    .sidebar.open{transform:translateX(0);}
+    /* Mobilde sidebar içeriği açıldığında tam metin göster */
+    .sidebar.open .logo{padding:20px 20px 16px;justify-content:flex-start;}
+    .sidebar.open .logo-icon{width:48px;height:48px;}
+    .sidebar.open .logo-text,
+    .sidebar.open .logo-sub{display:block;}
+    .sidebar.open .nav-section{display:block;}
+    .sidebar.open .nav-item{padding:11px 16px;justify-content:flex-start;}
+    .sidebar.open .nav-item > *:not(.icon):not(.nav-badge){display:inline;}
+    .sidebar.open .nav-item .icon{font-size:15px;width:18px;}
+    .sidebar.open .nav-badge{position:static;font-size:9px;padding:1px 6px;margin-left:auto;}
+    .sidebar.open .sync-status{justify-content:flex-start;}
+    .sidebar.open .sync-status > *{display:inline;}
+    .sidebar.open .sidebar-footer{padding:14px 16px;text-align:left;}
+
+    /* Main tam genişlik */
+    .main{width:100%;}
+
+    /* Hamburger görünür */
+    .hamburger-btn{display:block;}
+
+    /* Topbar tek satır */
+    .topbar{padding:0 10px;gap:8px;height:50px;}
+    .page-title{font-size:13px;}
+    .search-box{display:none;}
+    .topbar-right{gap:6px;margin-left:auto;}
+    .btn{padding:8px 12px;font-size:12px;}
+
+    /* İçerik */
+    .content{padding:12px;}
+
+    /* Stats 1 kolon */
+    .stats-grid{grid-template-columns:1fr;gap:8px;}
+    .stat-card{padding:12px;}
+    .stat-value{font-size:20px;}
+
+    /* Kanban dikey stack */
+    .kanban{grid-template-columns:1fr;}
+    .kanban-col{min-height:auto;}
+
+    /* Tablolar: yatay scroll sarıcı */
+    .card{overflow-x:auto;}
+    .table{min-width:520px;}
+    .table th,.table td{padding:8px 10px;font-size:11px;}
+
+    /* Filtreler dikey */
+    .filters{flex-direction:column;align-items:stretch;}
+    .filter-select{width:100%;}
+
+    /* Modal tam ekran */
+    .modal{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border-radius:0;}
+    .detail-panel{width:100vw;max-width:100vw;}
+
+    /* Confirm box */
+    .confirm-box{width:94vw;}
   }
 </style>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -380,9 +450,12 @@
   </div>
 </div>
 
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar(false)"></div>
+
 <!-- MAIN -->
 <div class="main">
   <div class="topbar">
+    <button class="hamburger-btn" onclick="toggleSidebar()" aria-label="Menü">☰</button>
     <div>
       <div class="page-title" id="pageTitle">Dashboard</div>
       <div class="page-sub" id="pageSub">Genel bakış</div>
@@ -4671,11 +4744,20 @@ window.mdfArkaKaydet = function(renk, alan, deger) {
 };
 
 
+window.toggleSidebar = function(forceState) {
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sidebarOverlay');
+  const open = typeof forceState === 'boolean' ? forceState : !sb.classList.contains('open');
+  sb.classList.toggle('open', open);
+  ov.classList.toggle('open', open);
+};
+
 window.showPage = function(id, el) {
   currentPage = id;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
+  if(window.innerWidth <= 640) toggleSidebar(false);
   const titles = {
     dashboard:['Dashboard','Genel bakış'],
     musteriler:['Müşteriler','Müşteri yönetimi'],
