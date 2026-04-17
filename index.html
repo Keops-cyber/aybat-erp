@@ -8431,7 +8431,7 @@ window.poEditKalemEkle = function() {
   div.id = 'po_kalem_' + idx;
   div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:8px;margin-bottom:8px;align-items:center;padding:8px;background:var(--surface2);border-radius:3px';
   div.innerHTML = `
-    <select class="po_malzeme" onchange="poKalemHesapla('${idx}')" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-size:12px;border-radius:3px">
+    <select class="po_malzeme" onchange="poMalzSecildi('${idx}')" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 9px;font-size:12px;border-radius:3px">
       <option value="">— Malzeme seç —</option>${poMalzOpts()}
     </select>
     <input class="po_miktar" type="number" min="0" step="0.01" value="1" oninput="poKalemHesapla('${idx}')" placeholder="Miktar" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px;font-size:12px;border-radius:3px">
