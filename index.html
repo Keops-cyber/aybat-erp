@@ -3479,6 +3479,26 @@ window.saveRecord = async function() {
         showToast('Sipariş eklendi ✓');
         // Yeni sipariş: Üretimde veya sonrası ise MDF stok düş
         if(['Üretimde','Teslim Hazır','Teslim Edildi'].includes(data.durum)) mdfStokGuncelle(gecerliKalemler, [], data.sipNo);
+        // Kasa: yeni sipariş ödemeli açılmışsa gelir + hammadde giderini yaz
+        if(data.durum !== 'İptal' && (odeDurumYeni === 'Tamamlandı' || odeDurumYeni === 'Kısmi' || odeDurumYeni === 'Kısmi Ödendi')) {
+          // Tamamlandı ise miktar girilmemişse toplam tutarı kullan
+          let yeniMiktar = Number(data.odemeMiktar || 0);
+          if(yeniMiktar === 0 && odeDurumYeni === 'Tamamlandı') {
+            yeniMiktar = Number(toplamTutar || 0);
+            try { await db.collection('siparisler').doc(sipRef.id).update({ odemeMiktar: yeniMiktar }); } catch(_) {}
+          }
+          const gelirTutar = odeDurumYeni === 'Tamamlandı' ? toplamTutar : (yeniMiktar > 0 ? yeniMiktar : toplamTutar);
+          await db.collection('kasaIslemleri').add({
+            tip:'Gelir', kategori: odeDurumYeni==='Tamamlandı' ? 'Sipariş Tahsilatı' : 'Ön Ödeme',
+            aciklama:'Tahsilat — ' + data.sipNo + ' · ' + (data.musteriAd||''),
+            tutar: gelirTutar,
+            tarih: data.odemeTarihi || new Date().toISOString().split('T')[0],
+            sipNo: data.sipNo||'', sipAno: data.sipNo||'', sipId: sipRef.id,
+            odemeYontemi:'Nakit', not:'Otomatik', otomatik:true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          await hammaddeGiderYaz(sipRef.id, data.sipNo, data, gecerliKalemler);
+        }
         // Cari müşteri varsa otomatik borç işlemi ekle
         try {
           const cariSnap = await db.collection('cariMusteriler')
@@ -4472,21 +4492,27 @@ window.deleteRecord = async function(type, id) {
   closeModal('confirmOverlay');
   closeModal('detailOverlay');
   try {
-    await db.collection(type==='siparis'?'siparisler':'musteriler').doc(id).delete();
-    showToast('Silindi ✓');
-    if(type==='siparis') {
-      try {
-        const sip = siparisler.find(x=>x.id===id);
-        let snap = await db.collection('cariHareketler').where('sipId','==',id).get();
-        if(snap.empty && sip?.sipNo) {
-          snap = await db.collection('cariHareketler')
-            .where('aciklama','>=','Sipariş No: '+sip.sipNo)
-            .where('aciklama','<=','Sipariş No: '+sip.sipNo+'\uf8ff').get();
-        }
-        if(!snap.empty) {
-          const b = db.batch(); snap.docs.forEach(d=>b.delete(d.ref)); await b.commit();
-        }
-      } catch(e) { console.warn('Cari silme:', e); }
+    if(type === 'siparis') {
+      // Silmeden ÖNCE sipariş verisini yakala; snapshot gelince in-memory'den kaybolur
+      const sip = siparisler.find(x => x.id === id);
+      const sipNo = sip?.sipNo || '';
+      const eskiDurum = sip?.durum || '';
+      const eskiKalemler = (sip?.kalemler && sip.kalemler.length)
+        ? sip.kalemler
+        : (sip?.urun ? [{urun:sip.urun, renk:sip.renk||'', yon:sip.yon||'', adet:sip.adet||1}] : []);
+      // Stok aktifse (Üretimde/Teslim Hazır/Teslim Edildi) geri ekle + hareket yazılır
+      const stokAktif = ['Üretimde','Teslim Hazır','Teslim Edildi'].includes(eskiDurum);
+      await db.collection('siparisler').doc(id).delete();
+      if(stokAktif && eskiKalemler.length) {
+        mdfStokGuncelle([], eskiKalemler, sipNo);
+        await aksesuarStokGuncelle(eskiKalemler, 'ekle');
+      }
+      // Kasa (gelir + hammadde gider) + cari hareket temizliği
+      await siparisIptalTemizle(id, sipNo);
+      showToast('Silindi ✓');
+    } else {
+      await db.collection('musteriler').doc(id).delete();
+      showToast('Silindi ✓');
     }
   } catch(e) { showToast('Hata: '+e.message,'error'); }
 };
@@ -7074,6 +7100,74 @@ async function hammaddeGiderSil(sipId) {
     }
   } catch(e) { console.warn('hammaddeGiderSil:', e); }
 }
+
+// ---- Ödeme / kasa denetimi ----
+// Geçmiş siparişlerde eksik gelir veya hammadde gider kaydı var mı diye kontrol eder.
+// Kullanım: tarayıcı konsolunda  await odemeDenetle()  → liste döner, hiçbir şey yazmaz.
+// Onarmak için:  await odemeOnar()  → sadece eksik olanları ekler, var olanlara dokunmaz.
+window.odemeDenetle = async function odemeDenetle() {
+  const snap = await db.collection('kasaIslemleri').where('otomatik','==',true).get();
+  const gelirByKey = new Map();   // key: sipId veya sipNo → true
+  const giderByKey = new Map();
+  snap.docs.forEach(d => {
+    const k = d.data();
+    const keys = [k.sipId, k.sipNo, k.sipAno].filter(Boolean);
+    const target = k.tip === 'Gelir' ? gelirByKey : (k.tip === 'Gider' ? giderByKey : null);
+    if(target) keys.forEach(x => target.set(x, d.id));
+  });
+  const eksikler = [];
+  for(const s of siparisler) {
+    if(s.durum === 'İptal') continue;
+    const ode = s.odeme || 'Bekliyor';
+    if(!(ode === 'Tamamlandı' || ode === 'Kısmi' || ode === 'Kısmi Ödendi')) continue;
+    const gelirVar = gelirByKey.has(s.id) || (s.sipNo && gelirByKey.has(s.sipNo));
+    const giderVar = giderByKey.has(s.id) || (s.sipNo && giderByKey.has(s.sipNo));
+    if(!gelirVar || !giderVar) {
+      eksikler.push({ id: s.id, sipNo: s.sipNo, musteri: s.musteriAd, tutar: s.tutar, odeme: ode, eksikGelir: !gelirVar, eksikGider: !giderVar });
+    }
+  }
+  console.table(eksikler);
+  console.log(`Toplam ${eksikler.length} siparişte eksik kasa kaydı var. Onarmak için:  await odemeOnar()`);
+  return eksikler;
+};
+
+window.odemeOnar = async function odemeOnar() {
+  const eksikler = await window.odemeDenetle();
+  if(!eksikler.length) { console.log('Eksik kayıt yok ✓'); return 0; }
+  let yazildi = 0;
+  for(const e of eksikler) {
+    const s = siparisler.find(x => x.id === e.id);
+    if(!s) continue;
+    const kalemler = (s.kalemler && s.kalemler.length) ? s.kalemler : (s.urun ? [{urun:s.urun, renk:s.renk||'', yon:s.yon||'', adet:s.adet||1}] : []);
+    const odeTarih = s.odemeTarihi || s.sipTarihi || new Date().toISOString().split('T')[0];
+    if(e.eksikGelir) {
+      const toplamTutar = Number(s.tutar || 0);
+      const odemeMiktar = Number(s.odemeMiktar || 0);
+      const gelirTutar = s.odeme === 'Tamamlandı' ? toplamTutar : (odemeMiktar > 0 ? odemeMiktar : toplamTutar);
+      await db.collection('kasaIslemleri').add({
+        tip:'Gelir', kategori: s.odeme==='Tamamlandı' ? 'Sipariş Tahsilatı' : 'Ön Ödeme',
+        aciklama:'Tahsilat — ' + (s.sipNo||'') + ' · ' + (s.musteriAd||''),
+        tutar: gelirTutar, tarih: odeTarih,
+        sipNo: s.sipNo||'', sipAno: s.sipNo||'', sipId: s.id,
+        odemeYontemi:'Nakit', not:'Otomatik (geriye dönük)', otomatik:true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    if(e.eksikGider) {
+      // Maliyet tanımlı mı? Değilse uyar, atla
+      const toplamMc = kalemler.reduce((a,k) => a + (Number(modelMaliyeti(k.urun)||0) * Number(k.adet||1)), 0);
+      if(toplamMc > 0) {
+        await hammaddeGiderYaz(s.id, s.sipNo, { ...s, odemeTarihi: odeTarih }, kalemler);
+      } else {
+        const urunler = kalemler.map(k=>k.urun).join(', ');
+        console.warn(`⚠ Sipariş ${s.sipNo}: maliyet tanımlı değil (${urunler}) — hammadde gideri yazılmadı. Maliyet sayfasından tanımla, sonra tekrar odemeOnar() çalıştır.`);
+      }
+    }
+    yazildi++;
+  }
+  console.log(`${yazildi} sipariş için eksik kasa kayıtları eklendi ✓`);
+  return yazildi;
+};
 
 // Sipariş iptali sırasında kasa + cari kayıtlarını temizler (her iki yoldan da çağrılır)
 async function siparisIptalTemizle(id, sipNo) {
